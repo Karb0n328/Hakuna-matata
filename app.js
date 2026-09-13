@@ -595,7 +595,7 @@ YANIT KURALI
     injectExtraStyles();
     try { await openDB(); state=(await dbGet(STATE_KEY))||defaultState(); }
     catch { state=defaultState(); toast('Yerel veritabanı açılamadı; bu oturum geçici olabilir.'); }
-    if(!state.selectedDate)state.selectedDate=todayISO();
+    state.selectedDate=todayISO();
     render();
     if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
     setTimeout(()=>{
