@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f1b33" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Hakuna Matata" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+  <link rel="icon" href="./icons/icon-192.png" />
+  <title>Hakuna Matata</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div id="app" class="app-shell">
+    <aside class="sidebar" aria-label="Ana menü">
+      <div class="brand">
+        <img class="brand-icon" src="./icons/icon-192.png" alt="" />
+        <div>
+          <div class="brand-title">Hakuna Matata</div>
+          <div class="brand-subtitle">Planla. Bitir. Devam et.</div>
+        </div>
+      </div>
+      <nav id="sidebarNav" class="nav-list"></nav>
+      <div class="sidebar-foot">
+        <div class="tiny-pill"><span>☁︎</span> Veriler bu cihazda</div>
+      </div>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <div>
+          <div id="pageEyebrow" class="eyebrow"></div>
+          <h1 id="pageTitle">Bugün</h1>
+        </div>
+        <div id="topbarActions" class="topbar-actions"></div>
+      </header>
+
+      <section id="view" class="view"></section>
+    </main>
+
+    <nav id="bottomNav" class="bottom-nav" aria-label="Mobil menü"></nav>
+  </div>
+
+  <div id="modalRoot"></div>
+  <div id="toastRoot" class="toast-root" aria-live="polite"></div>
+
+  <template id="modalTemplate">
+    <div class="modal-backdrop" data-close-modal>
+      <section class="modal-card" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+        <header class="modal-head">
+          <div>
+            <div class="eyebrow modal-eyebrow"></div>
+            <h2 class="modal-title"></h2>
+          </div>
+          <button class="icon-button" data-close-modal aria-label="Kapat">✕</button>
+        </header>
+        <div class="modal-body"></div>
+      </section>
+    </div>
+  </template>
+
+  <script src="./app.js" defer></script>
+</body>
+</html>
