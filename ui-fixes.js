@@ -1,37 +1,118 @@
 (() => {
   'use strict';
 
-  const CORE_HOUR_HEIGHT = 72;
+  const HOUR_HEIGHT = 72;
+  const DAY_START = 7 * 60;
+  const DAY_END = 24 * 60;
   const dragState = new WeakMap();
   let planPaintToken = 0;
 
-  function parseMinutes(text) {
+  function parseRange(text) {
     const m = String(text || '').match(/(\d{2}):(\d{2})\s*[–-]\s*(\d{2}):(\d{2})/);
     if (!m) return null;
     const start = Number(m[1]) * 60 + Number(m[2]);
     const end = Number(m[3]) * 60 + Number(m[4]);
-    return end > start ? end - start : null;
+    return end > start ? { start, end, minutes: end - start } : null;
   }
 
   function fitTimelineBlock(block) {
-    const minutes = parseMinutes(block.querySelector('.block-time')?.textContent);
-    if (!minutes) return;
+    const range = parseRange(block.querySelector('.block-time')?.textContent);
+    if (!range) return null;
 
-    // app.js kısa blokları Math.max(38, ...) ile çizdiği için art arda gelen
-    // 15–30 dk bloklar birbirinin üzerine biniyordu. Burada yüksekliği gerçek
-    // zaman ölçeğine geri getiriyoruz. 4 px aralık app.js ile aynı kalır.
-    const realHeight = Math.max(8, (minutes / 60) * CORE_HOUR_HEIGHT - 4);
-    block.style.height = `${realHeight}px`;
+    const realHeight = Math.max(14, (range.minutes / 60) * HOUR_HEIGHT - 4);
+    block.style.setProperty('height', `${realHeight}px`, 'important');
+    block.classList.remove('hm-micro', 'hm-short', 'hm-medium', 'hm-compact', 'hm-tiny');
+    if (range.minutes <= 18) block.classList.add('hm-micro');
+    else if (range.minutes <= 30) block.classList.add('hm-short');
+    else if (range.minutes <= 45) block.classList.add('hm-medium');
+    return range;
+  }
 
-    block.classList.remove('hm-micro', 'hm-tiny', 'hm-compact');
-    if (minutes <= 18) block.classList.add('hm-micro');
-    else if (minutes <= 30) block.classList.add('hm-tiny');
-    else if (minutes <= 45) block.classList.add('hm-compact');
+  function layoutOverlapGroup(group) {
+    if (!group.length) return;
+    const laneEnds = [];
+    for (const item of group) {
+      let lane = laneEnds.findIndex(end => end <= item.start);
+      if (lane === -1) lane = laneEnds.length;
+      laneEnds[lane] = item.end;
+      item.lane = lane;
+    }
+    const count = laneEnds.length;
+    for (const item of group) {
+      const block = item.block;
+      if (count <= 1) {
+        block.classList.remove('hm-lane');
+        block.style.setProperty('left', '10px', 'important');
+        block.style.setProperty('right', '14px', 'important');
+        continue;
+      }
+      block.classList.add('hm-lane');
+      const leftPct = item.lane / count * 100;
+      const rightPct = (count - item.lane - 1) / count * 100;
+      const leftPad = item.lane === 0 ? 10 : 4;
+      const rightPad = item.lane === count - 1 ? 14 : 4;
+      block.style.setProperty('left', `calc(${leftPct}% + ${leftPad}px)`, 'important');
+      block.style.setProperty('right', `calc(${rightPct}% + ${rightPad}px)`, 'important');
+    }
+  }
+
+  function layoutTimeline(timeline) {
+    if (!timeline) return;
+    const items = [...timeline.querySelectorAll('.time-block')]
+      .map(block => {
+        const range = fitTimelineBlock(block);
+        return range ? { block, ...range } : null;
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.start - b.start || a.end - b.end);
+
+    let group = [];
+    let groupEnd = -1;
+    for (const item of items) {
+      if (!group.length || item.start < groupEnd) {
+        group.push(item);
+        groupEnd = Math.max(groupEnd, item.end);
+      } else {
+        layoutOverlapGroup(group);
+        group = [item];
+        groupEnd = item.end;
+      }
+    }
+    layoutOverlapGroup(group);
+    drawNowLine(timeline);
+  }
+
+  function todayISO() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  function drawNowLine(timeline) {
+    timeline.querySelector('.hm-now-line')?.remove();
+    if (timeline.dataset.timelineDate !== todayISO()) return;
+    const now = new Date();
+    const mins = now.getHours() * 60 + now.getMinutes();
+    if (mins < DAY_START || mins > DAY_END) return;
+    const top = (mins - DAY_START) / 60 * HOUR_HEIGHT;
+    const line = document.createElement('div');
+    line.className = 'hm-now-line';
+    line.style.top = `${top}px`;
+    const label = document.createElement('span');
+    label.className = 'hm-now-label';
+    label.textContent = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    line.appendChild(label);
+    timeline.appendChild(line);
   }
 
   function fitTimelineBlocks(root = document) {
-    root.querySelectorAll?.('.time-block').forEach(fitTimelineBlock);
-    if (root.matches?.('.time-block')) fitTimelineBlock(root);
+    const timelines = [];
+    if (root.matches?.('.timeline')) timelines.push(root);
+    root.querySelectorAll?.('.timeline').forEach(t => timelines.push(t));
+    if (!timelines.length) {
+      const tl = root.closest?.('.timeline');
+      if (tl) timelines.push(tl);
+    }
+    [...new Set(timelines)].forEach(layoutTimeline);
   }
 
   function openHakunaDB() {
@@ -67,7 +148,6 @@
       weekBlocks.forEach(el => {
         const block = byId.get(el.dataset.planBlock);
         if (!block) return;
-
         el.classList.remove('hm-status-complete', 'hm-status-partial', 'hm-status-incomplete');
         el.querySelector('.hm-plan-status-icon')?.remove();
         el.removeAttribute('title');
@@ -75,13 +155,9 @@
 
         let cls = '';
         let label = '';
-        if (block.status === 'complete') {
-          cls = 'hm-status-complete'; label = 'Tamamlandı';
-        } else if (block.status === 'partial') {
-          cls = 'hm-status-partial'; label = 'Kısmen tamamlandı';
-        } else if (block.status === 'incomplete') {
-          cls = 'hm-status-incomplete'; label = 'Tamamlanmadı';
-        }
+        if (block.status === 'complete') { cls = 'hm-status-complete'; label = 'Tamamlandı'; }
+        else if (block.status === 'partial') { cls = 'hm-status-partial'; label = 'Kısmen tamamlandı'; }
+        else if (block.status === 'incomplete') { cls = 'hm-status-incomplete'; label = 'Tamamlanmadı'; }
 
         if (cls) {
           el.classList.add(cls);
@@ -134,10 +210,7 @@
     for (const record of records) {
       for (const node of record.addedNodes) {
         if (!(node instanceof Element)) continue;
-        if (
-          node.matches?.('.time-block, .week-block[data-plan-block]') ||
-          node.querySelector?.('.time-block, .week-block[data-plan-block]')
-        ) {
+        if (node.matches?.('.timeline, .time-block, .week-block[data-plan-block]') || node.querySelector?.('.timeline, .time-block, .week-block[data-plan-block]')) {
           needsEnhance = true;
           break;
         }
@@ -151,6 +224,7 @@
     enhance();
     const view = document.getElementById('view');
     if (view) observer.observe(view, { childList: true, subtree: true });
+    setInterval(() => document.querySelectorAll('.timeline').forEach(drawNowLine), 60000);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
