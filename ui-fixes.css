@@ -64,7 +64,7 @@
 .debt-row{cursor:pointer;}
 .debt-row:active{background:#f8fbff;}
 
-/* Plan görünümü: durum ilk bakışta anlaşılsın. */
+/* Plan görünümü: sadece renk ile durum belli olsun. */
 .week-block{
   position:relative;
   transition:background .15s ease,border-color .15s ease,color .15s ease,box-shadow .15s ease;
@@ -86,19 +86,6 @@
   border-color:#efc1c6 !important;
   color:#8d3f47 !important;
   box-shadow:inset 3px 0 0 #cf6670;
-}
-.hm-plan-status-icon{
-  margin-left:auto;
-  flex:0 0 auto;
-  width:22px;
-  height:22px;
-  border-radius:999px;
-  display:inline-grid;
-  place-items:center;
-  font-size:13px;
-  font-weight:900;
-  background:rgba(255,255,255,.72);
-  border:1px solid currentColor;
 }
 
 @media (max-width:720px){
