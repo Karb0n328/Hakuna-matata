@@ -37,12 +37,47 @@ jobs:
         with:
           gradle-version: '8.7'
 
-      - name: Generate Android launcher icons
+      - name: Generate valid Android launcher icons
         shell: bash
         run: |
           set -euo pipefail
           SRC="icons/hakuna-final.png"
+          FIXED="/tmp/hakuna-fixed.png"
           test -f "$SRC"
+
+          # Browsers tolerate the old artwork's bad PNG palette CRC, but some
+          # Android launchers reject it. Rewrite every chunk CRC while keeping
+          # the image pixels unchanged.
+          python3 - "$SRC" "$FIXED" <<'PY'
+          import struct, sys, zlib
+          src, dst = sys.argv[1], sys.argv[2]
+          data = open(src, 'rb').read()
+          sig = b'\x89PNG\r\n\x1a\n'
+          if not data.startswith(sig):
+              raise SystemExit('Launcher source is not a PNG')
+          out = bytearray(sig)
+          i = len(sig)
+          seen_iend = False
+          while i < len(data):
+              if i + 12 > len(data):
+                  raise SystemExit('Truncated PNG chunk')
+              length = struct.unpack('>I', data[i:i+4])[0]
+              end = i + 12 + length
+              if end > len(data):
+                  raise SystemExit('Truncated PNG payload')
+              ctype = data[i+4:i+8]
+              payload = data[i+8:i+8+length]
+              crc = zlib.crc32(ctype + payload) & 0xffffffff
+              out += data[i:i+8+length] + struct.pack('>I', crc)
+              i = end
+              if ctype == b'IEND':
+                  seen_iend = True
+                  break
+          if not seen_iend:
+              raise SystemExit('PNG has no IEND')
+          open(dst, 'wb').write(out)
+          print(f'Repaired PNG: {len(out)} bytes')
+          PY
 
           rm -rf android/app/src/main/res/mipmap android/app/src/main/res/mipmap-* \
                  android/app/src/main/res/drawable/hakuna_logo.png
@@ -55,22 +90,18 @@ jobs:
           mkdir -p android/app/src/main/res/mipmap-xxxhdpi
           mkdir -p android/app/src/main/res/mipmap-anydpi-v26
 
-          # Keep the final Hakuna artwork opaque. The old build tried to make
-          # dark pixels transparent, which could make the launcher icon vanish.
-          cp "$SRC" android/app/src/main/res/drawable/hakuna_logo.png
+          cp "$FIXED" android/app/src/main/res/drawable/hakuna_logo.png
 
           if command -v convert >/dev/null 2>&1; then
-            convert "$SRC" -alpha off -resize 48x48\!   android/app/src/main/res/mipmap-mdpi/ic_launcher.png
-            convert "$SRC" -alpha off -resize 72x72\!   android/app/src/main/res/mipmap-hdpi/ic_launcher.png
-            convert "$SRC" -alpha off -resize 96x96\!   android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
-            convert "$SRC" -alpha off -resize 144x144\! android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
-            convert "$SRC" -alpha off -resize 192x192\! android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+            convert "$FIXED" -alpha off -resize 48x48\!   android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+            convert "$FIXED" -alpha off -resize 72x72\!   android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+            convert "$FIXED" -alpha off -resize 96x96\!   android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+            convert "$FIXED" -alpha off -resize 144x144\! android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+            convert "$FIXED" -alpha off -resize 192x192\! android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
           else
-            cp "$SRC" android/app/src/main/res/mipmap-mdpi/ic_launcher.png
-            cp "$SRC" android/app/src/main/res/mipmap-hdpi/ic_launcher.png
-            cp "$SRC" android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
-            cp "$SRC" android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
-            cp "$SRC" android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+            for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+              cp "$FIXED" "android/app/src/main/res/mipmap-$d/ic_launcher.png"
+            done
           fi
 
           for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
@@ -94,8 +125,30 @@ jobs:
           </adaptive-icon>
           EOF
 
-          echo "Generated launcher resources:"
-          find android/app/src/main/res -type f \( -name 'ic_launcher*' -o -name 'hakuna_logo.png' \) -print
+          # Fail the build if any packaged source PNG still has a bad CRC.
+          python3 - <<'PY'
+          import glob, struct, zlib
+          files = glob.glob('android/app/src/main/res/**/*.png', recursive=True)
+          if not files:
+              raise SystemExit('No PNG launcher resources generated')
+          for path in files:
+              data = open(path, 'rb').read()
+              if not data.startswith(b'\x89PNG\r\n\x1a\n'):
+                  raise SystemExit(f'Not a PNG: {path}')
+              i = 8
+              while i < len(data):
+                  length = struct.unpack('>I', data[i:i+4])[0]
+                  ctype = data[i+4:i+8]
+                  payload = data[i+8:i+8+length]
+                  stored = struct.unpack('>I', data[i+8+length:i+12+length])[0]
+                  actual = zlib.crc32(ctype + payload) & 0xffffffff
+                  if stored != actual:
+                      raise SystemExit(f'Bad PNG CRC in {path}: {ctype!r}')
+                  i += 12 + length
+                  if ctype == b'IEND':
+                      break
+          print(f'Validated {len(files)} PNG resources')
+          PY
 
       - name: Build APK
         run: gradle -p android assembleDebug --no-daemon --stacktrace
