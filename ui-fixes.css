@@ -1,4 +1,4 @@
-/* Hakuna Matata UI fixes — compact timeline blocks + tappable debt cards */
+/* Hakuna Matata UI fixes — gerçek süreli kısa bloklar + plan durum renkleri */
 .time-block{
   min-height:0 !important;
   box-sizing:border-box;
@@ -7,60 +7,102 @@
 .time-block.hm-compact{
   padding:3px 10px;
   padding-right:28px;
-  border-radius:11px;
+  border-radius:10px;
 }
 .time-block.hm-compact .block-time{
   font-size:8px;
   line-height:1;
 }
 .time-block.hm-compact .block-title{
-  font-size:11px;
+  font-size:10.5px;
   line-height:1.05;
   margin-top:2px;
 }
-.time-block.hm-compact .block-meta{
-  display:none;
-}
+.time-block.hm-compact .block-meta{display:none;}
 .time-block.hm-compact .status-dot{
-  width:7px;
-  height:7px;
-  right:9px;
-  top:7px;
+  width:7px;height:7px;right:9px;top:7px;
 }
 
 .time-block.hm-tiny{
   padding:1px 9px;
-  padding-right:27px;
-  border-radius:8px;
+  padding-right:26px;
+  border-radius:7px;
   display:flex;
   align-items:center;
 }
 .time-block.hm-tiny .block-time,
-.time-block.hm-tiny .block-meta{
-  display:none;
-}
+.time-block.hm-tiny .block-meta{display:none;}
 .time-block.hm-tiny .block-title{
-  font-size:10px;
+  font-size:9.5px;
   line-height:1;
   margin:0;
   width:100%;
 }
 .time-block.hm-tiny .status-dot{
-  width:6px;
-  height:6px;
-  right:8px;
-  top:50%;
-  transform:translateY(-50%);
+  width:6px;height:6px;right:8px;top:50%;transform:translateY(-50%);
 }
 
-.debt-row{
-  cursor:pointer;
+.time-block.hm-micro{
+  padding:0 8px;
+  padding-right:22px;
+  border-radius:5px;
+  display:flex;
+  align-items:center;
 }
-.debt-row:active{
-  background:#f8fbff;
+.time-block.hm-micro .block-time,
+.time-block.hm-micro .block-meta{display:none;}
+.time-block.hm-micro .block-title{
+  font-size:8px;
+  line-height:1;
+  margin:0;
+  width:100%;
+}
+.time-block.hm-micro .status-dot{
+  width:5px;height:5px;right:7px;top:50%;transform:translateY(-50%);
+}
+
+.debt-row{cursor:pointer;}
+.debt-row:active{background:#f8fbff;}
+
+/* Plan görünümü: durum ilk bakışta anlaşılsın. */
+.week-block{
+  position:relative;
+  transition:background .15s ease,border-color .15s ease,color .15s ease,box-shadow .15s ease;
+}
+.week-block.hm-status-complete{
+  background:#e8f6ee !important;
+  border-color:#acd8be !important;
+  color:#286544 !important;
+  box-shadow:inset 3px 0 0 #55a878;
+}
+.week-block.hm-status-partial{
+  background:#fff4d9 !important;
+  border-color:#ecd08a !important;
+  color:#7b5a13 !important;
+  box-shadow:inset 3px 0 0 #d6a33d;
+}
+.week-block.hm-status-incomplete{
+  background:#fff0f1 !important;
+  border-color:#efc1c6 !important;
+  color:#8d3f47 !important;
+  box-shadow:inset 3px 0 0 #cf6670;
+}
+.hm-plan-status-icon{
+  margin-left:auto;
+  flex:0 0 auto;
+  width:22px;
+  height:22px;
+  border-radius:999px;
+  display:inline-grid;
+  place-items:center;
+  font-size:13px;
+  font-weight:900;
+  background:rgba(255,255,255,.72);
+  border:1px solid currentColor;
 }
 
 @media (max-width:720px){
   .time-block.hm-tiny .block-title{font-size:9px;}
   .time-block.hm-compact .block-title{font-size:10px;}
+  .time-block.hm-micro .block-title{font-size:7.5px;}
 }
