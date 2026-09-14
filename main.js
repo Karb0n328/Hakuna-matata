@@ -14,3 +14,4 @@ await import('./mata-fallback.js');
 await import('./mata-loader.js');
 await import('./week-settings.js');
 await import('./question-tools.js?v=2');
+await import('./question-delete-fix.js?v=1');
