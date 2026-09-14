@@ -1,4 +1,5 @@
 import './migration.js';
+await import('./auto-debt.js');
 
 if('serviceWorker' in navigator){
   try{
