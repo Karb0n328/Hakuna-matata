@@ -1,0 +1,66 @@
+/* Hakuna Matata UI fixes — compact timeline blocks + tappable debt cards */
+.time-block{
+  min-height:0 !important;
+  box-sizing:border-box;
+}
+
+.time-block.hm-compact{
+  padding:3px 10px;
+  padding-right:28px;
+  border-radius:11px;
+}
+.time-block.hm-compact .block-time{
+  font-size:8px;
+  line-height:1;
+}
+.time-block.hm-compact .block-title{
+  font-size:11px;
+  line-height:1.05;
+  margin-top:2px;
+}
+.time-block.hm-compact .block-meta{
+  display:none;
+}
+.time-block.hm-compact .status-dot{
+  width:7px;
+  height:7px;
+  right:9px;
+  top:7px;
+}
+
+.time-block.hm-tiny{
+  padding:1px 9px;
+  padding-right:27px;
+  border-radius:8px;
+  display:flex;
+  align-items:center;
+}
+.time-block.hm-tiny .block-time,
+.time-block.hm-tiny .block-meta{
+  display:none;
+}
+.time-block.hm-tiny .block-title{
+  font-size:10px;
+  line-height:1;
+  margin:0;
+  width:100%;
+}
+.time-block.hm-tiny .status-dot{
+  width:6px;
+  height:6px;
+  right:8px;
+  top:50%;
+  transform:translateY(-50%);
+}
+
+.debt-row{
+  cursor:pointer;
+}
+.debt-row:active{
+  background:#f8fbff;
+}
+
+@media (max-width:720px){
+  .time-block.hm-tiny .block-title{font-size:9px;}
+  .time-block.hm-compact .block-title{font-size:10px;}
+}
