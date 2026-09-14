@@ -7,6 +7,7 @@
   let lastDate=null;
   let lastSignature='';
   let observer=null;
+  let clockTimer=null;
 
   const $=(s,r=document)=>r.querySelector(s);
   const $$=(s,r=document)=>[...r.querySelectorAll(s)];
@@ -59,26 +60,42 @@
       <button class="hm-agenda-gap-btn" type="button"><strong>＋ ${esc(fmtDuration(mins))} boş</strong> · blok ekle</button>
     </div>`;
   }
+  function nowLabel(nowMin){
+    return `${String(Math.floor(nowMin/60)).padStart(2,'0')}:${String(nowMin%60).padStart(2,'0')}`;
+  }
   function buildNow(nowMin){
-    const t=`${String(Math.floor(nowMin/60)).padStart(2,'0')}:${String(nowMin%60).padStart(2,'0')}`;
+    const t=nowLabel(nowMin);
     return `<div class="hm-agenda-now" data-hm-now>
       <div class="hm-agenda-now-time">${t}</div>
       <div class="hm-agenda-now-dot"></div>
       <div class="hm-agenda-now-line"></div>
     </div>`;
   }
-  function blockRow(b,overlap=false){
-    const dur=Math.max(1,minute(b.end)-minute(b.start));
+  function buildInlineNow(nowMin,start,end){
+    const dur=Math.max(1,end-start);
+    const elapsed=Math.max(0,Math.min(dur,nowMin-start));
+    const pct=5+(elapsed/dur)*90;
+    return `<div class="hm-agenda-now-inline" data-hm-now style="--hm-now-top:${pct.toFixed(2)}%" aria-label="Şu an ${nowLabel(nowMin)}">
+      <div class="hm-agenda-now-inline-time">${nowLabel(nowMin)}</div>
+      <div class="hm-agenda-now-inline-dot"></div>
+      <div class="hm-agenda-now-inline-line"></div>
+    </div>`;
+  }
+  function blockRow(b,overlap=false,activeNowMin=null){
+    const start=minute(b.start),end=minute(b.end);
+    const dur=Math.max(1,end-start);
     const metric=b.metricValue?`${b.metricValue} ${esc(b.metricUnit||'')}`:'';
     const meta=[b.subject,metric,b.note].filter(Boolean).map(esc).join(' · ');
     const st=statusText(b.status);
-    return `<div class="hm-agenda-row" data-subject="${esc(b.subject||'Diğer')}">
+    const nowMarkup=activeNowMin!=null?buildInlineNow(activeNowMin,start,end):'';
+    return `<div class="hm-agenda-row ${activeNowMin!=null?'hm-agenda-row-active':''}" data-subject="${esc(b.subject||'Diğer')}">
       <div class="hm-agenda-time"><span class="hm-agenda-start">${esc(b.start)}</span><span class="hm-agenda-end">${esc(b.end)}</span></div>
       <div class="hm-agenda-node"></div>
       <button type="button" class="hm-agenda-card" data-agenda-block="${esc(b.id)}" data-subject="${esc(b.subject||'Diğer')}" data-status="${esc(b.status||'pending')}">
         <div class="hm-agenda-topline"><div class="hm-agenda-title">${subjectEmoji(b.subject)} ${esc(b.title)}</div><span class="hm-agenda-duration">${esc(fmtDuration(dur))}</span></div>
         <div class="hm-agenda-meta">${meta||'Çalışma bloğu'}${st?`<span class="hm-agenda-status">· ${esc(st)}</span>`:''}${overlap?'<span class="hm-agenda-overlap">çakışıyor</span>':''}</div>
       </button>
+      ${nowMarkup}
     </div>`;
   }
 
@@ -125,23 +142,30 @@
     const nowMin=now.getHours()*60+now.getMinutes();
     let nowInserted=false;
     let html='<div class="hm-agenda">';
-    let cursor=minute(blocks[0].start);
-    let prevEnd=cursor;
+    let prevEnd=minute(blocks[0].start);
 
     for(let i=0;i<blocks.length;i++){
       const b=blocks[i];
       const s=minute(b.start),e=minute(b.end);
-      if(s>prevEnd){
-        if(isToday&&!nowInserted&&nowMin>=prevEnd&&nowMin<=s){html+=buildNow(nowMin);nowInserted=true;}
-        html+=buildGap(prevEnd,s,date);
-      }else if(isToday&&!nowInserted&&nowMin>=prevEnd&&nowMin<=s){html+=buildNow(nowMin);nowInserted=true;}
 
-      if(isToday&&!nowInserted&&nowMin>=s&&nowMin<=e){html+=buildNow(nowMin);nowInserted=true;}
-      html+=blockRow(b,s<prevEnd);
+      if(s>prevEnd){
+        if(isToday&&!nowInserted&&nowMin>=prevEnd&&nowMin<s){
+          html+=buildNow(nowMin);
+          nowInserted=true;
+        }
+        html+=buildGap(prevEnd,s,date);
+      }
+
+      const activeNow=isToday&&!nowInserted&&nowMin>=s&&nowMin<e;
+      html+=blockRow(b,s<prevEnd,activeNow?nowMin:null);
+      if(activeNow)nowInserted=true;
       prevEnd=Math.max(prevEnd,e);
-      cursor=e;
     }
-    if(isToday&&!nowInserted&&nowMin>prevEnd){html+=buildNow(nowMin);nowInserted=true;}
+
+    if(isToday&&!nowInserted&&nowMin>=prevEnd){
+      html+=buildNow(nowMin);
+      nowInserted=true;
+    }
     html+='</div>';
     host.innerHTML=html;
 
@@ -183,8 +207,13 @@
   }
 
   function scheduleRender(){requestAnimationFrame(()=>renderAgenda(false));}
+  function startClock(){
+    if(clockTimer)clearInterval(clockTimer);
+    clockTimer=setInterval(()=>renderAgenda(true),30000);
+  }
   function init(){
     scheduleRender();
+    startClock();
     const view=$('#view');
     if(view){
       observer=new MutationObserver(()=>scheduleRender());
