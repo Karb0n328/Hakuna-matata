@@ -13,7 +13,7 @@
   const $$=(s,r=document)=>[...r.querySelectorAll(s)];
 
   function esc(v=''){
-    return String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+    return String(v).replace(/[&<>'\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[c]));
   }
   function minute(t){const [h,m]=String(t).split(':').map(Number);return h*60+m;}
   function fmtDuration(mins){
@@ -71,31 +71,19 @@
       <div class="hm-agenda-now-line"></div>
     </div>`;
   }
-  function buildInlineNow(nowMin,start,end){
-    const dur=Math.max(1,end-start);
-    const elapsed=Math.max(0,Math.min(dur,nowMin-start));
-    const pct=5+(elapsed/dur)*90;
-    return `<div class="hm-agenda-now-inline" data-hm-now style="--hm-now-top:${pct.toFixed(2)}%" aria-label="Şu an ${nowLabel(nowMin)}">
-      <div class="hm-agenda-now-inline-time">${nowLabel(nowMin)}</div>
-      <div class="hm-agenda-now-inline-dot"></div>
-      <div class="hm-agenda-now-inline-line"></div>
-    </div>`;
-  }
-  function blockRow(b,overlap=false,activeNowMin=null){
+  function blockRow(b,overlap=false){
     const start=minute(b.start),end=minute(b.end);
     const dur=Math.max(1,end-start);
     const metric=b.metricValue?`${b.metricValue} ${esc(b.metricUnit||'')}`:'';
     const meta=[b.subject,metric,b.note].filter(Boolean).map(esc).join(' · ');
     const st=statusText(b.status);
-    const nowMarkup=activeNowMin!=null?buildInlineNow(activeNowMin,start,end):'';
-    return `<div class="hm-agenda-row ${activeNowMin!=null?'hm-agenda-row-active':''}" data-subject="${esc(b.subject||'Diğer')}">
+    return `<div class="hm-agenda-row" data-subject="${esc(b.subject||'Diğer')}">
       <div class="hm-agenda-time"><span class="hm-agenda-start">${esc(b.start)}</span><span class="hm-agenda-end">${esc(b.end)}</span></div>
       <div class="hm-agenda-node"></div>
       <button type="button" class="hm-agenda-card" data-agenda-block="${esc(b.id)}" data-subject="${esc(b.subject||'Diğer')}" data-status="${esc(b.status||'pending')}">
         <div class="hm-agenda-topline"><div class="hm-agenda-title">${subjectEmoji(b.subject)} ${esc(b.title)}</div><span class="hm-agenda-duration">${esc(fmtDuration(dur))}</span></div>
         <div class="hm-agenda-meta">${meta||'Çalışma bloğu'}${st?`<span class="hm-agenda-status">· ${esc(st)}</span>`:''}${overlap?'<span class="hm-agenda-overlap">çakışıyor</span>':''}</div>
       </button>
-      ${nowMarkup}
     </div>`;
   }
 
@@ -144,25 +132,45 @@
     let html='<div class="hm-agenda">';
     let prevEnd=minute(blocks[0].start);
 
+    if(isToday&&nowMin<minute(blocks[0].start)){
+      html+=buildNow(nowMin);
+      nowInserted=true;
+    }
+
     for(let i=0;i<blocks.length;i++){
       const b=blocks[i];
       const s=minute(b.start),e=minute(b.end);
+      const nextStart=i<blocks.length-1?minute(blocks[i+1].start):null;
 
       if(s>prevEnd){
         if(isToday&&!nowInserted&&nowMin>=prevEnd&&nowMin<s){
+          html+=buildGap(prevEnd,nowMin,date);
+          html+=buildNow(nowMin);
+          html+=buildGap(nowMin,s,date);
+          nowInserted=true;
+        }else{
+          html+=buildGap(prevEnd,s,date);
+        }
+      }
+
+      html+=blockRow(b,s<prevEnd);
+
+      // Zaman çizgisi blokların içine girmez. Bir blok başladığı anda o blok
+      // artık “geçmiş/şimdiki” tarafta kabul edilir ve çizgi kartın ALTINA gelir.
+      // Sonraki blok da başlamışsa çizgi onun altına kadar ilerler.
+      if(isToday&&!nowInserted&&nowMin>=s){
+        const inThisBlock=nowMin<e;
+        const noLaterStartedBlock=nextStart==null||nowMin<nextStart;
+        if(inThisBlock&&noLaterStartedBlock){
           html+=buildNow(nowMin);
           nowInserted=true;
         }
-        html+=buildGap(prevEnd,s,date);
       }
 
-      const activeNow=isToday&&!nowInserted&&nowMin>=s&&nowMin<e;
-      html+=blockRow(b,s<prevEnd,activeNow?nowMin:null);
-      if(activeNow)nowInserted=true;
       prevEnd=Math.max(prevEnd,e);
     }
 
-    if(isToday&&!nowInserted&&nowMin>=prevEnd){
+    if(isToday&&!nowInserted&&nowMin>=minute(blocks[blocks.length-1].start)){
       html+=buildNow(nowMin);
       nowInserted=true;
     }
