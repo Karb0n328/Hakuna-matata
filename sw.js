@@ -1,5 +1,5 @@
-const CACHE='hakuna-matata-v23-auto-debt-rollover';
-const ASSETS=['./','./index.html','./styles.css','./mata.css','./ui-fixes.css','./today-agenda.css','./main.js','./migration.js','./auto-debt.js','./app.js','./week-settings.js','./ui-fixes.js','./today-agenda.js','./today-marker-fix.js','./mata-fallback.js','./mata-loader.js','./mata-observer-guard.js','./mata-core-v2.js','./mata-nlu-v2.js','./mata-ui-v2.js','./manifest.webmanifest','./icons/icon.svg','./icons/icon-192-v3.png','./icons/apple-touch-icon-v3.png','./icons/icon-192.png','./icons/icon-512.png','./icons/apple-touch-icon.png','./assets/mata.svg'];
+const CACHE='hakuna-matata-v24-final-logo';
+const ASSETS=['./','./index.html','./styles.css','./mata.css','./ui-fixes.css','./today-agenda.css','./main.js','./migration.js','./auto-debt.js','./app.js','./week-settings.js','./ui-fixes.js','./today-agenda.js','./today-marker-fix.js','./mata-fallback.js','./mata-loader.js','./mata-observer-guard.js','./mata-core-v2.js','./mata-nlu-v2.js','./mata-ui-v2.js','./manifest.webmanifest?v=final-logo','./icons/hakuna-final.png?v=final-logo','./assets/mata.svg'];
 
 function patchApp(text){
   const oldWeek="  function startOfWeekISO(iso) {\n    const d=parseISODate(iso); const wd=(d.getDay()+6)%7; d.setDate(d.getDate()-wd); return isoDate(d);\n  }";
