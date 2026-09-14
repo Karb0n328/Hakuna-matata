@@ -44,21 +44,27 @@ jobs:
           SRC="icons/hakuna-final.png"
           test -f "$SRC"
 
-          # Remove the old XML/placeholder icon so Android cannot fall back to it.
-          rm -rf android/app/src/main/res/mipmap android/app/src/main/res/mipmap-* android/app/src/main/res/drawable/hakuna_logo.png
+          rm -rf android/app/src/main/res/mipmap android/app/src/main/res/mipmap-* \
+                 android/app/src/main/res/drawable/hakuna_logo.png
 
-          for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
-            mkdir -p "android/app/src/main/res/mipmap-$d"
-          done
+          mkdir -p android/app/src/main/res/drawable
+          mkdir -p android/app/src/main/res/mipmap-mdpi
+          mkdir -p android/app/src/main/res/mipmap-hdpi
+          mkdir -p android/app/src/main/res/mipmap-xhdpi
+          mkdir -p android/app/src/main/res/mipmap-xxhdpi
+          mkdir -p android/app/src/main/res/mipmap-xxxhdpi
+          mkdir -p android/app/src/main/res/mipmap-anydpi-v26
 
-          # Ubuntu runners normally include ImageMagick. If it is unavailable,
-          # use the same PNG at every density; Android will still render it.
+          # Keep the final Hakuna artwork opaque. The old build tried to make
+          # dark pixels transparent, which could make the launcher icon vanish.
+          cp "$SRC" android/app/src/main/res/drawable/hakuna_logo.png
+
           if command -v convert >/dev/null 2>&1; then
-            convert "$SRC" -fuzz 3% -transparent black -resize 48x48   android/app/src/main/res/mipmap-mdpi/ic_launcher.png
-            convert "$SRC" -fuzz 3% -transparent black -resize 72x72   android/app/src/main/res/mipmap-hdpi/ic_launcher.png
-            convert "$SRC" -fuzz 3% -transparent black -resize 96x96   android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
-            convert "$SRC" -fuzz 3% -transparent black -resize 144x144 android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
-            convert "$SRC" -fuzz 3% -transparent black -resize 192x192 android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+            convert "$SRC" -alpha off -resize 48x48\!   android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+            convert "$SRC" -alpha off -resize 72x72\!   android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+            convert "$SRC" -alpha off -resize 96x96\!   android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+            convert "$SRC" -alpha off -resize 144x144\! android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+            convert "$SRC" -alpha off -resize 192x192\! android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
           else
             cp "$SRC" android/app/src/main/res/mipmap-mdpi/ic_launcher.png
             cp "$SRC" android/app/src/main/res/mipmap-hdpi/ic_launcher.png
@@ -67,13 +73,29 @@ jobs:
             cp "$SRC" android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
           fi
 
-          # Round icon is intentionally the same final Hakuna artwork.
           for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
-            cp "android/app/src/main/res/mipmap-$d/ic_launcher.png" "android/app/src/main/res/mipmap-$d/ic_launcher_round.png"
+            cp "android/app/src/main/res/mipmap-$d/ic_launcher.png" \
+               "android/app/src/main/res/mipmap-$d/ic_launcher_round.png"
           done
 
+          cat > android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@color/hakuna_launcher_background" />
+              <foreground android:drawable="@drawable/hakuna_logo" />
+          </adaptive-icon>
+          EOF
+
+          cat > android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@color/hakuna_launcher_background" />
+              <foreground android:drawable="@drawable/hakuna_logo" />
+          </adaptive-icon>
+          EOF
+
           echo "Generated launcher resources:"
-          find android/app/src/main/res -path '*mipmap-*' -type f -maxdepth 3 -print
+          find android/app/src/main/res -type f \( -name 'ic_launcher*' -o -name 'hakuna_logo.png' \) -print
 
       - name: Build APK
         run: gradle -p android assembleDebug --no-daemon --stacktrace
@@ -82,7 +104,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          unzip -l android/app/build/outputs/apk/debug/app-debug.apk | grep -E 'mipmap-.*/ic_launcher(_round)?\.png' | tee /tmp/icon-list.txt
+          unzip -l android/app/build/outputs/apk/debug/app-debug.apk | grep -E 'ic_launcher|hakuna_logo' | tee /tmp/icon-list.txt
           test -s /tmp/icon-list.txt
 
       - name: Prepare artifact
