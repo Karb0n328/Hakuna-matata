@@ -17,6 +17,7 @@
 
     await load('./mata-core-v2.js');
     await load('./mata-nlu-v2.js');
+    await load('./mata-insights-v1.js?v=1');
     await load('./mata-ui-v2.js');
   })().catch(err => {
     console.error('Mata v2 yüklenemedi.', err);
