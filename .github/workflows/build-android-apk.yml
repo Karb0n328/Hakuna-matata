@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - 'android/**'
+      - 'icons/hakuna-final.png'
       - '.github/workflows/build-android-apk.yml'
 
 permissions:
@@ -36,20 +37,60 @@ jobs:
         with:
           gradle-version: '8.7'
 
-      - name: Prepare app icon
+      - name: Generate Android launcher icons
+        shell: bash
         run: |
-          mkdir -p android/app/src/main/res/drawable
-          cp icons/hakuna-final.png android/app/src/main/res/drawable/hakuna_logo.png
+          set -euo pipefail
+          SRC="icons/hakuna-final.png"
+          test -f "$SRC"
+
+          # Remove the old XML/placeholder icon so Android cannot fall back to it.
+          rm -rf android/app/src/main/res/mipmap android/app/src/main/res/mipmap-* android/app/src/main/res/drawable/hakuna_logo.png
+
+          for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+            mkdir -p "android/app/src/main/res/mipmap-$d"
+          done
+
+          # Ubuntu runners normally include ImageMagick. If it is unavailable,
+          # use the same PNG at every density; Android will still render it.
+          if command -v convert >/dev/null 2>&1; then
+            convert "$SRC" -fuzz 3% -transparent black -resize 48x48   android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+            convert "$SRC" -fuzz 3% -transparent black -resize 72x72   android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+            convert "$SRC" -fuzz 3% -transparent black -resize 96x96   android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+            convert "$SRC" -fuzz 3% -transparent black -resize 144x144 android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+            convert "$SRC" -fuzz 3% -transparent black -resize 192x192 android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          else
+            cp "$SRC" android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+            cp "$SRC" android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+            cp "$SRC" android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+            cp "$SRC" android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+            cp "$SRC" android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          fi
+
+          # Round icon is intentionally the same final Hakuna artwork.
+          for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+            cp "android/app/src/main/res/mipmap-$d/ic_launcher.png" "android/app/src/main/res/mipmap-$d/ic_launcher_round.png"
+          done
+
+          echo "Generated launcher resources:"
+          find android/app/src/main/res -path '*mipmap-*' -type f -maxdepth 3 -print
 
       - name: Build APK
         run: gradle -p android assembleDebug --no-daemon --stacktrace
 
+      - name: Verify launcher icon is packaged
+        shell: bash
+        run: |
+          set -euo pipefail
+          unzip -l android/app/build/outputs/apk/debug/app-debug.apk | grep -E 'mipmap-.*/ic_launcher(_round)?\.png' | tee /tmp/icon-list.txt
+          test -s /tmp/icon-list.txt
+
       - name: Prepare artifact
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk Hakuna-Matata.apk
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk 'Hakuna Matata.apk'
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Hakuna-Matata-APK
-          path: Hakuna-Matata.apk
+          path: Hakuna Matata.apk
           retention-days: 30
