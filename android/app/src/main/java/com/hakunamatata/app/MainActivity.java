@@ -10,6 +10,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.util.Base64;
 import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
 import android.webkit.JavascriptInterface;
@@ -21,16 +22,19 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.io.OutputStream;
 
 public class MainActivity extends Activity {
     private static final int FILE_CHOOSER_REQUEST = 1107;
-    private static final String HOME_URL = "https://karb0n328.github.io/Hakuna-matata/";
+    private static final String HOME_URL = "https://karb0n328.github.io/Hakuna-matata/?native=1.0.4";
 
     private WebView webView;
     private ValueCallback<Uri[]> filePathCallback;
+    private String nativeLogoDataUrl;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,6 +42,8 @@ public class MainActivity extends Activity {
 
         getWindow().setStatusBarColor(Color.parseColor("#0F1B33"));
         getWindow().setNavigationBarColor(Color.parseColor("#0F1B33"));
+
+        nativeLogoDataUrl = buildNativeLogoDataUrl();
 
         webView = new WebView(this);
         setContentView(webView);
@@ -53,7 +59,7 @@ public class MainActivity extends Activity {
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
-        settings.setUserAgentString(settings.getUserAgentString() + " HakunaMatataAndroid/1.0");
+        settings.setUserAgentString(settings.getUserAgentString() + " HakunaMatataAndroid/1.0.4");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         }
@@ -74,6 +80,12 @@ public class MainActivity extends Activity {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 return handleUri(Uri.parse(url));
+            }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                injectNativeBrandLogo();
             }
 
             private boolean handleUri(Uri uri) {
@@ -147,6 +159,36 @@ public class MainActivity extends Activity {
         }
     }
 
+    private String buildNativeLogoDataUrl() {
+        try (InputStream in = getResources().openRawResource(R.drawable.hakuna_logo);
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            byte[] buffer = new byte[8192];
+            int read;
+            while ((read = in.read(buffer)) != -1) out.write(buffer, 0, read);
+            return "data:image/png;base64," + Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP);
+        } catch (Exception ignored) {
+            return "";
+        }
+    }
+
+    private void injectNativeBrandLogo() {
+        if (webView == null || nativeLogoDataUrl == null || nativeLogoDataUrl.isEmpty()) return;
+        String script = "(()=>{" +
+                "const src=" + jsString(nativeLogoDataUrl) + ";" +
+                "const apply=()=>document.querySelectorAll('.brand-icon').forEach(img=>{" +
+                "img.src=src;img.removeAttribute('srcset');" +
+                "img.style.display='block';img.style.visibility='visible';img.style.opacity='1';" +
+                "img.style.objectFit='cover';" +
+                "});" +
+                "apply();" +
+                "if(!window.__hakunaNativeBrandObserver){" +
+                "window.__hakunaNativeBrandObserver=new MutationObserver(apply);" +
+                "window.__hakunaNativeBrandObserver.observe(document.documentElement,{childList:true,subtree:true});" +
+                "}" +
+                "})();";
+        webView.evaluateJavascript(script, null);
+    }
+
     private void saveBlobUrl(String blobUrl, String fileName, String mimeType) {
         String script = "(async()=>{try{" +
                 "const r=await fetch(" + jsString(blobUrl) + ");" +
@@ -174,7 +216,7 @@ public class MainActivity extends Activity {
                 try {
                     int comma = dataUrl.indexOf(',');
                     String payload = comma >= 0 ? dataUrl.substring(comma + 1) : dataUrl;
-                    byte[] bytes = android.util.Base64.decode(payload, android.util.Base64.DEFAULT);
+                    byte[] bytes = Base64.decode(payload, Base64.DEFAULT);
                     String safeName = (fileName == null || fileName.trim().isEmpty()) ? "Hakuna-Matata-Yedek.json" : fileName.replaceAll("[\\\\/:*?\"<>|]", "-");
                     String safeMime = (mimeType == null || mimeType.trim().isEmpty()) ? "application/octet-stream" : mimeType;
 
