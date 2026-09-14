@@ -1,5 +1,5 @@
-const CACHE='hakuna-matata-v25-question-duplicate';
-const ASSETS=['./','./index.html','./styles.css','./mata.css','./ui-fixes.css','./today-agenda.css','./main.js','./migration.js','./auto-debt.js','./app.js','./week-settings.js','./ui-fixes.js','./today-agenda.js','./today-marker-fix.js','./mata-fallback.js','./mata-loader.js','./mata-observer-guard.js','./mata-core-v2.js','./mata-nlu-v2.js','./mata-ui-v2.js','./manifest.webmanifest?v=final-logo','./icons/hakuna-final.png?v=final-logo','./assets/mata.svg'];
+const CACHE='hakuna-matata-v26-brand-logo';
+const ASSETS=['./','./index.html','./styles.css','./mata.css','./ui-fixes.css','./today-agenda.css','./main.js','./migration.js','./auto-debt.js','./app.js','./week-settings.js','./ui-fixes.js','./today-agenda.js','./today-marker-fix.js','./mata-fallback.js','./mata-loader.js','./mata-observer-guard.js','./mata-core-v2.js','./mata-nlu-v2.js','./mata-ui-v2.js','./manifest.webmanifest?v=final-logo-v2','./icons/hakuna-final.png?v=final-logo-v2','./icons/hakuna-brand-v3.png?v=brand-v3','./assets/mata.svg'];
 
 function patchApp(text){
   const oldWeek="  function startOfWeekISO(iso) {\n    const d=parseISODate(iso); const wd=(d.getDay()+6)%7; d.setDate(d.getDate()-wd); return isoDate(d);\n  }";
@@ -44,6 +44,10 @@ self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys
 self.addEventListener('fetch',event=>{
   if(event.request.method!=='GET')return;
   const url=new URL(event.request.url);
+  if(event.request.mode==='navigate'){
+    event.respondWith(fetch(event.request,{cache:'reload'}).then(resp=>{const copy=resp.clone();caches.open(CACHE).then(c=>c.put('./index.html',copy));return resp;}).catch(()=>caches.match('./index.html')));
+    return;
+  }
   if(url.pathname.endsWith('/app.js')){
     event.respondWith((async()=>{
       try{
