@@ -16,3 +16,4 @@ await import('./week-settings.js');
 await import('./question-tools.js?v=2');
 await import('./question-delete-fix.js?v=1');
 await import('./plan-mode.js?v=2');
+await import('./plan-mode-pure-cards.js?v=1');
