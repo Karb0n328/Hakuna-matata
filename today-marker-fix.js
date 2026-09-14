@@ -17,12 +17,25 @@
     const d=new Date();
     return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
   }
+  function markerMarkup(){
+    return '<div class="hm-now-spacer" aria-hidden="true"></div><div class="hm-now-rail-dot" aria-hidden="true"></div><div class="hm-now-chip"><span class="hm-now-live-dot" aria-hidden="true"></span><span>Şimdi</span><strong class="hm-now-clock"></strong></div>';
+  }
   function makeMarker(){
     const el=document.createElement('div');
     el.className='hm-agenda-now hm-now-after-block';
     el.dataset.hmNow='1';
-    el.innerHTML='<div class="hm-agenda-now-time"></div><div class="hm-agenda-now-dot"></div><div class="hm-agenda-now-line"></div>';
+    el.setAttribute('aria-label','Şu an');
+    el.innerHTML=markerMarkup();
     return el;
+  }
+  function ensureCompactMarker(marker){
+    if(!marker.querySelector('.hm-now-chip'))marker.innerHTML=markerMarkup();
+    marker.className='hm-agenda-now hm-now-after-block';
+    marker.dataset.hmNow='1';
+    const clock=$('.hm-now-clock',marker);
+    const label=nowLabel();
+    if(clock&&clock.textContent!==label)clock.textContent=label;
+    marker.setAttribute('aria-label',`Şu an ${label}`);
   }
   function placeMarker(){
     scheduled=false;
@@ -32,13 +45,12 @@
     const agenda=$('.hm-agenda',wrap||document);
     if(!timeline||!agenda)return;
 
-    // Yalnızca bugünün ekranında canlı işaret göster.
     if(timeline.dataset.timelineDate!==todayISO()){
       $$('[data-hm-now]',agenda).forEach(x=>x.remove());
       return;
     }
 
-    // Eski sürümden kalabilecek blok-içi işaretleri tamamen kaldır.
+    // Eski sürümden kalabilecek blok-içi göstergeleri temizle.
     $$('.hm-agenda-now-inline',agenda).forEach(x=>x.remove());
 
     const rows=$$('.hm-agenda-row',agenda);
@@ -53,12 +65,13 @@
       else break;
     }
 
-    let marker=$('.hm-agenda-now',agenda);
-    if(!marker)marker=makeMarker();
-    marker.classList.add('hm-now-after-block');
-    const time=$('.hm-agenda-now-time',marker);
-    if(time)time.textContent=nowLabel();
+    const markers=$$('[data-hm-now]',agenda);
+    let marker=markers[0]||makeMarker();
+    markers.slice(1).forEach(x=>x.remove());
+    ensureCompactMarker(marker);
 
+    // Gösterge gerçek saat oranını çizmez; son başlamış bloğun hemen altında durur.
+    // Böylece kartların üstüne binmez, alanı da uzun bir çizgiyle kaplamaz.
     if(latest){
       if(latest.nextElementSibling!==marker)latest.insertAdjacentElement('afterend',marker);
     }else{
@@ -72,7 +85,67 @@
   }
 
   const style=document.createElement('style');
-  style.textContent='.hm-agenda-now.hm-now-after-block{position:relative;z-index:3;margin:1px 0 7px;clear:both}.hm-agenda-now.hm-now-after-block .hm-agenda-now-line{background:#2f7ee6}.hm-agenda-now.hm-now-after-block .hm-agenda-now-time{background:#fff;position:relative;z-index:1}';
+  style.textContent=`
+    .hm-agenda-now.hm-now-after-block{
+      position:relative;
+      z-index:5;
+      display:grid;
+      grid-template-columns:72px 18px minmax(0,1fr);
+      align-items:center;
+      min-height:24px;
+      margin:-1px 0 4px;
+      pointer-events:none;
+    }
+    .hm-now-spacer{min-height:1px}
+    .hm-now-rail-dot{
+      width:9px;
+      height:9px;
+      justify-self:center;
+      border-radius:50%;
+      background:#2f7ee6;
+      border:2px solid #fff;
+      box-shadow:0 0 0 2px #b9d7fb,0 2px 5px rgba(47,126,230,.16);
+    }
+    .hm-now-chip{
+      width:max-content;
+      max-width:100%;
+      display:inline-flex;
+      align-items:center;
+      gap:5px;
+      margin-left:7px;
+      padding:4px 8px 4px 7px;
+      border:1px solid #cfe2fb;
+      border-radius:999px;
+      background:#f3f8ff;
+      color:#4e6e97;
+      font-size:9.5px;
+      line-height:1;
+      font-weight:800;
+      box-shadow:0 2px 7px rgba(47,126,230,.06);
+      white-space:nowrap;
+    }
+    .hm-now-chip strong{
+      color:#236fd3;
+      font-size:10px;
+      font-variant-numeric:tabular-nums;
+      letter-spacing:.01em;
+    }
+    .hm-now-live-dot{
+      width:5px;
+      height:5px;
+      border-radius:50%;
+      background:#2f7ee6;
+      box-shadow:0 0 0 3px rgba(47,126,230,.09);
+    }
+    .hm-agenda-now.hm-now-after-block .hm-agenda-now-time,
+    .hm-agenda-now.hm-now-after-block .hm-agenda-now-dot,
+    .hm-agenda-now.hm-now-after-block .hm-agenda-now-line{display:none!important}
+    @media(max-width:720px){
+      .hm-agenda-now.hm-now-after-block{grid-template-columns:62px 16px minmax(0,1fr)}
+      .hm-now-chip{margin-left:6px;padding:4px 7px;font-size:9px}
+      .hm-now-chip strong{font-size:9.5px}
+    }
+  `;
   document.head.appendChild(style);
 
   const view=$('#view');
