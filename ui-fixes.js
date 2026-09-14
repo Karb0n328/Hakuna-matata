@@ -70,26 +70,23 @@
 
         el.classList.remove('hm-status-complete', 'hm-status-partial', 'hm-status-incomplete');
         el.querySelector('.hm-plan-status-icon')?.remove();
+        el.removeAttribute('title');
+        el.removeAttribute('aria-label');
 
         let cls = '';
-        let icon = '';
         let label = '';
         if (block.status === 'complete') {
-          cls = 'hm-status-complete'; icon = '✓'; label = 'Tamamlandı';
+          cls = 'hm-status-complete'; label = 'Tamamlandı';
         } else if (block.status === 'partial') {
-          cls = 'hm-status-partial'; icon = '◑'; label = 'Kısmen tamamlandı';
+          cls = 'hm-status-partial'; label = 'Kısmen tamamlandı';
         } else if (block.status === 'incomplete') {
-          cls = 'hm-status-incomplete'; icon = '○'; label = 'Tamamlanmadı';
+          cls = 'hm-status-incomplete'; label = 'Tamamlanmadı';
         }
 
         if (cls) {
           el.classList.add(cls);
-          const badge = document.createElement('span');
-          badge.className = 'hm-plan-status-icon';
-          badge.textContent = icon;
-          badge.setAttribute('aria-label', label);
-          badge.title = label;
-          el.appendChild(badge);
+          el.setAttribute('aria-label', `${el.textContent.trim()} — ${label}`);
+          el.title = label;
         }
       });
     } catch (err) {
