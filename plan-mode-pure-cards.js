@@ -7,7 +7,7 @@
   const EMOJI={'Türkçe':'📖','Matematik':'🧮','Geometri':'📐','Fizik':'⚡','Kimya':'🧪','Biyoloji':'🧬','Tarih':'🏛️','Coğrafya':'🌍','Felsefe':'💭','Din':'☾','Deneme':'📝','Diğer':'✨'};
   const $=(s,r=document)=>r.querySelector(s);
   const $$=(s,r=document)=>[...r.querySelectorAll(s)];
-  const esc=(v='')=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const esc=(v='')=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
 
   function openDB(){
     return new Promise((resolve,reject)=>{
@@ -61,7 +61,6 @@
       const pct=plans.length?Math.round(done/plans.length*100):0;
 
       const listCard=$('.hm-plan-list-card',view);
-      const stack=$('.hm-plan-stack',listCard||view);
       if(!plans.length){
         const body=$('.card-body',listCard||view);
         if(body)emptyTodayBody(body);
@@ -121,9 +120,14 @@
     });
   }
 
-  const observer=new MutationObserver(schedule);
   function init(){
-    observer.observe(document.body,{childList:true,subtree:true});
+    const observer=new MutationObserver(schedule);
+    const view=$('#view');
+    const actions=$('#topbarActions');
+    const title=$('#pageTitle');
+    if(view)observer.observe(view,{childList:true,subtree:false});
+    if(actions)observer.observe(actions,{childList:true,subtree:false});
+    if(title)observer.observe(title,{childList:true,subtree:true,characterData:true});
     document.addEventListener('click',e=>{
       if(e.target.closest?.('[data-hm-mode],[data-nav],[data-hm-date-step],[data-hm-today],[data-hm-select-day],[data-hm-status],[data-hm-add]'))setTimeout(schedule,40);
     },true);
