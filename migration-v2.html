@@ -4,82 +4,202 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow">
-  <title>Hakuna Matata — V2 Veri Güvenliği</title>
+  <title>Hakuna Matata — V2 Güvenli Geçiş</title>
   <style>
-    :root{color-scheme:dark;background:#0f1b33;color:#f5f7fb;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-    *{box-sizing:border-box}body{margin:0;min-height:100vh;padding:32px 18px;background:#0f1b33}.wrap{max-width:760px;margin:0 auto}.card{background:#172642;border:1px solid rgba(255,255,255,.09);border-radius:20px;padding:22px;margin:16px 0;box-shadow:0 18px 60px rgba(0,0,0,.22)}h1{font-size:28px;margin:0 0 8px}p{line-height:1.55;color:#cbd5e1}.warn{background:#322b1b;border-color:#7a6325}.ok{background:#17372f;border-color:#2f7b68}.error{background:#3a2027;border-color:#924455}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}.metric{background:rgba(255,255,255,.055);padding:14px;border-radius:14px}.metric strong{display:block;font-size:24px;margin-top:5px}.hash{word-break:break-all;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#a5b4fc}button{appearance:none;border:0;border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer;margin-right:8px;margin-top:8px;background:#f5f7fb;color:#0f1b33}button.secondary{background:#263a5c;color:#f5f7fb}button:disabled{opacity:.45;cursor:not-allowed}.small{font-size:13px;color:#94a3b8}
+    :root{color-scheme:dark;background:#0f1b33;color:#f5f7fb;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:28px 16px;background:#0f1b33}.wrap{max-width:820px;margin:0 auto}.card{background:#172642;border:1px solid rgba(255,255,255,.09);border-radius:20px;padding:22px;margin:16px 0;box-shadow:0 18px 60px rgba(0,0,0,.2)}h1,h2{margin-top:0}h1{font-size:28px}h2{font-size:20px}p{line-height:1.55;color:#cbd5e1}.warn{background:#322b1b;border-color:#7a6325}.ok{background:#17372f;border-color:#2f7b68}.error{background:#3a2027;border-color:#924455}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}.metric{background:rgba(255,255,255,.055);padding:14px;border-radius:14px}.metric strong{display:block;font-size:24px;margin-top:5px}.hash{word-break:break-all;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#a5b4fc}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field{display:flex;flex-direction:column;gap:6px;margin:10px 0}.field label{font-size:13px;color:#cbd5e1}.field input{width:100%;border:1px solid rgba(255,255,255,.12);background:#0f1b33;color:#fff;border-radius:12px;padding:12px 13px;font-size:16px}button{appearance:none;border:0;border-radius:12px;padding:12px 16px;font-weight:750;cursor:pointer;margin-right:8px;margin-top:8px;background:#f5f7fb;color:#0f1b33}button.secondary{background:#263a5c;color:#f5f7fb}button.danger{background:#7f1d1d;color:#fff}button:disabled{opacity:.42;cursor:not-allowed}.small{font-size:13px;color:#94a3b8}.statusline{padding:11px 13px;border-radius:12px;background:rgba(255,255,255,.055);margin-top:12px;color:#cbd5e1}.hidden{display:none!important}@media(max-width:640px){.row{grid-template-columns:1fr}body{padding:18px 12px}.card{padding:18px}}
   </style>
 </head>
 <body>
-  <main class="wrap">
-    <div class="card warn">
-      <h1>Hakuna V2 — Veri Güvenliği Kontrolü</h1>
-      <p>Bu ekran mevcut Hakuna veritabanını <strong>yalnızca okur</strong>. Veri değiştirme veya silme işlemi yapmaz. Önce mevcut verinin tam snapshot'ını ve bütünlük özetini çıkaracağız.</p>
-    </div>
+<main class="wrap">
+  <section class="card warn">
+    <h1>Hakuna V2 — Sıfır Veri Kaybı Geçişi</h1>
+    <p>Bu ekran mevcut Hakuna veritabanını yalnızca <strong>okur</strong>. Eski <code>hakuna-matata-db</code> hiçbir aşamada temizlenmez veya silinmez. Önce snapshot alırız, sonra hesaba kopyalarız, en son buluttan geri okuyup birebir doğrularız.</p>
+  </section>
 
-    <div id="status" class="card">
-      <strong>Hazır.</strong>
-      <p>Kontrolü başlatınca çalışma blokları, görevler, borçlar, <strong>denemeler</strong> ve sorular sayılacak; tam state SHA-256 ile mühürlenecek.</p>
-      <button id="auditBtn">Mevcut veriyi kontrol et</button>
-    </div>
+  <section id="auditStatus" class="card">
+    <h2>1. Mevcut veriyi mühürle</h2>
+    <p>Çalışma blokları, görevler, borçlar, <strong>denemeler</strong>, sorular ve state içindeki diğer tüm alanlar SHA-256 ile mühürlenir.</p>
+    <button id="auditBtn">Mevcut veriyi kontrol et</button>
+    <div id="auditMessage" class="statusline">Henüz kontrol yapılmadı.</div>
+  </section>
 
-    <section id="result" class="card" hidden>
-      <h2>Yerel veri özeti</h2>
-      <div class="grid">
-        <div class="metric">Çalışma blokları<strong id="blocks">0</strong></div>
-        <div class="metric">Görevler<strong id="tasks">0</strong></div>
-        <div class="metric">Borçlar<strong id="debts">0</strong></div>
-        <div class="metric">Denemeler<strong id="exams">0</strong></div>
-        <div class="metric">Sorular<strong id="questions">0</strong></div>
+  <section id="result" class="card" hidden>
+    <h2>Yerel veri özeti</h2>
+    <div class="grid">
+      <div class="metric">Çalışma blokları<strong id="blocks">0</strong></div>
+      <div class="metric">Görevler<strong id="tasks">0</strong></div>
+      <div class="metric">Borçlar<strong id="debts">0</strong></div>
+      <div class="metric">Denemeler<strong id="exams">0</strong></div>
+      <div class="metric">Sorular<strong id="questions">0</strong></div>
+    </div>
+    <p class="small">Yerel state SHA-256</p>
+    <div id="hash" class="hash"></div>
+    <button id="backupBtn" class="secondary" disabled>Pre-migration JSON yedeğini indir</button>
+    <div id="backupMessage" class="statusline">Buluta kopyalamadan önce ayrı JSON yedeği alınması zorunlu.</div>
+  </section>
+
+  <section class="card">
+    <h2>2. Hakuna hesabı</h2>
+    <p>Email + şifre hesabın kalıcı Supabase UUID'sini oluşturur. Kullanıcı adı profile bağlanır; e-posta public tabloda tutulmaz.</p>
+    <div id="signedOut">
+      <div class="row">
+        <div>
+          <h3>Yeni hesap</h3>
+          <div class="field"><label>Kullanıcı adı</label><input id="signupUsername" autocomplete="username" placeholder="batu"></div>
+          <div class="field"><label>E-posta</label><input id="signupEmail" type="email" autocomplete="email"></div>
+          <div class="field"><label>Şifre</label><input id="signupPassword" type="password" autocomplete="new-password"></div>
+          <button id="signupBtn">Hesap oluştur</button>
+        </div>
+        <div>
+          <h3>Giriş</h3>
+          <div class="field"><label>E-posta</label><input id="loginEmail" type="email" autocomplete="email"></div>
+          <div class="field"><label>Şifre</label><input id="loginPassword" type="password" autocomplete="current-password"></div>
+          <button id="loginBtn">Giriş yap</button>
+          <p class="small">Kullanıcı adıyla giriş resolver'ı ana migration'dan bağımsız ikinci auth katmanında eklenecek. Veri geçişi email+şifre ile güvenle yapılabilir.</p>
+        </div>
       </div>
-      <p class="small">Snapshot SHA-256</p>
-      <div id="hash" class="hash"></div>
-      <button id="backupBtn" class="secondary" disabled>Tam pre-migration yedeğini indir</button>
-    </section>
-  </main>
+    </div>
+    <div id="signedIn" hidden>
+      <p>Bağlı hesap: <strong id="accountName"></strong></p>
+      <button id="logoutBtn" class="secondary">Çıkış yap</button>
+    </div>
+    <div id="authMessage" class="statusline">Oturum kontrol ediliyor…</div>
+  </section>
 
-  <script type="module">
-    import { buildLegacySnapshot, downloadSnapshot, verifySnapshotIntegrity } from './v2-migration/legacy-reader.js';
+  <section class="card">
+    <h2>3. Kopyala → geri oku → doğrula</h2>
+    <p><strong>Bu işlem taşıma değil, kopyalamadır.</strong> Önce immutable legacy snapshot oluşturulur; sonra ilk cloud state yazılır. Buluttaki iki kopya tekrar okunur ve yerel SHA-256 ile karşılaştırılır.</p>
+    <button id="migrateBtn" disabled>Buluta güvenli kopyala ve doğrula</button>
+    <div id="migrationMessage" class="statusline">Snapshot + JSON yedeği + giriş tamamlanınca buton açılacak.</div>
+  </section>
+</main>
 
-    const status = document.querySelector('#status');
-    const result = document.querySelector('#result');
-    const auditBtn = document.querySelector('#auditBtn');
-    const backupBtn = document.querySelector('#backupBtn');
-    let snapshot = null;
+<script type="module">
+  import { buildLegacySnapshot, downloadSnapshot, verifySnapshotIntegrity } from './v2-migration/legacy-reader.js';
+  import { supabase, signUpWithEmail, signInWithEmail, ensureOwnProfile, currentUser } from './v2-migration/supabase-client.js';
+  import { migrateLegacySnapshot } from './v2-migration/cloud-migration.js';
 
-    function showStatus(kind, title, text) {
-      status.className = `card ${kind || ''}`;
-      status.querySelector('strong').textContent = title;
-      status.querySelector('p').textContent = text;
+  const $ = (s) => document.querySelector(s);
+  let snapshot = null;
+  let user = null;
+  let backupDownloaded = false;
+
+  function message(el, text, kind = '') {
+    el.textContent = text;
+    el.style.background = kind === 'ok' ? 'rgba(34,197,94,.12)' : kind === 'error' ? 'rgba(239,68,68,.14)' : 'rgba(255,255,255,.055)';
+  }
+
+  function refreshMigrationButton() {
+    $('#migrateBtn').disabled = !(snapshot && user && backupDownloaded);
+  }
+
+  async function refreshAuth() {
+    user = await currentUser();
+    if (!user) {
+      $('#signedOut').hidden = false;
+      $('#signedIn').hidden = true;
+      message($('#authMessage'), 'Giriş yapılmadı.');
+      refreshMigrationButton();
+      return;
     }
+    try {
+      const profile = await ensureOwnProfile(user);
+      $('#signedOut').hidden = true;
+      $('#signedIn').hidden = false;
+      $('#accountName').textContent = `${profile.username} · ${user.email || 'email'}`;
+      message($('#authMessage'), 'Hesap hazır ve kullanıcı UUID ile bağlı.', 'ok');
+    } catch (error) {
+      message($('#authMessage'), error?.message || String(error), 'error');
+    }
+    refreshMigrationButton();
+  }
 
-    auditBtn.addEventListener('click', async () => {
-      auditBtn.disabled = true;
-      showStatus('', 'Kontrol ediliyor…', 'Eski Hakuna state yalnızca okunuyor; hiçbir kayıt değiştirilmiyor.');
-      try {
-        snapshot = await buildLegacySnapshot();
-        const verification = await verifySnapshotIntegrity(snapshot);
-        if (!verification.ok) throw new Error('Snapshot bütünlük doğrulaması başarısız.');
+  $('#auditBtn').addEventListener('click', async () => {
+    $('#auditBtn').disabled = true;
+    message($('#auditMessage'), 'Eski IndexedDB readonly okunuyor…');
+    try {
+      snapshot = await buildLegacySnapshot();
+      const check = await verifySnapshotIntegrity(snapshot);
+      if (!check.ok) throw new Error('Snapshot bütünlük kontrolü başarısız.');
+      for (const key of ['blocks','tasks','debts','exams','questions']) $(`#${key}`).textContent = snapshot.counts[key] ?? 0;
+      $('#hash').textContent = snapshot.hash;
+      $('#result').hidden = false;
+      $('#backupBtn').disabled = false;
+      backupDownloaded = false;
+      message($('#backupMessage'), 'Şimdi ayrı JSON yedeğini indir. Bu olmadan cloud migration açılmaz.');
+      message($('#auditMessage'), `Yerel state doğrulandı. Denemeler: ${snapshot.counts.exams}. Hash: ${snapshot.hash.slice(0,16)}…`, 'ok');
+    } catch (error) {
+      snapshot = null;
+      message($('#auditMessage'), error?.message || String(error), 'error');
+    } finally {
+      $('#auditBtn').disabled = false;
+      refreshMigrationButton();
+    }
+  });
 
-        for (const key of ['blocks','tasks','debts','exams','questions']) {
-          document.querySelector(`#${key}`).textContent = snapshot.counts[key] ?? 0;
-        }
-        document.querySelector('#hash').textContent = snapshot.hash;
-        result.hidden = false;
-        backupBtn.disabled = false;
-        showStatus('ok', 'Yerel veri güvenli şekilde okundu.', `Denemeler dahil mevcut state bütünlük kontrolünden geçti. Hash: ${snapshot.hash.slice(0,12)}…`);
-      } catch (error) {
-        snapshot = null;
-        backupBtn.disabled = true;
-        showStatus('error', 'Kontrol tamamlanamadı.', error?.message || String(error));
-      } finally {
-        auditBtn.disabled = false;
+  $('#backupBtn').addEventListener('click', () => {
+    if (!snapshot) return;
+    downloadSnapshot(snapshot);
+    backupDownloaded = true;
+    message($('#backupMessage'), 'Pre-migration JSON yedeği hazırlandı. Eski IndexedDB ayrıca yerinde duruyor.', 'ok');
+    refreshMigrationButton();
+  });
+
+  $('#signupBtn').addEventListener('click', async () => {
+    $('#signupBtn').disabled = true;
+    message($('#authMessage'), 'Hesap oluşturuluyor…');
+    try {
+      const data = await signUpWithEmail({
+        username: $('#signupUsername').value,
+        email: $('#signupEmail').value,
+        password: $('#signupPassword').value
+      });
+      if (data.session) {
+        await refreshAuth();
+      } else {
+        message($('#authMessage'), 'Hesap oluşturuldu. E-postadaki doğrulama bağlantısını aç, sonra bu ekrandan giriş yap.', 'ok');
       }
-    });
+    } catch (error) {
+      message($('#authMessage'), error?.message || String(error), 'error');
+    } finally {
+      $('#signupBtn').disabled = false;
+    }
+  });
 
-    backupBtn.addEventListener('click', () => {
-      if (snapshot) downloadSnapshot(snapshot);
-    });
-  </script>
+  $('#loginBtn').addEventListener('click', async () => {
+    $('#loginBtn').disabled = true;
+    message($('#authMessage'), 'Giriş yapılıyor…');
+    try {
+      await signInWithEmail({ email: $('#loginEmail').value, password: $('#loginPassword').value });
+      await refreshAuth();
+    } catch (error) {
+      message($('#authMessage'), error?.message || String(error), 'error');
+    } finally {
+      $('#loginBtn').disabled = false;
+    }
+  });
+
+  $('#logoutBtn').addEventListener('click', async () => {
+    await supabase.auth.signOut();
+    await refreshAuth();
+  });
+
+  $('#migrateBtn').addEventListener('click', async () => {
+    if (!snapshot || !user || !backupDownloaded) return;
+    $('#migrateBtn').disabled = true;
+    message($('#migrationMessage'), 'Kopyalanıyor ve buluttan geri okunuyor… Eski IndexedDB değiştirilmiyor.');
+    try {
+      const result = await migrateLegacySnapshot(user, snapshot);
+      message($('#migrationMessage'), `DOĞRULANDI ✓ Denemeler: ${result.counts.exams}. SHA-256: ${result.hash}. Eski IndexedDB yerinde bırakıldı.`, 'ok');
+    } catch (error) {
+      message($('#migrationMessage'), `Migration durduruldu: ${error?.message || String(error)} Eski IndexedDB'ye dokunulmadı.`, 'error');
+    } finally {
+      refreshMigrationButton();
+    }
+  });
+
+  supabase.auth.onAuthStateChange(() => setTimeout(refreshAuth, 0));
+  await refreshAuth();
+</script>
 </body>
 </html>
