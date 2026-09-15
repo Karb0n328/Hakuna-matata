@@ -17,6 +17,11 @@ function openLegacyDb() {
   });
 }
 
+function safeClone(value) {
+  if (typeof structuredClone === 'function') return structuredClone(value);
+  return JSON.parse(JSON.stringify(value));
+}
+
 export async function readLegacyState() {
   const db = await openLegacyDb();
   try {
@@ -28,7 +33,7 @@ export async function readLegacyState() {
       const req = tx.objectStore(LEGACY_STORE).get(LEGACY_KEY);
       req.onsuccess = () => {
         if (req.result == null) reject(new Error('Legacy state bulunamadı.'));
-        else resolve(structuredClone(req.result));
+        else resolve(safeClone(req.result));
       };
       req.onerror = () => reject(req.error || new Error('Legacy state okunamadı.'));
     });
