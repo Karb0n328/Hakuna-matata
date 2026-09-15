@@ -32,8 +32,6 @@ function patchApp(text){
     text=text.replace(questionFormMarker,questionDuplicateHelper+questionFormMarker);
   }
 
-  // Günlük saat çizelgesindeki veri değişikliklerinde bütün sayfayı tekrar kurma.
-  // IndexedDB kaydı yine önce tamamlanır; sonra yalnızca değişen günlük yüzey güncellenir.
   const todayMarker="  function renderToday(view,actions) {";
   const smoothTodayHelper=`  function refreshTodaySurface() {
     if(currentPage!=='today' || state.settings?.planMode==='cards'){ render(); return; }
@@ -93,6 +91,14 @@ self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys
 self.addEventListener('fetch',event=>{
   if(event.request.method!=='GET')return;
   const url=new URL(event.request.url);
+
+  // V2 migration must never poison the normal app cache. It is intentionally
+  // network-only and isolated from the offline index fallback.
+  if(url.origin===self.location.origin && (url.pathname.endsWith('/migration-v2.html') || url.pathname.includes('/v2-migration/'))){
+    event.respondWith(fetch(event.request,{cache:'no-store'}));
+    return;
+  }
+
   if(event.request.mode==='navigate'){
     event.respondWith(fetch(event.request,{cache:'reload'}).then(resp=>{const copy=resp.clone();caches.open(CACHE).then(c=>c.put('./index.html',copy));return resp;}).catch(()=>caches.match('./index.html')));
     return;
