@@ -89,13 +89,20 @@ function patchConnectedLabel(){
 }
 
 let scheduled=false;
-const observer=new MutationObserver(()=>{
+function schedulePatch(){
   if(scheduled)return;
   scheduled=true;
   requestAnimationFrame(()=>{
     scheduled=false;
     patchConnectedLabel();
   });
-});
-observer.observe(document.documentElement,{childList:true,subtree:true});
+}
+
+const view=document.querySelector('#view');
+if(view)new MutationObserver(schedulePatch).observe(view,{childList:true});
+document.addEventListener('click',e=>{
+  if(e.target.closest?.('[data-nav],[data-mata-nav]'))schedulePatch();
+},true);
+document.addEventListener('hakuna:account-changed',schedulePatch);
+window.addEventListener('focus',schedulePatch);
 patchConnectedLabel();
