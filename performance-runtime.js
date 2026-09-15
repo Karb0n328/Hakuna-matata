@@ -6,6 +6,25 @@
   let heldHeight = 0;
   let queuedRelease = false;
 
+  function installObserverGuard(){
+    const Native=window.MutationObserver;
+    if(!Native||Native.__hakunaPerfGuard)return;
+    class HakunaMutationObserver extends Native{
+      observe(target,options){
+        const id=target?.id;
+        if((id==='view'||id==='modalRoot')&&options?.childList&&options?.subtree){
+          return super.observe(target,{...options,subtree:false});
+        }
+        return super.observe(target,options);
+      }
+    }
+    HakunaMutationObserver.__hakunaPerfGuard=true;
+    HakunaMutationObserver.__hakunaNative=Native;
+    window.MutationObserver=HakunaMutationObserver;
+  }
+
+  installObserverGuard();
+
   function view(){ return $('#view'); }
 
   function holdSurface(){
