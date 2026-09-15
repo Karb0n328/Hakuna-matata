@@ -3,7 +3,7 @@ await import('./auto-debt.js');
 
 // Core UI first: never hold the first paint behind service-worker updates or optional modules.
 await import('./app.js?v=week20');
-await import('./performance-runtime.js?v=1');
+await import('./performance-runtime.js?v=2');
 
 // Service worker refreshes in the background. Existing installations keep working,
 // while first paint is no longer delayed by an unconditional 350 ms wait.
@@ -58,7 +58,7 @@ afterFirstPaint(()=>{
     try{await importAccountSyncOptimized();}catch{}
 
     await Promise.allSettled([
-      import('./account-auth-hotfix.js?v=4'),
+      import('./account-auth-hotfix.js?v=5'),
       import('./settings-copy-fix.js?v=1'),
       import('./debt-edit.js?v=1'),
       import('./sidebar-welcome.js?v=2')
@@ -69,7 +69,7 @@ afterFirstPaint(()=>{
   // moving the whole chain off the critical first-paint path.
   void (async()=>{
     try{
-      await import('./week-settings.js');
+      await import('./week-settings.js?v=2');
       await import('./question-tools.js?v=2');
       await import('./question-delete-fix.js?v=1');
       await import('./plan-mode.js?v=2');
