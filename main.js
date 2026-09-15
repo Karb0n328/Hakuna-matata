@@ -10,6 +10,7 @@ if('serviceWorker' in navigator){
 }
 
 await import('./app.js?v=week20');
+await import('./smooth-save-ui.js?v=1');
 await import('./mata-fallback.js');
 await import('./mata-loader.js');
 await import('./week-settings.js');
