@@ -16,7 +16,7 @@ import('./settings-copy-fix.js?v=1').catch(()=>{});
 import('./debt-edit.js?v=1').catch(()=>{});
 await import('./smooth-save-ui.js?v=1');
 await import('./mata-fallback.js');
-await import('./mata-loader.js?v=3');
+await import('./mata-loader.js?v=4');
 await import('./week-settings.js');
 await import('./question-tools.js?v=2');
 await import('./question-delete-fix.js?v=1');
