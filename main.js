@@ -1,33 +1,50 @@
 import './migration.js';
 await import('./auto-debt.js');
 
-// Core UI first: never hold the first paint behind service-worker updates or optional modules.
-await import('./app.js?v=week20');
-await import('./performance-runtime.js?v=2');
+async function ensureStableServiceWorker(){
+  if(!('serviceWorker' in navigator))return;
+  try{
+    let controllerChanged=false;
+    let resolveChange;
+    const changed=new Promise(resolve=>{resolveChange=resolve;});
+    const onChange=()=>{controllerChanged=true;navigator.serviceWorker.removeEventListener('controllerchange',onChange);resolveChange();};
+    navigator.serviceWorker.addEventListener('controllerchange',onChange);
 
-// Service worker refreshes in the background. Existing installations keep working,
-// while first paint is no longer delayed by an unconditional 350 ms wait.
-if('serviceWorker' in navigator){
-  requestAnimationFrame(()=>{
-    navigator.serviceWorker.register('./sw.js')
-      .then(reg=>reg.update())
-      .catch(()=>{});
-  });
+    const reg=await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});
+    await reg.update().catch(()=>{});
+    const pending=!!(reg.installing||reg.waiting);
+
+    if(pending){
+      await Promise.race([changed,new Promise(resolve=>setTimeout(resolve,5000))]);
+      if(!controllerChanged){
+        const tries=Number(sessionStorage.getItem('hakuna.swRecoveryTry')||0);
+        if(tries<1){
+          sessionStorage.setItem('hakuna.swRecoveryTry',String(tries+1));
+          location.reload();
+          await new Promise(()=>{});
+        }
+      }
+    }
+    sessionStorage.removeItem('hakuna.swRecoveryTry');
+    navigator.serviceWorker.removeEventListener('controllerchange',onChange);
+  }catch{}
 }
+
+// Critical rule: core navigation is never runtime-rewritten for performance.
+// If a new worker is waiting, let the stable worker take control first so an
+// older cached performance patch cannot poison app.js on iPhone/PWA installs.
+await ensureStableServiceWorker();
+await import('./app.js?v=stable-core-1');
+await import('./performance-runtime.js?v=3');
 
 async function importAccountSyncOptimized(){
   const nativeSetInterval=window.setInterval;
-
-  // account-sync-v2 was written defensively and polled every 1.8 s. Keep its
-  // safety net, but reduce idle CPU/IndexedDB/hash churn. The global performance
-  // runtime already narrows expensive #view subtree observers safely.
   window.setInterval=function(fn,delay,...args){
     let next=Number(delay)||0;
     if(next===1800)next=5000;
     else if(next===45000)next=60000;
     return nativeSetInterval.call(window,fn,next,...args);
   };
-
   try{
     await import('./account-sync-v2.js?v=perf1');
   }finally{
@@ -39,11 +56,9 @@ function afterFirstPaint(fn){
   requestAnimationFrame(()=>requestAnimationFrame(fn));
 }
 
-// Small local enhancements are deferred until the core screen is already visible.
 afterFirstPaint(()=>{
   void (async()=>{
     try{await importAccountSyncOptimized();}catch{}
-
     await Promise.allSettled([
       import('./account-auth-hotfix.js?v=5'),
       import('./settings-copy-fix.js?v=1'),
@@ -52,8 +67,6 @@ afterFirstPaint(()=>{
     ]);
   })();
 
-  // These modules have ordering relationships, so keep the proven order while
-  // moving the whole chain off the critical first-paint path.
   void (async()=>{
     try{
       await import('./week-settings.js?v=2');
@@ -66,8 +79,6 @@ afterFirstPaint(()=>{
   })();
 });
 
-// Mata is the heaviest optional UI surface. Load it when the browser has a quiet
-// moment (or shortly after startup on browsers without requestIdleCallback).
 const loadMata=()=>void (async()=>{
   try{
     await import('./mata-fallback.js');
