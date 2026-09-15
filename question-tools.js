@@ -4,6 +4,7 @@
   const DB_NAME='hakuna-matata-db';
   const DB_VERSION=1;
   const STATE_KEY='state';
+  let enhanceQueued=false;
 
   const uid=(prefix='q')=>`${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
   const esc=(v='')=>String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
@@ -48,14 +49,14 @@
     el.className='toast';
     el.textContent=text;
     root.append(el);
-    setTimeout(()=>el.remove(),2800);
+    setTimeout(()=>el.remove(),2400);
   }
 
   function parseReferences(raw){
     const text=String(raw||'').trim();
     if(!text)return [];
     let parts=text.split(/[\n,;]+/).map(x=>x.trim()).filter(Boolean);
-    if(parts.length===1 && /^\d+(?:\s+\d+)+$/.test(parts[0])) parts=parts[0].split(/\s+/);
+    if(parts.length===1 && /^\d+(?:\s+\d+)+$/.test(parts[0]))parts=parts[0].split(/\s+/);
     return parts.map(x=>/^\d+$/.test(x)?`Sayfa ${x}`:x);
   }
 
@@ -64,7 +65,14 @@
     if(root)root.innerHTML='';
   }
 
-  function returnToQuestions(message){
+  async function returnToQuestions(message){
+    closeModal();
+    if(window.HakunaCore?.refreshFromDB){
+      await window.HakunaCore.refreshFromDB('questions');
+      if(message)toast(message);
+      scheduleEnhance();
+      return;
+    }
     sessionStorage.setItem('hakuna.returnQuestions','1');
     if(message)sessionStorage.setItem('hakuna.questionMessage',message);
     location.reload();
@@ -103,14 +111,12 @@
       const id=toggle.dataset.qToggle;
       const row=toggle.closest('.list-item');
       if(!row||!id)return;
-
       const stale=row.querySelector('[data-q-duplicate]');
       if(stale)stale.replaceWith(makeCopyButton(id));
       if(row.querySelector('[data-hm-q-copy]'))return;
-
       const del=row.querySelector('[data-q-delete]');
       const copy=makeCopyButton(id);
-      if(del)del.before(copy); else row.append(copy);
+      if(del)del.before(copy);else row.append(copy);
     });
   }
 
@@ -118,7 +124,6 @@
     const form=document.getElementById('questionForm');
     if(!form||form.dataset.hmMultiReady==='1')return;
     form.dataset.hmMultiReady='1';
-
     const old=form.elements.reference;
     if(!old)return;
     const field=old.closest('.field');
@@ -129,7 +134,6 @@
     area.placeholder='Örn. 124, 137, 141\nveya Test 7 / Soru 4, Test 8 / Soru 2';
     area.value=old.value||'';
     old.replaceWith(area);
-
     const label=field?.querySelector('label');
     if(label)label.textContent='Sayfa / test / soru(lar)';
     if(field&&!field.querySelector('.hm-q-help')){
@@ -152,15 +156,10 @@
       try{
         await updateState(s=>{
           const base=Date.now();
-          refs.forEach((reference,i)=>s.questions.push({
-            id:uid('q'),subject,topic,source,reference,note,status:'open',createdAt:new Date(base+i).toISOString()
-          }));
+          refs.forEach((reference,i)=>s.questions.push({id:uid('q'),subject,topic,source,reference,note,status:'open',createdAt:new Date(base+i).toISOString()}));
         });
-        returnToQuestions(refs.length===1?'Soru eklendi.':`${refs.length} soru ayrı ayrı eklendi.`);
-      }catch(err){
-        console.error(err);
-        toast('Sorular kaydedilemedi.');
-      }
+        await returnToQuestions(refs.length===1?'Soru eklendi.':`${refs.length} soru ayrı ayrı eklendi.`);
+      }catch(err){console.error(err);toast('Sorular kaydedilemedi.');}
     };
   }
 
@@ -169,16 +168,12 @@
     try{state=(await readState()).state;}catch{return toast('Soru okunamadı.');}
     const q=state?.questions?.find(x=>x.id===id);
     if(!q)return toast('Bu soru bulunamadı.');
-
     const root=document.getElementById('modalRoot');
     if(!root)return;
     root.innerHTML=`
       <div class="modal-backdrop" data-hm-q-close>
         <section class="modal-card" role="dialog" aria-modal="true">
-          <header class="modal-head">
-            <div><div class="eyebrow modal-eyebrow">Kaynak, konu ve not korunur</div><h2 class="modal-title">Soruyu çoğalt</h2></div>
-            <button class="icon-button" type="button" data-hm-q-close aria-label="Kapat">✕</button>
-          </header>
+          <header class="modal-head"><div><div class="eyebrow modal-eyebrow">Kaynak, konu ve not korunur</div><h2 class="modal-title">Soruyu çoğalt</h2></div><button class="icon-button" type="button" data-hm-q-close aria-label="Kapat">✕</button></header>
           <div class="modal-body">
             <div class="hm-q-source-card"><strong>${esc(q.source)} · ${esc(q.subject)}</strong><span>${esc(q.topic||'Konu belirtilmemiş')}${q.note?` · ${esc(q.note)}`:''}</span></div>
             <form id="hmQuestionCopyForm">
@@ -210,21 +205,18 @@
       try{
         await updateState(s=>{
           const base=Date.now();
-          refs.forEach((reference,i)=>s.questions.push({
-            id:uid('q'),subject:q.subject,topic:q.topic||'',source:q.source,reference,note:q.note||'',status:'open',createdAt:new Date(base+i).toISOString()
-          }));
+          refs.forEach((reference,i)=>s.questions.push({id:uid('q'),subject:q.subject,topic:q.topic||'',source:q.source,reference,note:q.note||'',status:'open',createdAt:new Date(base+i).toISOString()}));
         });
-        returnToQuestions(refs.length===1?'Soru çoğaltıldı.':`${refs.length} soru ayrı ayrı çoğaltıldı.`);
-      }catch(err){
-        console.error(err);
-        toast('Soru çoğaltılamadı.');
-      }
+        await returnToQuestions(refs.length===1?'Soru çoğaltıldı.':`${refs.length} soru ayrı ayrı çoğaltıldı.`);
+      }catch(err){console.error(err);toast('Soru çoğaltılamadı.');}
     };
   }
 
-  function enhance(){
-    enhanceQuestionRows();
-    enhanceQuestionForm();
+  function enhance(){enhanceQuestionRows();enhanceQuestionForm();}
+  function scheduleEnhance(){
+    if(enhanceQueued)return;
+    enhanceQueued=true;
+    requestAnimationFrame(()=>{enhanceQueued=false;enhance();});
   }
 
   document.addEventListener('click',e=>{
@@ -232,13 +224,11 @@
     if(!btn)return;
     const id=btn.dataset.hmQCopy||btn.dataset.qDuplicate;
     if(!id)return;
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
+    e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
     openCopyModal(id);
   },true);
 
-  const observer=new MutationObserver(()=>requestAnimationFrame(enhance));
+  const observer=new MutationObserver(scheduleEnhance);
 
   function restoreQuestionPage(){
     if(sessionStorage.getItem('hakuna.returnQuestions')!=='1')return;
@@ -248,27 +238,25 @@
       tries++;
       const nav=document.querySelector('[data-nav="questions"]');
       if(nav){
-        clearInterval(timer);
-        nav.click();
+        clearInterval(timer);nav.click();
         setTimeout(()=>{
           const msg=sessionStorage.getItem('hakuna.questionMessage');
           if(msg){sessionStorage.removeItem('hakuna.questionMessage');toast(msg);}
           enhance();
         },120);
-      } else if(tries>30) clearInterval(timer);
+      }else if(tries>30)clearInterval(timer);
     },80);
   }
 
   function init(){
-    injectStyle();
-    enhance();
+    injectStyle();enhance();
     const view=document.getElementById('view');
     const modal=document.getElementById('modalRoot');
-    if(view)observer.observe(view,{childList:true,subtree:true});
-    if(modal)observer.observe(modal,{childList:true,subtree:true});
+    if(view)observer.observe(view,{childList:true});
+    if(modal)observer.observe(modal,{childList:true});
     restoreQuestionPage();
   }
 
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
   else init();
 })();
