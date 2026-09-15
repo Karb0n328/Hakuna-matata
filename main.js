@@ -18,4 +18,4 @@ await import('./question-tools.js?v=2');
 await import('./question-delete-fix.js?v=1');
 await import('./plan-mode.js?v=2');
 await import('./plan-mode-pure-cards.js?v=2');
-await import('./immediate-debt-status.js?v=1');
+await import('./immediate-debt-status.js?v=2');
