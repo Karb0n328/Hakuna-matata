@@ -8,6 +8,7 @@
   let lastSignature='';
   let observer=null;
   let clockTimer=null;
+  let renderQueued=false;
 
   const $=(s,r=document)=>r.querySelector(s);
   const $$=(s,r=document)=>[...r.querySelectorAll(s)];
@@ -148,32 +149,21 @@
           html+=buildNow(nowMin);
           html+=buildGap(nowMin,s,date);
           nowInserted=true;
-        }else{
-          html+=buildGap(prevEnd,s,date);
-        }
+        }else html+=buildGap(prevEnd,s,date);
       }
 
       html+=blockRow(b,s<prevEnd);
 
-      // Zaman çizgisi blokların içine girmez. Bir blok başladığı anda o blok
-      // artık “geçmiş/şimdiki” tarafta kabul edilir ve çizgi kartın ALTINA gelir.
-      // Sonraki blok da başlamışsa çizgi onun altına kadar ilerler.
       if(isToday&&!nowInserted&&nowMin>=s){
         const inThisBlock=nowMin<e;
         const noLaterStartedBlock=nextStart==null||nowMin<nextStart;
-        if(inThisBlock&&noLaterStartedBlock){
-          html+=buildNow(nowMin);
-          nowInserted=true;
-        }
+        if(inThisBlock&&noLaterStartedBlock){html+=buildNow(nowMin);nowInserted=true;}
       }
 
       prevEnd=Math.max(prevEnd,e);
     }
 
-    if(isToday&&!nowInserted&&nowMin>=minute(blocks[blocks.length-1].start)){
-      html+=buildNow(nowMin);
-      nowInserted=true;
-    }
+    if(isToday&&!nowInserted&&nowMin>=minute(blocks[blocks.length-1].start))html+=buildNow(nowMin);
     html+='</div>';
     host.innerHTML=html;
 
@@ -190,8 +180,7 @@
         if(!gap||!add)return;
         add.click();
         requestAnimationFrame(()=>{
-          const form=$('#blockForm');
-          if(!form)return;
+          const form=$('#blockForm');if(!form)return;
           const dateInput=form.querySelector('[name="date"]');
           const startInput=form.querySelector('[name="start"]');
           const endInput=form.querySelector('[name="end"]');
@@ -214,23 +203,43 @@
     }else host.scrollTop=0;
   }
 
-  function scheduleRender(){requestAnimationFrame(()=>renderAgenda(false));}
-  function startClock(){
-    if(clockTimer)clearInterval(clockTimer);
-    clockTimer=setInterval(()=>renderAgenda(true),30000);
+  function scheduleRender(force=false){
+    if(renderQueued)return;
+    renderQueued=true;
+    requestAnimationFrame(()=>{
+      renderQueued=false;
+      renderAgenda(force);
+    });
   }
+
+  function stopClock(){if(clockTimer){clearTimeout(clockTimer);clockTimer=null;}}
+  function startClock(){
+    stopClock();
+    if(document.hidden)return;
+    const delay=Math.max(1000,60050-(Date.now()%60000));
+    clockTimer=setTimeout(()=>{
+      clockTimer=null;
+      scheduleRender(true);
+      startClock();
+    },delay);
+  }
+
   function init(){
     scheduleRender();
     startClock();
     const view=$('#view');
     if(view){
-      observer=new MutationObserver(()=>scheduleRender());
-      observer.observe(view,{childList:true,subtree:true});
+      observer=new MutationObserver(()=>scheduleRender(false));
+      observer.observe(view,{childList:true});
     }
     document.addEventListener('click',e=>{
-      if(e.target.closest('[data-nav="today"], [data-date-step], [data-go-today], [data-status], [data-close-modal]'))setTimeout(()=>renderAgenda(true),40);
+      if(e.target.closest('[data-nav="today"], [data-date-step], [data-go-today], [data-status], [data-close-modal]'))setTimeout(()=>scheduleRender(true),40);
     },true);
+    document.addEventListener('visibilitychange',()=>{
+      if(document.hidden)stopClock();
+      else{scheduleRender(true);startClock();}
+    });
   }
 
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
