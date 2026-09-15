@@ -17,11 +17,10 @@ if('serviceWorker' in navigator){
 
 async function importAccountSyncOptimized(){
   const nativeSetInterval=window.setInterval;
-  const NativeMutationObserver=window.MutationObserver;
 
   // account-sync-v2 was written defensively and polled every 1.8 s. Keep its
-  // safety net, but reduce idle CPU/IndexedDB/hash churn. Also restrict its
-  // account-UI observer to top-level page swaps instead of every descendant.
+  // safety net, but reduce idle CPU/IndexedDB/hash churn. The global performance
+  // runtime already narrows expensive #view subtree observers safely.
   window.setInterval=function(fn,delay,...args){
     let next=Number(delay)||0;
     if(next===1800)next=5000;
@@ -29,22 +28,10 @@ async function importAccountSyncOptimized(){
     return nativeSetInterval.call(window,fn,next,...args);
   };
 
-  if(NativeMutationObserver){
-    window.MutationObserver=class HakunaPerfMutationObserver extends NativeMutationObserver{
-      observe(target,options){
-        if(target?.id==='view'&&options?.subtree){
-          return super.observe(target,{...options,subtree:false});
-        }
-        return super.observe(target,options);
-      }
-    };
-  }
-
   try{
     await import('./account-sync-v2.js?v=perf1');
   }finally{
     window.setInterval=nativeSetInterval;
-    if(NativeMutationObserver)window.MutationObserver=NativeMutationObserver;
   }
 }
 
