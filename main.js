@@ -60,7 +60,7 @@ afterFirstPaint(()=>{
     await Promise.allSettled([
       import('./account-auth-hotfix.js?v=5'),
       import('./settings-copy-fix.js?v=1'),
-      import('./debt-edit.js?v=1'),
+      import('./debt-edit.js?v=2'),
       import('./sidebar-welcome.js?v=2')
     ]);
   })();
@@ -70,8 +70,8 @@ afterFirstPaint(()=>{
   void (async()=>{
     try{
       await import('./week-settings.js?v=2');
-      await import('./question-tools.js?v=2');
-      await import('./question-delete-fix.js?v=1');
+      await import('./question-tools.js?v=3');
+      await import('./question-delete-fix.js?v=2');
       await import('./plan-mode.js?v=2');
       await import('./plan-mode-pure-cards.js?v=2');
       await import('./immediate-debt-status.js?v=2');
