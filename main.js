@@ -10,7 +10,7 @@ if('serviceWorker' in navigator){
 }
 
 await import('./app.js?v=week20');
-import('./v2-migration/launcher.js?v=1').catch(()=>{});
+import('./account-sync.js?v=1').catch(()=>{});
 await import('./smooth-save-ui.js?v=1');
 await import('./mata-fallback.js');
 await import('./mata-loader.js');
