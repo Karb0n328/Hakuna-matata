@@ -99,28 +99,30 @@
       const btn=$('[data-save-week]',section);
       const old=btn.textContent;btn.textContent='Kaydedildi ✓';btn.disabled=true;
       setTimeout(()=>{btn.textContent=old;btn.disabled=false;},1200);
-      enhanceWeeklyViews();
+      enhanceWeeklyViews(true);
     };
   }
 
-  async function enhanceWeeklyViews(){
+  async function enhanceWeeklyViews(force=false){
+    const board=$('.week-board');
+    const debtTitles=[...document.querySelectorAll('.card-title')].filter(t=>t.textContent.includes('Haftalık borçlar'));
+    const settings=$('.settings-grid');
+    if(!force&&!board&&!debtTitles.length&&!settings)return;
+
     const startDay=getLocalStart();
     const state=await readState().catch(()=>null);
     const ref=state?.selectedDate||todayISO();
     const start=startFor(ref,startDay),end=addDays(start,6);
 
-    const board=$('.week-board');
     if(board){
       const card=board.closest('.card');
       const subtitle=card?.querySelector('.card-subtitle');
       if(subtitle)subtitle.textContent=`${fmt(start)} → ${fmt(end)} · Bir güne dokunup ayrıntılı programa geç.`;
     }
 
-    document.querySelectorAll('.card-title').forEach(title=>{
-      if(title.textContent.includes('Haftalık borçlar')){
-        const sub=title.parentElement?.querySelector('.card-subtitle');
-        if(sub&&!sub.dataset.weekRangeApplied){sub.dataset.weekRangeApplied='1';sub.textContent=`${fmt(start)} → ${fmt(end)} · Önce bu haftanın borçları, sonra devredenler.`;}
-      }
+    debtTitles.forEach(title=>{
+      const sub=title.parentElement?.querySelector('.card-subtitle');
+      if(sub){sub.dataset.weekRangeApplied='1';sub.textContent=`${fmt(start)} → ${fmt(end)} · Önce bu haftanın borçları, sonra devredenler.`;}
     });
   }
 
@@ -145,7 +147,7 @@
     requestAnimationFrame(async()=>{
       scheduled=false;
       injectSettings();
-      await enhanceWeeklyViews();
+      await enhanceWeeklyViews(false);
     });
   }
 
@@ -154,9 +156,10 @@
     await syncFromState();
     schedule();
     const view=$('#view');
-    if(view)new MutationObserver(schedule).observe(view,{childList:true,subtree:true});
-    document.addEventListener('click',()=>setTimeout(schedule,30),true);
+    if(view)new MutationObserver(schedule).observe(view,{childList:true});
+    const title=$('#pageTitle');
+    if(title)new MutationObserver(schedule).observe(title,{childList:true,characterData:true});
   }
 
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
