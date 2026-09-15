@@ -13,6 +13,7 @@
   const uid=(p='debt')=>`${p}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
   const minute=t=>{const [h,m]=String(t||'00:00').split(':').map(Number);return (h||0)*60+(m||0);};
   const duration=(a,b)=>Math.max(0,minute(b)-minute(a));
+  const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 
   function openDB(){
     return new Promise((resolve,reject)=>{
@@ -130,17 +131,27 @@
     else sessionStorage.removeItem('hakuna.immediateDebtReturn');
   }
 
+  async function needsRepair(kind,key,status,remaining){
+    const state=normalize(await readState());
+    const changed=kind==='block'?ensureBlock(state,key,status,remaining):ensurePlan(state,key,status,remaining);
+    return {state,changed};
+  }
+
   async function verify(kind,key,status,remaining=null){
     if(checking)return;
     checking=true;
     try{
-      const state=normalize(await readState());
-      const changed=kind==='block'?ensureBlock(state,key,status,remaining):ensurePlan(state,key,status,remaining);
-      if(!changed)return;
+      let check=await needsRepair(kind,key,status,remaining);
+      if(!check.changed)return;
 
-      // Normal uygulama akışı bir şeyi kaçırdıysa yalnız o zaman yedek düzeltme yap.
-      // Rutin her kayıtta sayfayı yenilemek artık yok.
-      await writeState(state);
+      // Normal kayıt işleminin IndexedDB transaction'ına zaman tanı.
+      // Böylece başarılı normal kaydı yanlışlıkla "eksik" sanıp sayfa yenilemiyoruz.
+      await wait(220);
+      check=await needsRepair(kind,key,status,remaining);
+      if(!check.changed)return;
+
+      // Yalnız gerçek bir tutarsızlık kaldıysa güvenlik katmanı devreye girer.
+      await writeState(check.state);
       rememberPage();
       sessionStorage.setItem('hakuna.fallbackSync','1');
       setTimeout(()=>location.reload(),20);
@@ -151,7 +162,7 @@
     }
   }
 
-  function later(fn){setTimeout(fn,360);}
+  function later(fn){setTimeout(fn,900);}
 
   document.addEventListener('click',e=>{
     const block=e.target.closest?.('[data-block-id],[data-plan-block]');
