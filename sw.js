@@ -1,5 +1,5 @@
-const CACHE='hakuna-matata-v26-brand-logo';
-const ASSETS=['./','./index.html','./styles.css','./mata.css','./ui-fixes.css','./today-agenda.css','./main.js','./migration.js','./auto-debt.js','./app.js','./week-settings.js','./ui-fixes.js','./today-agenda.js','./today-marker-fix.js','./mata-fallback.js','./mata-loader.js','./mata-observer-guard.js','./mata-core-v2.js','./mata-nlu-v2.js','./mata-ui-v2.js','./manifest.webmanifest?v=final-logo-v2','./icons/hakuna-final.png?v=final-logo-v2','./icons/hakuna-brand-v3.png?v=brand-v3','./assets/mata.svg'];
+const CACHE='hakuna-matata-v27-smooth-ui';
+const ASSETS=['./','./index.html','./styles.css','./mata.css','./ui-fixes.css','./today-agenda.css','./main.js','./migration.js','./auto-debt.js','./app.js','./week-settings.js','./ui-fixes.js','./today-agenda.js','./today-marker-fix.js','./mata-fallback.js','./mata-loader.js','./mata-observer-guard.js','./mata-core-v2.js','./mata-nlu-v2.js','./mata-ui-v2.js','./plan-mode.js','./plan-mode-pure-cards.js','./immediate-debt-status.js','./manifest.webmanifest?v=final-logo-v2','./icons/hakuna-final.png?v=final-logo-v2','./icons/hakuna-brand-v3.png?v=brand-v3','./assets/mata.svg'];
 
 function patchApp(text){
   const oldWeek="  function startOfWeekISO(iso) {\n    const d=parseISODate(iso); const wd=(d.getDay()+6)%7; d.setDate(d.getDate()-wd); return isoDate(d);\n  }";
@@ -31,6 +31,55 @@ function patchApp(text){
   if(!text.includes('function openQuestionDuplicate(id)') && text.includes(questionFormMarker)){
     text=text.replace(questionFormMarker,questionDuplicateHelper+questionFormMarker);
   }
+
+  // Günlük saat çizelgesindeki veri değişikliklerinde bütün sayfayı tekrar kurma.
+  // IndexedDB kaydı yine önce tamamlanır; sonra yalnızca değişen günlük yüzey güncellenir.
+  const todayMarker="  function renderToday(view,actions) {";
+  const smoothTodayHelper=`  function refreshTodaySurface() {
+    if(currentPage!=='today' || state.settings?.planMode==='cards'){ render(); return; }
+    const view=$('#view');
+    if(!view){ render(); return; }
+    const date=state.selectedDate;
+    const shown=$('[data-timeline-date]',view)?.dataset.timelineDate;
+    if(shown && shown!==date){ render(); return; }
+    const blocks=blocksFor(date), debts=activeDebts(), tasks=activeTasks();
+    const complete=blocks.filter(b=>b.status==='complete').length;
+    const pct=blocks.length?Math.round(complete/blocks.length*100):0;
+    const planned=blocks.reduce((s,b)=>s+durationMinutes(b.start,b.end),0);
+
+    const scroll=$('.timeline-scroll',view);
+    if(scroll){ scroll.innerHTML=timelineHTML(date); bindTimeline(scroll); }
+    const badge=$('.timeline-toolbar .subject-badge',view);
+    if(badge)badge.textContent=blocks.length+' blok';
+
+    const cards=$$('.dashboard-side > .card',view);
+    if(cards[0]){
+      const vals=$$('.summary-value',cards[0]);
+      if(vals[0])vals[0].textContent=String(blocks.length);
+      if(vals[1])vals[1].textContent=String(complete);
+      if(vals[2])vals[2].textContent=String(planned?Math.round(planned/60*10)/10:0);
+      const fill=$('.progress-fill',cards[0]); if(fill)fill.style.width=pct+'%';
+      const sub=$('.card-body > .card-subtitle',cards[0]); if(sub)sub.textContent='%'+pct+' tamamlandı';
+    }
+    if(cards[1]){
+      const body=$('.card-body',cards[1]);
+      if(body)body.innerHTML=debts.length?'<div class="list-stack">'+debts.slice(0,4).map(debtItemHTML).join('')+'</div>':emptyHTML('✨','Borç yok','Şimdilik tertemiz.');
+    }
+    if(cards[2]){
+      const body=$('.card-body',cards[2]);
+      if(body)body.innerHTML=tasks.length?'<div class="list-stack">'+tasks.slice(0,4).map(taskItemHTML).join('')+'</div>':emptyHTML('🗂️','Havuz boş','Görev ekleyip sonra programa yerleştirebilirsin.');
+    }
+    bindCommonListActions(view);
+  }
+
+`;
+  if(!text.includes('function refreshTodaySurface()') && text.includes(todayMarker))text=text.replace(todayMarker,smoothTodayHelper+todayMarker);
+
+  text=text.replace("closeModal(); render(); toast(editing?'Blok güncellendi.':'Blok eklendi.');","closeModal(); refreshTodaySurface(); toast(editing?'Blok güncellendi.':'Blok eklendi.');");
+  text=text.replace("closeModal();render();}});","closeModal();refreshTodaySurface();}});");
+  text=text.replace("closeModal(); render(); toast(status==='complete'?'Tamamlandı ✓':'Tamamı borçlara aktarıldı.');","closeModal(); refreshTodaySurface(); toast(status==='complete'?'Tamamlandı ✓':'Tamamı borçlara aktarıldı.');");
+  text=text.replace("},false); closeModal(); render(); toast(`${value} ${unit} borca eklendi.`);","},false); closeModal(); refreshTodaySurface(); toast(`${value} ${unit} borca eklendi.`);");
+
   return text;
 }
 
