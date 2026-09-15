@@ -1,0 +1,36 @@
+html{
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+  scrollbar-gutter:stable;
+}
+html,body,#app{min-height:100%;}
+body{overflow-anchor:none;}
+.main-area,.view{min-width:0;}
+.view{
+  min-height:calc(100dvh - 112px);
+  overflow-anchor:none;
+}
+button,a,[role="button"],input,select,textarea{
+  touch-action:manipulation;
+}
+.brand-icon{
+  width:46px;
+  height:46px;
+  min-width:46px;
+  min-height:46px;
+  flex:0 0 46px;
+  object-fit:contain;
+}
+#view,.topbar,.sidebar,.bottom-nav{
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+}
+html.hm-route-switching #view{
+  opacity:.992;
+}
+@media (prefers-reduced-motion:no-preference){
+  #view{transition:opacity 70ms ease;}
+}
+@media (max-width:760px){
+  .view{min-height:calc(100dvh - 150px);}
+}
