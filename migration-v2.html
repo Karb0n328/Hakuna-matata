@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Hakuna Matata — V2 Veri Güvenliği</title>
+  <style>
+    :root{color-scheme:dark;background:#0f1b33;color:#f5f7fb;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;padding:32px 18px;background:#0f1b33}.wrap{max-width:760px;margin:0 auto}.card{background:#172642;border:1px solid rgba(255,255,255,.09);border-radius:20px;padding:22px;margin:16px 0;box-shadow:0 18px 60px rgba(0,0,0,.22)}h1{font-size:28px;margin:0 0 8px}p{line-height:1.55;color:#cbd5e1}.warn{background:#322b1b;border-color:#7a6325}.ok{background:#17372f;border-color:#2f7b68}.error{background:#3a2027;border-color:#924455}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}.metric{background:rgba(255,255,255,.055);padding:14px;border-radius:14px}.metric strong{display:block;font-size:24px;margin-top:5px}.hash{word-break:break-all;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#a5b4fc}button{appearance:none;border:0;border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer;margin-right:8px;margin-top:8px;background:#f5f7fb;color:#0f1b33}button.secondary{background:#263a5c;color:#f5f7fb}button:disabled{opacity:.45;cursor:not-allowed}.small{font-size:13px;color:#94a3b8}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="card warn">
+      <h1>Hakuna V2 — Veri Güvenliği Kontrolü</h1>
+      <p>Bu ekran mevcut Hakuna veritabanını <strong>yalnızca okur</strong>. Veri değiştirme veya silme işlemi yapmaz. Önce mevcut verinin tam snapshot'ını ve bütünlük özetini çıkaracağız.</p>
+    </div>
+
+    <div id="status" class="card">
+      <strong>Hazır.</strong>
+      <p>Kontrolü başlatınca çalışma blokları, görevler, borçlar, <strong>denemeler</strong> ve sorular sayılacak; tam state SHA-256 ile mühürlenecek.</p>
+      <button id="auditBtn">Mevcut veriyi kontrol et</button>
+    </div>
+
+    <section id="result" class="card" hidden>
+      <h2>Yerel veri özeti</h2>
+      <div class="grid">
+        <div class="metric">Çalışma blokları<strong id="blocks">0</strong></div>
+        <div class="metric">Görevler<strong id="tasks">0</strong></div>
+        <div class="metric">Borçlar<strong id="debts">0</strong></div>
+        <div class="metric">Denemeler<strong id="exams">0</strong></div>
+        <div class="metric">Sorular<strong id="questions">0</strong></div>
+      </div>
+      <p class="small">Snapshot SHA-256</p>
+      <div id="hash" class="hash"></div>
+      <button id="backupBtn" class="secondary" disabled>Tam pre-migration yedeğini indir</button>
+    </section>
+  </main>
+
+  <script type="module">
+    import { buildLegacySnapshot, downloadSnapshot, verifySnapshotIntegrity } from './v2-migration/legacy-reader.js';
+
+    const status = document.querySelector('#status');
+    const result = document.querySelector('#result');
+    const auditBtn = document.querySelector('#auditBtn');
+    const backupBtn = document.querySelector('#backupBtn');
+    let snapshot = null;
+
+    function showStatus(kind, title, text) {
+      status.className = `card ${kind || ''}`;
+      status.querySelector('strong').textContent = title;
+      status.querySelector('p').textContent = text;
+    }
+
+    auditBtn.addEventListener('click', async () => {
+      auditBtn.disabled = true;
+      showStatus('', 'Kontrol ediliyor…', 'Eski Hakuna state yalnızca okunuyor; hiçbir kayıt değiştirilmiyor.');
+      try {
+        snapshot = await buildLegacySnapshot();
+        const verification = await verifySnapshotIntegrity(snapshot);
+        if (!verification.ok) throw new Error('Snapshot bütünlük doğrulaması başarısız.');
+
+        for (const key of ['blocks','tasks','debts','exams','questions']) {
+          document.querySelector(`#${key}`).textContent = snapshot.counts[key] ?? 0;
+        }
+        document.querySelector('#hash').textContent = snapshot.hash;
+        result.hidden = false;
+        backupBtn.disabled = false;
+        showStatus('ok', 'Yerel veri güvenli şekilde okundu.', `Denemeler dahil mevcut state bütünlük kontrolünden geçti. Hash: ${snapshot.hash.slice(0,12)}…`);
+      } catch (error) {
+        snapshot = null;
+        backupBtn.disabled = true;
+        showStatus('error', 'Kontrol tamamlanamadı.', error?.message || String(error));
+      } finally {
+        auditBtn.disabled = false;
+      }
+    });
+
+    backupBtn.addEventListener('click', () => {
+      if (snapshot) downloadSnapshot(snapshot);
+    });
+  </script>
+</body>
+</html>
