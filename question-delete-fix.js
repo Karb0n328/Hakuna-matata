@@ -46,7 +46,7 @@
     el.className='toast';
     el.textContent=text;
     root.append(el);
-    setTimeout(()=>el.remove(),2800);
+    setTimeout(()=>el.remove(),2400);
   }
 
   document.addEventListener('click',async e=>{
@@ -68,9 +68,15 @@
         btn.disabled=false;
         return toast('Bu soru zaten silinmiş.');
       }
-      sessionStorage.setItem('hakuna.returnQuestions','1');
-      sessionStorage.setItem('hakuna.questionMessage','Soru silindi.');
-      location.reload();
+      if(window.HakunaCore?.refreshFromDB){
+        await window.HakunaCore.refreshFromDB('questions');
+        deleting=false;
+        toast('Soru silindi.');
+      }else{
+        sessionStorage.setItem('hakuna.returnQuestions','1');
+        sessionStorage.setItem('hakuna.questionMessage','Soru silindi.');
+        location.reload();
+      }
     }catch(err){
       console.error('Soru silinemedi',err);
       deleting=false;
