@@ -6,6 +6,8 @@
   const DAY_END = 24 * 60;
   const dragState = new WeakMap();
   let planPaintToken = 0;
+  let enhanceQueued = false;
+  let minuteTimer = null;
 
   function parseRange(text) {
     const m = String(text || '').match(/(\d{2}):(\d{2})\s*[–-]\s*(\d{2}):(\d{2})/);
@@ -175,6 +177,15 @@
     paintPlanStatuses(root);
   }
 
+  function scheduleEnhance(){
+    if(enhanceQueued)return;
+    enhanceQueued=true;
+    requestAnimationFrame(()=>{
+      enhanceQueued=false;
+      enhance(document.getElementById('view')||document);
+    });
+  }
+
   document.addEventListener('pointerdown', e => {
     const row = e.target.closest?.('.debt-row');
     if (!row) return;
@@ -206,27 +217,40 @@
   });
 
   const observer = new MutationObserver(records => {
-    let needsEnhance = false;
     for (const record of records) {
       for (const node of record.addedNodes) {
         if (!(node instanceof Element)) continue;
-        if (node.matches?.('.timeline, .time-block, .week-block[data-plan-block]') || node.querySelector?.('.timeline, .time-block, .week-block[data-plan-block]')) {
-          needsEnhance = true;
-          break;
+        if (node.matches?.('.timeline, .time-block, .week-block[data-plan-block], .dashboard-grid, .week-board') || node.querySelector?.('.timeline, .time-block, .week-block[data-plan-block]')) {
+          scheduleEnhance();
+          return;
         }
       }
-      if (needsEnhance) break;
     }
-    if (needsEnhance) requestAnimationFrame(() => enhance());
   });
+
+  function stopMinuteTimer(){if(minuteTimer){clearTimeout(minuteTimer);minuteTimer=null;}}
+  function startMinuteTimer(){
+    stopMinuteTimer();
+    if(document.hidden)return;
+    const delay=Math.max(1000,60050-(Date.now()%60000));
+    minuteTimer=setTimeout(()=>{
+      minuteTimer=null;
+      document.querySelectorAll('.timeline').forEach(drawNowLine);
+      startMinuteTimer();
+    },delay);
+  }
 
   function init() {
     enhance();
     const view = document.getElementById('view');
-    if (view) observer.observe(view, { childList: true, subtree: true });
-    setInterval(() => document.querySelectorAll('.timeline').forEach(drawNowLine), 60000);
+    if (view) observer.observe(view, { childList: true });
+    startMinuteTimer();
+    document.addEventListener('visibilitychange',()=>{
+      if(document.hidden)stopMinuteTimer();
+      else{scheduleEnhance();startMinuteTimer();}
+    });
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, {once:true});
   else init();
 })();
