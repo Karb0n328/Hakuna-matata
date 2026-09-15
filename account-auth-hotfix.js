@@ -30,7 +30,10 @@ async function finishSession(data,root){
   const {error}=await supabase.auth.setSession({access_token:data.session.access_token,refresh_token:data.session.refresh_token});
   if(error)throw error;
   message(root,'Hesap bağlandı ✓ Verilerin hazırlanıyor…',true);
-  setTimeout(()=>location.reload(),650);
+  setTimeout(()=>{
+    root?.remove();
+    location.reload();
+  },500);
 }
 
 document.addEventListener('submit',async e=>{
@@ -71,14 +74,28 @@ document.addEventListener('submit',async e=>{
 
 function patchConnectedLabel(){
   const card=document.querySelector('.hakuna-cloud-settings');
-  if(!card)return;
-  const title=card.querySelector('.card-title');
-  if(card.querySelector('.hakuna-cloud-dot')){
-    if(title)title.textContent='☁️ Hesap bağlı';
-  }else if(title){
-    title.textContent='☁️ Hakuna hesabı';
+  const connected=!!card?.querySelector('.hakuna-cloud-dot');
+  if(card){
+    const title=card.querySelector('.card-title');
+    const desired=connected?'☁️ Hesap bağlı':'☁️ Hakuna hesabı';
+    if(title&&title.textContent!==desired)title.textContent=desired;
+  }
+
+  const foot=document.querySelector('.sidebar-foot .tiny-pill');
+  if(foot){
+    const desired=connected?'☁︎ Hesap bağlı · Senkron açık':'☁︎ Veriler bu cihazda';
+    if(foot.textContent.trim()!==desired)foot.textContent=desired;
   }
 }
 
-new MutationObserver(()=>queueMicrotask(patchConnectedLabel)).observe(document.documentElement,{childList:true,subtree:true});
+let scheduled=false;
+const observer=new MutationObserver(()=>{
+  if(scheduled)return;
+  scheduled=true;
+  requestAnimationFrame(()=>{
+    scheduled=false;
+    patchConnectedLabel();
+  });
+});
+observer.observe(document.documentElement,{childList:true,subtree:true});
 patchConnectedLabel();
