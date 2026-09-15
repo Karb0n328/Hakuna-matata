@@ -1,5 +1,12 @@
-const CACHE='hakuna-matata-v27-smooth-ui';
-const ASSETS=['./','./index.html','./styles.css','./mata.css','./ui-fixes.css','./today-agenda.css','./main.js','./migration.js','./auto-debt.js','./app.js','./week-settings.js','./ui-fixes.js','./today-agenda.js','./today-marker-fix.js','./mata-fallback.js','./mata-loader.js','./mata-observer-guard.js','./mata-core-v2.js','./mata-nlu-v2.js','./mata-ui-v2.js','./plan-mode.js','./plan-mode-pure-cards.js','./immediate-debt-status.js','./manifest.webmanifest?v=final-logo-v2','./icons/hakuna-final.png?v=final-logo-v2','./icons/hakuna-brand-v3.png?v=brand-v3','./assets/mata.svg'];
+const CACHE='hakuna-matata-v30-performance';
+const ASSETS=[
+  './','./index.html','./styles.css','./performance.css','./mata.css','./ui-fixes.css','./today-agenda.css','./fixed-sidebar.css',
+  './main.js','./migration.js','./auto-debt.js','./app.js','./performance-runtime.js','./week-settings.js','./ui-fixes.js','./today-agenda.js','./today-marker-fix.js',
+  './account-sync-v2.js','./account-auth-hotfix.js','./settings-copy-fix.js','./debt-edit.js','./sidebar-welcome.js','./question-tools.js','./question-delete-fix.js',
+  './mata-fallback.js','./mata-loader.js','./mata-observer-guard.js','./mata-core-v2.js','./mata-nlu-v2.js','./mata-insights-v1.js','./mata-brain-v3.js','./mata-ui-v2.js',
+  './plan-mode.js','./plan-mode-pure-cards.js','./immediate-debt-status.js',
+  './manifest.webmanifest?v=final-logo-v2','./icons/hakuna-final.png?v=final-logo-v2','./icons/hakuna-brand-v3.png?v=brand-v3','./assets/mata.svg'
+];
 
 function patchApp(text){
   const oldWeek="  function startOfWeekISO(iso) {\n    const d=parseISODate(iso); const wd=(d.getDay()+6)%7; d.setDate(d.getDate()-wd); return isoDate(d);\n  }";
@@ -17,6 +24,10 @@ function patchApp(text){
   text=text.replace("    const last7=Array.from({length:7},(_,i)=>addDaysISO(todayISO(),i-6));","    const week=startOfWeekISO(todayISO());\n    const last7=Array.from({length:7},(_,i)=>addDaysISO(week,i));");
   text=text.replaceAll('Son 7 gün günlük ortalama','Bu hafta günlük ortalama');
   text=text.replaceAll('⏱ Son 7 gün tamamlanan çalışma','⏱ Bu haftanın tamamlanan çalışması');
+
+  const oldNav="  function renderNavigation() {\n    $('#sidebarNav').innerHTML=navButtons(NAV);\n    $('#bottomNav').innerHTML=MOBILE_NAV.map(([id,icon,label]) => `<button class=\"${currentPage===id || (id==='more' && ['questions','analytics','settings'].includes(currentPage))?'active':''}\" data-nav=\"${id}\"><span class=\"nav-icon\">${icon}</span><span>${label}</span></button>`).join('');\n    $$('[data-nav]').forEach(b=>b.onclick=()=>{\n      const id=b.dataset.nav;\n      if (id==='more') return openMoreMenu();\n      currentPage=id; render();\n    });\n  }";
+  const newNav="  function renderNavigation() {\n    const side=$('#sidebarNav'), bottom=$('#bottomNav');\n    if(!side.dataset.hmBuilt){ side.innerHTML=navButtons(NAV); side.dataset.hmBuilt='1'; }\n    if(!bottom.dataset.hmBuilt){ bottom.innerHTML=MOBILE_NAV.map(([id,icon,label]) => `<button class=\"${currentPage===id || (id==='more' && ['questions','analytics','settings'].includes(currentPage))?'active':''}\" data-nav=\"${id}\"><span class=\"nav-icon\">${icon}</span><span>${label}</span></button>`).join(''); bottom.dataset.hmBuilt='1'; }\n    $$('[data-nav]',side).forEach(b=>b.classList.toggle('active',b.dataset.nav===currentPage));\n    $$('[data-nav]',bottom).forEach(b=>{ const id=b.dataset.nav; b.classList.toggle('active',currentPage===id || (id==='more' && ['questions','analytics','settings'].includes(currentPage))); });\n    $$('[data-mata-nav]').forEach(b=>b.classList.remove('active'));\n    const bind=root=>{\n      if(root.dataset.hmNavBound==='1')return;\n      root.dataset.hmNavBound='1';\n      root.addEventListener('click',e=>{\n        const b=e.target.closest?.('[data-nav]'); if(!b||!root.contains(b))return;\n        const id=b.dataset.nav;\n        if(id==='more')return openMoreMenu();\n        currentPage=id; render();\n      });\n    };\n    bind(side); bind(bottom);\n  }";
+  if(text.includes(oldNav))text=text.replace(oldNav,newNav);
 
   const oldQuestionItem="  function questionItemHTML(q) { return `<div class=\"list-item\"><button class=\"circle-check ${q.status==='solved'?'done':''}\" data-q-toggle=\"${q.id}\">${q.status==='solved'?'✓':'?'}</button><div class=\"list-item-main\"><div class=\"list-item-title\">${subjectEmoji(q.subject)} ${esc(q.source)} · ${esc(q.reference)}</div><div class=\"list-item-meta\">${esc(q.subject)}${q.topic?` · ${esc(q.topic)}`:''}${q.note?` · ${esc(q.note)}`:''}</div></div><button class=\"icon-button\" data-q-delete=\"${q.id}\">🗑</button></div>`; }";
   const newQuestionItem="  function questionItemHTML(q) { return `<div class=\"list-item\"><button class=\"circle-check ${q.status==='solved'?'done':''}\" data-q-toggle=\"${q.id}\">${q.status==='solved'?'✓':'?'}</button><div class=\"list-item-main\"><div class=\"list-item-title\">${subjectEmoji(q.subject)} ${esc(q.source)} · ${esc(q.reference)}</div><div class=\"list-item-meta\">${esc(q.subject)}${q.topic?` · ${esc(q.topic)}`:''}${q.note?` · ${esc(q.note)}`:''}</div></div><button class=\"pill-btn\" data-q-duplicate=\"${q.id}\" title=\"Soruyu çoğalt\">⧉ Çoğalt</button><button class=\"icon-button\" data-q-delete=\"${q.id}\">🗑</button></div>`; }";
@@ -86,23 +97,49 @@ function responseFromText(resp,text){
   return new Response(text,{status:resp.status,statusText:resp.statusText,headers});
 }
 
-self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));self.skipWaiting();});
-self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim();});
+async function cacheStatic(request,event){
+  const cache=await caches.open(CACHE);
+  const cached=await cache.match(request);
+  const network=fetch(request).then(resp=>{
+    if(resp&&resp.ok)cache.put(request,resp.clone());
+    return resp;
+  });
+  if(cached){
+    event.waitUntil(network.catch(()=>{}));
+    return cached;
+  }
+  try{return await network;}catch{return new Response('',{status:503,statusText:'Offline'});}
+}
+
+self.addEventListener('install',event=>{
+  event.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));
+  self.skipWaiting();
+});
+self.addEventListener('activate',event=>{
+  event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));
+  self.clients.claim();
+});
 self.addEventListener('fetch',event=>{
   if(event.request.method!=='GET')return;
   const url=new URL(event.request.url);
 
-  // V2 migration must never poison the normal app cache. It is intentionally
-  // network-only and isolated from the offline index fallback.
-  if(url.origin===self.location.origin && (url.pathname.endsWith('/migration-v2.html') || url.pathname.includes('/v2-migration/'))){
+  // Never cache Supabase/CDN/API traffic in the app service worker.
+  if(url.origin!==self.location.origin)return;
+
+  if(url.pathname.endsWith('/migration-v2.html') || url.pathname.includes('/v2-migration/')){
     event.respondWith(fetch(event.request,{cache:'no-store'}));
     return;
   }
 
   if(event.request.mode==='navigate'){
-    event.respondWith(fetch(event.request,{cache:'reload'}).then(resp=>{const copy=resp.clone();caches.open(CACHE).then(c=>c.put('./index.html',copy));return resp;}).catch(()=>caches.match('./index.html')));
+    event.respondWith(
+      fetch(event.request,{cache:'reload'})
+        .then(resp=>{const copy=resp.clone();caches.open(CACHE).then(c=>c.put('./index.html',copy));return resp;})
+        .catch(()=>caches.match('./index.html'))
+    );
     return;
   }
+
   if(url.pathname.endsWith('/app.js')){
     event.respondWith((async()=>{
       try{
@@ -113,10 +150,16 @@ self.addEventListener('fetch',event=>{
       }catch{
         const cached=(await caches.match(event.request))||(await caches.match('./app.js'));
         if(cached)return responseFromText(cached,patchApp(await cached.text()));
-        return caches.match('./index.html');
+        return new Response('',{status:503,statusText:'Offline'});
       }
     })());
     return;
   }
-  event.respondWith(fetch(event.request).then(resp=>{const copy=resp.clone();caches.open(CACHE).then(c=>c.put(event.request,copy));return resp;}).catch(()=>caches.match(event.request).then(cached=>cached||caches.match('./index.html'))));
+
+  if(/\.(?:js|css|png|jpg|jpeg|webp|svg|webmanifest)$/i.test(url.pathname)){
+    event.respondWith(cacheStatic(event.request,event));
+    return;
+  }
+
+  event.respondWith(fetch(event.request).catch(()=>caches.match(event.request)));
 });
