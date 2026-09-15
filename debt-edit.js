@@ -50,6 +50,16 @@
     return {state,debt};
   }
 
+  function toast(text){
+    const root=document.getElementById('toastRoot');
+    if(!root)return;
+    const el=document.createElement('div');
+    el.className='toast';
+    el.textContent=text;
+    root.append(el);
+    setTimeout(()=>el.remove(),2400);
+  }
+
   function closeModal(){
     document.querySelector('[data-hakuna-debt-edit-modal]')?.remove();
   }
@@ -121,8 +131,14 @@
         target.unit=String(fd.get('unit')||'test');
         target.updatedAt=new Date().toISOString();
         await writeState(state);
-        sessionStorage.setItem(RETURN_KEY,'1');
-        location.reload();
+        closeModal();
+        if(window.HakunaCore?.refreshFromDB){
+          await window.HakunaCore.refreshFromDB();
+          toast('Borç güncellendi.');
+        }else{
+          sessionStorage.setItem(RETURN_KEY,'1');
+          location.reload();
+        }
       }catch(err){
         btn.disabled=false;
         alert(err?.message||'Borç güncellenemedi.');
@@ -153,6 +169,6 @@
     },80);
   }
 
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',restoreDebtsTab);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',restoreDebtsTab,{once:true});
   else restoreDebtsTab();
 })();
