@@ -2,6 +2,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const URL='https://zyrbbkbwrijnnykbgjvc.supabase.co';
 const KEY='sb_publishable_OW-03s1ExuA2GwmmL7HtRQ_IHOPxyGL';
+const AUTH_ENDPOINT=`${URL}/functions/v1/hakuna-account-auth`;
 const supabase=createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 
 function message(root,text,ok=false){
@@ -11,7 +12,58 @@ function message(root,text,ok=false){
   el.style.color=ok?'#15803d':'#b42318';
 }
 
-async function callAuth(mode,payload){
+function validateAuthData(data){
+  if(data?.error)throw new Error(data.error);
+  if(!data?.session?.access_token||!data?.session?.refresh_token)throw new Error('Oturum oluşturulamadı.');
+  return data;
+}
+
+async function directAuth(mode,payload){
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),15000);
+  let response;
+  try{
+    response=await fetch(AUTH_ENDPOINT,{
+      method:'POST',
+      mode:'cors',
+      cache:'no-store',
+      credentials:'omit',
+      signal:controller.signal,
+      headers:{
+        'Content-Type':'application/json',
+        'apikey':KEY,
+        'Authorization':`Bearer ${KEY}`,
+        'x-client-info':'hakuna-matata-web/1'
+      },
+      body:JSON.stringify({mode,...payload})
+    });
+  }catch(err){
+    const wrapped=new Error(err?.name==='AbortError'
+      ?'Hesap sunucusu zaman aşımına uğradı. İnternet bağlantını kontrol edip tekrar dene.'
+      :'Hesap sunucusuna bağlantı kurulamadı. İnternet, VPN/özel DNS veya içerik engelleyiciyi kontrol et.');
+    wrapped.hakunaNetwork=true;
+    throw wrapped;
+  }finally{
+    clearTimeout(timer);
+  }
+
+  let data=null;
+  try{
+    const text=await response.text();
+    data=text?JSON.parse(text):{};
+  }catch{
+    data={};
+  }
+
+  if(!response.ok){
+    const err=new Error(data?.error||`Hesap sunucusu hata verdi (${response.status}).`);
+    err.hakunaHttp=true;
+    throw err;
+  }
+  return validateAuthData(data);
+}
+
+async function sdkAuth(mode,payload){
   const {data,error}=await supabase.functions.invoke('hakuna-account-auth',{body:{mode,...payload}});
   if(error){
     let detail='Hesap sunucusuna ulaşılamadı.';
@@ -21,9 +73,19 @@ async function callAuth(mode,payload){
     }catch{}
     throw new Error(detail);
   }
-  if(data?.error)throw new Error(data.error);
-  if(!data?.session?.access_token||!data?.session?.refresh_token)throw new Error('Oturum oluşturulamadı.');
-  return data;
+  return validateAuthData(data);
+}
+
+async function callAuth(mode,payload){
+  try{
+    return await directAuth(mode,payload);
+  }catch(err){
+    // Sunucu cevap verdiyse gerçek hata mesajını koru. Yalnız ağ/CORS seviyesinde
+    // doğrudan fetch başarısızsa SDK yolunu bir kez yedek olarak dene.
+    if(err?.hakunaHttp)throw err;
+    try{return await sdkAuth(mode,payload);}catch{}
+    throw err;
+  }
 }
 
 async function finishSession(data,root){
