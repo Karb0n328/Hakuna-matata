@@ -19,7 +19,7 @@ try{
 
 // These modules protect/repair data but are not allowed to block first paint.
 void import('./auto-debt.js?v=fastboot1').catch(err=>console.warn('Auto debt load',err));
-void import('./debt-delete-guard.js?v=2').catch(err=>console.warn('Debt deletion guard load',err));
+void import('./deletion-guard-v2.js?v=1').catch(err=>console.warn('Deletion guard load',err));
 void import('./performance-runtime.js?v=4').catch(err=>console.warn('Performance runtime load',err));
 
 async function refreshServiceWorkerLater(){
@@ -43,7 +43,7 @@ async function importAccountSyncOptimized(){
     return nativeSetInterval.call(window,fn,next,...args);
   };
   try{
-    await import('./account-sync-v2.js?v=perf1');
+    await import('./account-sync-v2.js?v=deletion-journal-1');
   }finally{
     window.setInterval=nativeSetInterval;
   }
@@ -71,8 +71,8 @@ afterFirstPaint(()=>{
     try{
       await import('./week-settings.js?v=2');
       await import('./question-tools.js?v=3');
-      await import('./question-delete-fix.js?v=2');
-      await import('./plan-mode.js?v=2');
+      await import('./question-delete-fix.js?v=4');
+      await import('./plan-mode.js?v=3');
       await import('./plan-mode-pure-cards.js?v=2');
       await import('./immediate-debt-status.js?v=2');
     }catch(err){console.warn('Hakuna enhancement load',err);}
@@ -82,7 +82,7 @@ afterFirstPaint(()=>{
 const loadMata=()=>void (async()=>{
   try{
     await import('./mata-fallback.js');
-    await import('./mata-loader.js?v=4');
+    await import('./mata-loader.js?v=5');
   }catch(err){console.warn('Mata load',err);}
 })();
 
