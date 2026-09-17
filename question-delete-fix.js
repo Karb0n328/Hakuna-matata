@@ -4,6 +4,8 @@
   const DB_NAME='hakuna-matata-db';
   const DB_VERSION=1;
   const STATE_KEY='state';
+  const TOMBSTONE_PREFIX='__hakuna_deleted_question__:';
+  const LOCAL_KEY='hakuna.deletedQuestionTombstones.v1';
   let deleting=false;
 
   function openDB(){
@@ -15,7 +17,19 @@
     });
   }
 
+  function rememberDeletedLocally(id,deletedAt){
+    try{
+      const map=JSON.parse(localStorage.getItem(LOCAL_KEY)||'{}');
+      const safe=map&&typeof map==='object'&&!Array.isArray(map)?map:{};
+      if(!safe[id] || String(safe[id])<String(deletedAt))safe[id]=deletedAt;
+      localStorage.setItem(LOCAL_KEY,JSON.stringify(safe));
+    }catch{}
+  }
+
   async function deleteQuestion(id){
+    const deletedAt=new Date().toISOString();
+    rememberDeletedLocally(String(id),deletedAt);
+
     const db=await openDB();
     return new Promise((resolve,reject)=>{
       const tx=db.transaction('app','readwrite');
@@ -30,7 +44,11 @@
         const before=state.questions.length;
         state.questions=state.questions.filter(q=>String(q.id)!==String(id));
         found=state.questions.length!==before;
-        if(found)store.put(state,STATE_KEY);
+
+        // Deletion is data too. Keep a tombstone in the synced state so a stale
+        // device/cloud revision cannot resurrect this question during ID merge.
+        state[TOMBSTONE_PREFIX+String(id)]={deletedAt};
+        store.put(state,STATE_KEY);
       };
       req.onerror=()=>reject(req.error);
       tx.oncomplete=()=>{db.close();resolve(found);};
@@ -63,6 +81,7 @@
 
     try{
       const found=await deleteQuestion(id);
+      window.HakunaDebtDeleteGuard?.markQuestionDeleted?.(id);
       if(!found){
         deleting=false;
         btn.disabled=false;
