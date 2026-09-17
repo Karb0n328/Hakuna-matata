@@ -5,8 +5,10 @@
   const DB_VERSION=1;
   const STORE='app';
   const STATE_KEY='state';
-  const TOMBSTONE_PREFIX='__hakuna_deleted_debt__:';
-  const LOCAL_KEY='hakuna.deletedDebtTombstones.v1';
+  const TYPES={
+    debt:{collection:'debts',prefix:'__hakuna_deleted_debt__:',localKey:'hakuna.deletedDebtTombstones.v1'},
+    question:{collection:'questions',prefix:'__hakuna_deleted_question__:',localKey:'hakuna.deletedQuestionTombstones.v1'}
+  };
 
   let busy=false;
   let timer=null;
@@ -44,29 +46,31 @@
     }finally{db.close();}
   }
 
-  function readLocalTombstones(){
+  function readLocal(type){
     try{
-      const value=JSON.parse(localStorage.getItem(LOCAL_KEY)||'{}');
+      const value=JSON.parse(localStorage.getItem(TYPES[type].localKey)||'{}');
       return value&&typeof value==='object'&&!Array.isArray(value)?value:{};
     }catch{return {};}
   }
 
-  function writeLocalTombstones(value){
-    try{localStorage.setItem(LOCAL_KEY,JSON.stringify(value));}catch{}
+  function writeLocal(type,value){
+    try{localStorage.setItem(TYPES[type].localKey,JSON.stringify(value));}catch{}
   }
 
-  function rememberDeleted(id,deletedAt=new Date().toISOString()){
+  function rememberDeleted(type,id,deletedAt=new Date().toISOString()){
+    if(!TYPES[type])return;
     id=String(id||'').trim();
     if(!id)return;
-    const map=readLocalTombstones();
+    const map=readLocal(type);
     if(!map[id] || String(map[id])<String(deletedAt)){
       map[id]=deletedAt;
-      writeLocalTombstones(map);
+      writeLocal(type,map);
     }
   }
 
-  function tombstoneId(key){
-    return String(key).startsWith(TOMBSTONE_PREFIX)?String(key).slice(TOMBSTONE_PREFIX.length):'';
+  function idFromKey(type,key){
+    const prefix=TYPES[type].prefix;
+    return String(key).startsWith(prefix)?String(key).slice(prefix.length):'';
   }
 
   async function reconcile(){
@@ -76,76 +80,95 @@
       const state=await readState();
       if(!state||typeof state!=='object')return;
 
-      const local=readLocalTombstones();
-      let localChanged=false;
       let stateChanged=false;
+      let visibleDataChanged=false;
 
-      // Tombstones received from cloud are also kept locally. This protects a
-      // deletion even if a later account reconcile temporarily replaces state.
-      for(const [key,value] of Object.entries(state)){
-        const id=tombstoneId(key);
-        if(!id)continue;
-        const deletedAt=typeof value==='string'?value:(value?.deletedAt||new Date().toISOString());
-        if(!local[id] || String(local[id])<String(deletedAt)){
-          local[id]=deletedAt;
-          localChanged=true;
+      for(const type of Object.keys(TYPES)){
+        const cfg=TYPES[type];
+        const local=readLocal(type);
+        let localChanged=false;
+
+        // Tombstones arriving from cloud are persisted on the device too.
+        for(const [key,value] of Object.entries(state)){
+          const id=idFromKey(type,key);
+          if(!id)continue;
+          const deletedAt=typeof value==='string'?value:(value?.deletedAt||new Date().toISOString());
+          if(!local[id] || String(local[id])<String(deletedAt)){
+            local[id]=deletedAt;
+            localChanged=true;
+          }
+        }
+
+        // Re-assert local deletion intent into state. Top-level tombstone keys
+        // survive the existing cloud object merge even when array records union.
+        for(const [id,deletedAt] of Object.entries(local)){
+          const key=cfg.prefix+id;
+          const current=state[key];
+          const currentAt=typeof current==='string'?current:current?.deletedAt;
+          if(!currentAt || String(currentAt)<String(deletedAt)){
+            state[key]={deletedAt:String(deletedAt)};
+            stateChanged=true;
+          }
+        }
+
+        const deletedIds=new Set(Object.keys(state).map(key=>idFromKey(type,key)).filter(Boolean));
+        if(Array.isArray(state[cfg.collection])&&deletedIds.size){
+          const before=state[cfg.collection].length;
+          state[cfg.collection]=state[cfg.collection].filter(item=>!deletedIds.has(String(item?.id||'')));
+          if(state[cfg.collection].length!==before){
+            stateChanged=true;
+            visibleDataChanged=true;
+          }
+        }
+
+        if(localChanged)writeLocal(type,local);
+      }
+
+      if(stateChanged){
+        await writeState(state);
+        if(visibleDataChanged && window.HakunaCore?.refreshFromDB){
+          await window.HakunaCore.refreshFromDB();
         }
       }
-
-      // Each deleted debt is stored as its own top-level key. The existing
-      // cloud merge spreads remote + local objects, so different tombstones
-      // naturally survive/union even during revision conflicts.
-      for(const [id,deletedAt] of Object.entries(local)){
-        const key=TOMBSTONE_PREFIX+id;
-        const current=state[key];
-        const currentAt=typeof current==='string'?current:current?.deletedAt;
-        if(!currentAt || String(currentAt)<String(deletedAt)){
-          state[key]={deletedAt:String(deletedAt)};
-          stateChanged=true;
-        }
-      }
-
-      const deletedIds=new Set(Object.keys(state).map(tombstoneId).filter(Boolean));
-      if(Array.isArray(state.debts)&&deletedIds.size){
-        const before=state.debts.length;
-        state.debts=state.debts.filter(d=>!deletedIds.has(String(d?.id||'')));
-        if(state.debts.length!==before)stateChanged=true;
-      }
-
-      if(localChanged)writeLocalTombstones(local);
-      if(stateChanged)await writeState(state);
     }catch(err){
-      console.warn('Hakuna debt deletion guard',err);
+      console.warn('Hakuna deletion guard',err);
     }finally{
       busy=false;
     }
   }
 
-  function markDeleted(id){
+  function markDeleted(type,id){
+    if(!TYPES[type])return;
     id=String(id||'').trim();
     if(!id)return;
-    rememberDeleted(id);
-    // Re-assert after the normal UI mutation finishes. LocalStorage is written
-    // synchronously first, so even a racing IndexedDB save cannot lose intent.
-    setTimeout(reconcile,80);
-    setTimeout(reconcile,500);
+    rememberDeleted(type,id);
+    setTimeout(reconcile,50);
+    setTimeout(reconcile,250);
+    setTimeout(reconcile,900);
   }
 
   document.addEventListener('click',event=>{
-    const btn=event.target.closest?.('[data-delete-debt]');
-    if(btn)markDeleted(btn.dataset.deleteDebt);
+    const debtBtn=event.target.closest?.('[data-delete-debt]');
+    if(debtBtn)markDeleted('debt',debtBtn.dataset.deleteDebt);
+
+    const questionBtn=event.target.closest?.('[data-q-delete]');
+    if(questionBtn)markDeleted('question',questionBtn.dataset.qDelete);
   },true);
 
-  window.HakunaDebtDeleteGuard={markDeleted,reconcile};
+  window.HakunaDebtDeleteGuard={
+    markDeleted:id=>markDeleted('debt',id),
+    markQuestionDeleted:id=>markDeleted('question',id),
+    reconcile
+  };
 
   const schedule=()=>{
     clearTimeout(timer);
-    timer=setTimeout(reconcile,120);
+    timer=setTimeout(reconcile,100);
   };
   window.addEventListener('online',schedule);
   window.addEventListener('focus',schedule);
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')schedule();});
 
   reconcile();
-  setInterval(reconcile,1500);
+  setInterval(reconcile,1200);
 })();
