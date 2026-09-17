@@ -1,42 +1,38 @@
 import './migration.js';
-await import('./auto-debt.js');
 
-async function ensureStableServiceWorker(){
-  if(!('serviceWorker' in navigator))return;
-  try{
-    let controllerChanged=false;
-    let resolveChange;
-    const changed=new Promise(resolve=>{resolveChange=resolve;});
-    const onChange=()=>{controllerChanged=true;navigator.serviceWorker.removeEventListener('controllerchange',onChange);resolveChange();};
-    navigator.serviceWorker.addEventListener('controllerchange',onChange);
-
-    const reg=await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});
-    await reg.update().catch(()=>{});
-    const pending=!!(reg.installing||reg.waiting);
-
-    if(pending){
-      await Promise.race([changed,new Promise(resolve=>setTimeout(resolve,5000))]);
-      if(!controllerChanged){
-        const tries=Number(sessionStorage.getItem('hakuna.swRecoveryTry')||0);
-        if(tries<1){
-          sessionStorage.setItem('hakuna.swRecoveryTry',String(tries+1));
-          location.reload();
-          await new Promise(()=>{});
-        }
-      }
-    }
-    sessionStorage.removeItem('hakuna.swRecoveryTry');
-    navigator.serviceWorker.removeEventListener('controllerchange',onChange);
-  }catch{}
+function showBootError(error){
+  console.error('Hakuna core boot failed',error);
+  const view=document.querySelector('#view');
+  if(!view)return;
+  view.innerHTML=`<section class="card"><div class="card-body" style="padding:24px"><div class="card-title">Hakuna açılırken bir dosya yenilenemedi</div><div class="card-subtitle" style="margin-top:8px">Verilerin cihazda duruyor. İnternet bağlantın varsa aşağıdaki düğmeyle uygulamayı yeniden yükle.</div><div class="form-actions" style="margin-top:16px"><button class="primary-btn" type="button" data-hakuna-boot-reload>Yeniden dene</button></div></div></section>`;
+  view.querySelector('[data-hakuna-boot-reload]')?.addEventListener('click',()=>location.reload());
 }
 
-// Critical rule: core navigation is never runtime-rewritten for performance.
-// If a new worker is waiting, let the stable worker take control first so an
-// older cached performance patch cannot poison app.js on iPhone/PWA installs.
-await ensureStableServiceWorker();
-await import('./app.js?v=stable-core-1');
-await import('./debt-delete-guard.js?v=1');
-await import('./performance-runtime.js?v=3');
+// Core UI must be the first expensive module to load. Service-worker updates,
+// cloud sync and enhancements are maintenance work and must never keep the PWA
+// on a blank screen during startup.
+try{
+  await import('./app.js?v=stable-core-2');
+}catch(error){
+  showBootError(error);
+}
+
+// These modules protect/repair data but are not allowed to block first paint.
+void import('./auto-debt.js?v=fastboot1').catch(err=>console.warn('Auto debt load',err));
+void import('./debt-delete-guard.js?v=2').catch(err=>console.warn('Debt deletion guard load',err));
+void import('./performance-runtime.js?v=4').catch(err=>console.warn('Performance runtime load',err));
+
+async function refreshServiceWorkerLater(){
+  if(!('serviceWorker' in navigator))return;
+  try{
+    const reg=await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});
+    // Do not wait for installing/waiting workers and never reload during boot.
+    // skipWaiting + clients.claim in sw.js will move clients over safely.
+    void reg.update().catch(()=>{});
+  }catch(err){
+    console.warn('Hakuna service worker refresh',err);
+  }
+}
 
 async function importAccountSyncOptimized(){
   const nativeSetInterval=window.setInterval;
@@ -58,8 +54,11 @@ function afterFirstPaint(fn){
 }
 
 afterFirstPaint(()=>{
+  // Cache/service-worker maintenance happens only after the core screen exists.
+  void refreshServiceWorkerLater();
+
   void (async()=>{
-    try{await importAccountSyncOptimized();}catch{}
+    try{await importAccountSyncOptimized();}catch(err){console.warn('Hakuna cloud sync load',err);}
     await Promise.allSettled([
       import('./account-auth-hotfix.js?v=6'),
       import('./settings-copy-fix.js?v=1'),
