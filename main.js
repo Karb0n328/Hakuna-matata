@@ -35,6 +35,7 @@ async function ensureStableServiceWorker(){
 // older cached performance patch cannot poison app.js on iPhone/PWA installs.
 await ensureStableServiceWorker();
 await import('./app.js?v=stable-core-1');
+await import('./debt-delete-guard.js?v=1');
 await import('./performance-runtime.js?v=3');
 
 async function importAccountSyncOptimized(){
