@@ -1,5 +1,5 @@
-const CACHE='hakuna-matata-v27-smooth-ui';
-const ASSETS=['./','./index.html','./styles.css','./mata.css','./ui-fixes.css','./today-agenda.css','./main.js','./migration.js','./auto-debt.js','./app.js','./week-settings.js','./ui-fixes.js','./today-agenda.js','./today-marker-fix.js','./mata-fallback.js','./mata-loader.js','./mata-observer-guard.js','./mata-core-v2.js','./mata-nlu-v2.js','./mata-ui-v2.js','./plan-mode.js','./plan-mode-pure-cards.js','./immediate-debt-status.js','./manifest.webmanifest?v=final-logo-v2','./icons/hakuna-final.png?v=final-logo-v2','./icons/hakuna-brand-v3.png?v=brand-v3','./assets/mata.svg'];
+const CACHE='hakuna-matata-v28-fast-start';
+const ASSETS=['./','./index.html','./styles.css','./performance.css','./mata.css','./ui-fixes.css','./today-agenda.css','./fixed-sidebar.css','./main.js','./migration.js','./auto-debt.js','./debt-delete-guard.js','./performance-runtime.js','./app.js','./week-settings.js','./ui-fixes.js','./today-agenda.js','./today-marker-fix.js','./mata-fallback.js','./mata-loader.js','./mata-observer-guard.js','./mata-core-v2.js','./mata-nlu-v2.js','./mata-ui-v2.js','./plan-mode.js','./plan-mode-pure-cards.js','./immediate-debt-status.js','./manifest.webmanifest?v=final-logo-v2','./icons/hakuna-final.png?v=final-logo-v2','./icons/hakuna-brand-v3.png?v=brand-v3','./assets/mata.svg'];
 
 function patchApp(text){
   const oldWeek="  function startOfWeekISO(iso) {\n    const d=parseISODate(iso); const wd=(d.getDay()+6)%7; d.setDate(d.getDate()-wd); return isoDate(d);\n  }";
@@ -86,37 +86,82 @@ function responseFromText(resp,text){
   return new Response(text,{status:resp.status,statusText:resp.statusText,headers});
 }
 
-self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));self.skipWaiting();});
-self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim();});
+function cachePut(request,response){
+  if(!response || !(response.ok || response.type==='opaque'))return Promise.resolve();
+  return caches.open(CACHE).then(c=>c.put(request,response.clone())).catch(()=>{});
+}
+
+self.addEventListener('install',event=>{
+  event.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));
+  self.skipWaiting();
+});
+self.addEventListener('activate',event=>{
+  event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));
+  self.clients.claim();
+});
 self.addEventListener('fetch',event=>{
   if(event.request.method!=='GET')return;
   const url=new URL(event.request.url);
 
-  // V2 migration must never poison the normal app cache. It is intentionally
-  // network-only and isolated from the offline index fallback.
+  // Migration tooling is intentionally isolated from the normal app cache.
   if(url.origin===self.location.origin && (url.pathname.endsWith('/migration-v2.html') || url.pathname.includes('/v2-migration/'))){
     event.respondWith(fetch(event.request,{cache:'no-store'}));
     return;
   }
 
+  // Home-screen launches must never wait on a slow network. Show the cached
+  // application shell immediately and refresh it in the background.
   if(event.request.mode==='navigate'){
-    event.respondWith(fetch(event.request,{cache:'reload'}).then(resp=>{const copy=resp.clone();caches.open(CACHE).then(c=>c.put('./index.html',copy));return resp;}).catch(()=>caches.match('./index.html')));
+    const network=fetch(event.request,{cache:'no-store'}).then(resp=>{
+      if(resp.ok)caches.open(CACHE).then(c=>c.put('./index.html',resp.clone())).catch(()=>{});
+      return resp;
+    });
+    event.waitUntil(network.then(()=>{}).catch(()=>{}));
+    event.respondWith(
+      caches.match('./index.html').then(cached=>cached||network).catch(()=>network)
+    );
     return;
   }
-  if(url.pathname.endsWith('/app.js')){
+
+  // app.js still receives the compatibility patch, but cached code is used
+  // immediately. Network revalidation never blocks the visible application.
+  if(url.origin===self.location.origin && url.pathname.endsWith('/app.js')){
+    const network=fetch(event.request,{cache:'no-store'}).then(async resp=>{
+      if(!resp.ok)return resp;
+      const out=responseFromText(resp,patchApp(await resp.text()));
+      await cachePut(event.request,out);
+      return out;
+    });
+    event.waitUntil(network.then(()=>{}).catch(()=>{}));
     event.respondWith((async()=>{
-      try{
-        const resp=await fetch(event.request);
-        const out=responseFromText(resp,patchApp(await resp.text()));
-        caches.open(CACHE).then(c=>c.put(event.request,out.clone()));
-        return out;
-      }catch{
-        const cached=(await caches.match(event.request))||(await caches.match('./app.js'));
-        if(cached)return responseFromText(cached,patchApp(await cached.text()));
-        return caches.match('./index.html');
+      const cached=await caches.match(event.request,{ignoreSearch:true});
+      if(cached)return responseFromText(cached,patchApp(await cached.text()));
+      try{return await network;}catch{return new Response('Hakuna core unavailable',{status:503,headers:{'Content-Type':'text/javascript'}});}
+    })());
+    return;
+  }
+
+  // Same-origin static files use stale-while-revalidate. Query-string version
+  // changes can still reuse the cached base file, which is important for iOS
+  // standalone mode when the connection is slow or briefly unavailable.
+  if(url.origin===self.location.origin){
+    const network=fetch(event.request,{cache:'no-store'}).then(async resp=>{
+      await cachePut(event.request,resp);
+      return resp;
+    });
+    event.waitUntil(network.then(()=>{}).catch(()=>{}));
+    event.respondWith((async()=>{
+      const cached=await caches.match(event.request,{ignoreSearch:true});
+      if(cached)return cached;
+      try{return await network;}catch{
+        const dest=event.request.destination;
+        if(dest==='script')return new Response('',{status:503,headers:{'Content-Type':'text/javascript'}});
+        if(dest==='style')return new Response('',{status:503,headers:{'Content-Type':'text/css'}});
+        return new Response('',{status:503});
       }
     })());
     return;
   }
-  event.respondWith(fetch(event.request).then(resp=>{const copy=resp.clone();caches.open(CACHE).then(c=>c.put(event.request,copy));return resp;}).catch(()=>caches.match(event.request).then(cached=>cached||caches.match('./index.html'))));
+
+  event.respondWith(fetch(event.request));
 });
