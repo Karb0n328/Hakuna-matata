@@ -8,8 +8,7 @@
   const MUSTAFA_USER_ID='9731add6-573b-4124-8383-e447b0cdc401';
   const FLAG='mustafa_phone_popup_seen_v1';
   const LOCAL_KEY=`hakuna.once.${FLAG}.${MUSTAFA_USER_ID}`;
-  const PHOTO='https://down-my.img.susercontent.com/file/my-11134207-7r98v-luw64n0c9v8z05';
-  const PHOTO_FALLBACK='https://n11scdn.akamaized.net/a1/450/elektronik/tuslu-telefon/samsung-sm-b310e-tuslu-cep-telefonu-duos-beyaz__0302105792090320.jpg';
+  const PHOTO='./assets/mustafa-phone.jpeg?v=1';
 
   let shown=false;
   let checking=false;
@@ -169,11 +168,6 @@
         <button class="mustafa-once-button" type="button">ben malım</button>
       </section>
     `;
-
-    const img=overlay.querySelector('img');
-    img.addEventListener('error',()=>{
-      if(img.src!==PHOTO_FALLBACK)img.src=PHOTO_FALLBACK;
-    },{once:true});
 
     overlay.querySelector('.mustafa-once-button').addEventListener('click',()=>{
       closeOverlay(session,flags);
