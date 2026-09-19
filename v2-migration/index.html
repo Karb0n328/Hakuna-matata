@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0f1b33">
+  <title>Hakuna V2 Migration Audit</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div class="eyebrow">HAKUNA MATATA V2</div>
+      <h1>Veri güvenliği kontrolü</h1>
+      <p>Bu araç mevcut Hakuna IndexedDB verisini yalnız okur. Eski veritabanına yazmaz, temizlemez veya silmez.</p>
+    </header>
+
+    <section id="status" class="status working" aria-live="polite">
+      <strong>Hazırlanıyor</strong>
+      <span>Legacy veri kontrol ediliyor.</span>
+    </section>
+
+    <section id="details" class="card" hidden></section>
+
+    <section class="actions">
+      <button id="runAudit" type="button">Tekrar kontrol et</button>
+      <button id="downloadSnapshot" class="secondary" type="button" disabled>Migration öncesi yedeği indir</button>
+    </section>
+
+    <section class="card rules">
+      <h2>Bu aşamada yapılanlar</h2>
+      <ul>
+        <li><code>hakuna-matata-db / app / state</code> readonly okunur.</li>
+        <li>Blocks, görevler, borçlar, <strong>denemeler</strong>, sorular ve diğer tüm state alanları aynen snapshot'a girer.</li>
+        <li>State için deterministic SHA-256 üretilir.</li>
+        <li>Eski database otomatik olarak hiçbir zaman silinmez.</li>
+      </ul>
+    </section>
+  </main>
+  <script src="./app.js"></script>
+</body>
+</html>
