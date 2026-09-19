@@ -6,7 +6,7 @@
   const BATU_USER_ID='8f2cf782-f4f2-4c85-a9e9-a560c623e6d5';
   const THEME_KEY='hakuna.batu.darkMode.v1';
   const DEFAULT_LOGO='./icons/hakuna-brand-v3.png?v=brand-v3';
-  const DARK_LOGO='./assets/batu-dark-logo.webp?v=2';
+  const DARK_LOGO='./assets/batu-dark-logo-sidebar.svg?v=1';
 
   let refreshQueued=false;
 
