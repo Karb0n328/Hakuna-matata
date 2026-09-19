@@ -50,7 +50,13 @@
       root.dataset.batuTheme='dark';
       if(logo){
         logo.dataset.batuThemeLogo='1';
-        if(!logo.src.includes('batu-dark-logo.webp'))logo.src=DARK_LOGO;
+        logo.onerror=()=>{
+          logo.onerror=null;
+          logo.src='./assets/batu-dark-logo.svg?v=1';
+        };
+        if(!logo.src.includes('batu-dark-logo-sidebar.svg'))logo.src=DARK_LOGO;
+        logo.style.visibility='visible';
+        logo.style.opacity='1';
         logo.alt='Batu';
       }
       if(meta)meta.content='#08090b';
