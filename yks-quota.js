@@ -257,9 +257,11 @@
     const meta=document.querySelector('#yksProgramMeta span');
     if(!meta)return;
     const base=meta.textContent.replace(/ · kontenjan[^·]*/gi,'').trim();
-    if(state==='loading')meta.textContent=base+' · kontenjan yükleniyor';
-    else if(state==='ready')meta.textContent=base+' · kontenjan YÖK Atlas';
-    else if(state==='error')meta.textContent=base+' · kontenjan alınamadı';
+    let next=base;
+    if(state==='loading')next=base+' · kontenjan yükleniyor';
+    else if(state==='ready')next=base+' · kontenjan YÖK Atlas';
+    else if(state==='error')next=base+' · kontenjan alınamadı';
+    if(meta.textContent!==next)meta.textContent=next;
   }
 
   async function enhance(){
@@ -294,13 +296,15 @@
         const cell=row.querySelector('[data-yks-quota-cell] strong');
         if(!cell)continue;
         const quota=quotaForRow(lookup,row,department,year);
-        cell.textContent=quota===null?'—':new Intl.NumberFormat('tr-TR').format(quota);
-        cell.title=quota===null?'Kontenjan eşleşmesi bulunamadı':year+' genel kontenjanı';
+        const next=quota===null?'—':new Intl.NumberFormat('tr-TR').format(quota);
+        if(cell.textContent!==next)cell.textContent=next;
+        const title=quota===null?'Kontenjan eşleşmesi bulunamadı':year+' genel kontenjanı';
+        if(cell.title!==title)cell.title=title;
       }
       setMetaState('ready');
     }catch(error){
       console.warn('YKS kontenjan verisi yüklenemedi:',error);
-      for(const cell of tbody.querySelectorAll('[data-yks-quota-cell] strong'))cell.textContent='—';
+      for(const cell of tbody.querySelectorAll('[data-yks-quota-cell] strong'))if(cell.textContent!=='—')cell.textContent='—';
       setMetaState('error');
     }
   }
