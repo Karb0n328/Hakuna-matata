@@ -117,8 +117,8 @@
     const sv=document.querySelector('[data-hm-timer-side-value]');
     const mv=document.querySelector('[data-hm-timer-mobile-label]');
     const x=label(s);
-    if(side){side.dataset.state=s.status||'idle'; if(sv)sv.textContent=x;}
-    if(mob){mob.dataset.state=s.status||'idle'; if(mv)mv.textContent=s.status==='idle'?'Sayaç':x;}
+    if(side){side.dataset.state=s.status||'idle'; if(sv&&sv.textContent!==x)sv.textContent=x;}
+    if(mob){mob.dataset.state=s.status||'idle'; const mobileText=s.status==='idle'?'Sayaç':x; if(mv&&mv.textContent!==mobileText)mv.textContent=mobileText;}
   }
 
   function ensureBanner(s){
@@ -195,8 +195,8 @@
     if(modalOpen){
       const c=document.querySelector('[data-clock]');
       const n=document.querySelector('[data-note]');
-      if(s.status==='running'&&c){c.textContent=fmt(remaining(s));if(n)n.textContent='Bitiş: '+clock(s.endAt)+' · uygulama kapansa da gerçek saate göre devam eder.';}
-      else if(s.status==='paused'&&c)c.textContent=fmt(remaining(s));
+      if(s.status==='running'&&c){const next=fmt(remaining(s));if(c.textContent!==next)c.textContent=next;const note='Bitiş: '+clock(s.endAt)+' · uygulama kapansa da gerçek saate göre devam eder.';if(n&&n.textContent!==note)n.textContent=note;}
+      else if(s.status==='paused'&&c){const next=fmt(remaining(s));if(c.textContent!==next)c.textContent=next;}
       else if(s.status==='finished')renderModal();
       else if(force)renderModal();
     }
@@ -211,7 +211,7 @@
   function init(){
     update(true);
     setInterval(function(){update(false);},1000);
-    new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true,characterData:true});
+    new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true});
     document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')update(true);});
     window.addEventListener('focus',function(){update(true);},{passive:true});
     window.addEventListener('pageshow',function(){update(true);},{passive:true});
