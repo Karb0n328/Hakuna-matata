@@ -1,0 +1,158 @@
+/* Hakuna persistent silent timer v2 */
+.hm-timer-dock{
+  margin:12px 6px 14px;
+  padding:14px;
+  border:1px solid rgba(255,255,255,.13);
+  border-radius:18px;
+  background:linear-gradient(145deg,rgba(255,255,255,.085),rgba(255,255,255,.035));
+  color:#fff;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+}
+.hm-timer-dock-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.hm-timer-dock-title{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:900}
+.hm-timer-dock-badge{font-size:8px;font-weight:850;letter-spacing:.04em;padding:4px 6px;border-radius:999px;background:rgba(255,255,255,.09);color:rgba(255,255,255,.62)}
+.hm-timer-dock-clock{margin-top:10px;font-size:30px;line-height:1;font-weight:920;letter-spacing:-.055em;font-variant-numeric:tabular-nums}
+.hm-timer-dock-sub{margin-top:5px;font-size:9px;line-height:1.35;color:rgba(255,255,255,.56)}
+.hm-timer-dock-progress{height:5px;margin-top:11px;border-radius:999px;background:rgba(255,255,255,.10);overflow:hidden}
+.hm-timer-dock-progress>i{display:block;width:0;height:100%;border-radius:inherit;background:#fff;transition:width .35s linear}
+.hm-timer-dock-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:10px}
+.hm-timer-dock-actions button{min-width:0;border:1px solid rgba(255,255,255,.11);background:rgba(255,255,255,.075);color:#fff;border-radius:10px;padding:7px 5px;font-size:9px;font-weight:820}
+.hm-timer-dock-actions button:active{transform:scale(.98)}
+.hm-timer-dock-open{width:100%;margin-top:7px;border:0;background:transparent;color:rgba(255,255,255,.55);font-size:9px;font-weight:760;padding:4px}
+.hm-timer-dock[data-state="finished"]{border-color:rgba(255,255,255,.38);background:linear-gradient(145deg,rgba(255,255,255,.17),rgba(255,255,255,.07))}
+.hm-timer-dock[data-state="finished"] .hm-timer-dock-clock{font-size:20px;letter-spacing:-.02em}
+.hm-timer-dock[data-state="finished"] .hm-timer-dock-sub{color:#fff}
+.hm-timer-dock[data-state="idle"] .hm-timer-dock-progress{display:none}
+
+.hm-timer-mobile-dock{
+  display:none;
+  position:fixed;
+  z-index:42;
+  right:12px;
+  bottom:calc(80px + env(safe-area-inset-bottom));
+  min-width:142px;
+  border:1px solid var(--line);
+  border-radius:18px;
+  background:var(--card);
+  color:var(--ink);
+  box-shadow:0 13px 32px rgba(14,27,47,.18);
+  padding:10px 12px;
+  text-align:left;
+}
+.hm-timer-mobile-dock strong{display:block;font-size:18px;line-height:1;font-variant-numeric:tabular-nums}
+.hm-timer-mobile-dock span{display:block;margin-top:4px;color:var(--muted);font-size:9px}
+.hm-timer-mobile-dock[data-state="finished"]{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.hm-timer-mobile-dock[data-state="finished"] span{color:inherit;opacity:.75}
+
+.hm-timer-modal{
+  position:fixed;inset:0;z-index:130;
+  display:grid;place-items:center;
+  padding:max(18px,env(safe-area-inset-top)) 18px max(18px,env(safe-area-inset-bottom));
+  background:rgba(8,16,29,.48);
+  backdrop-filter:blur(8px);
+}
+.hm-timer-modal-card{
+  width:min(540px,100%);
+  max-height:92dvh;
+  overflow:auto;
+  background:var(--card);
+  color:var(--ink);
+  border:1px solid var(--line);
+  border-radius:26px;
+  box-shadow:0 30px 90px rgba(4,12,24,.28);
+}
+.hm-timer-modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;padding:21px 22px 0}
+.hm-timer-modal-kicker{font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);font-weight:850}
+.hm-timer-modal-title{font-size:22px;font-weight:920;letter-spacing:-.04em;margin-top:3px}
+.hm-timer-modal-close{width:40px;height:40px;border:1px solid var(--line);border-radius:13px;background:var(--card);color:var(--muted);font-size:17px;font-weight:800}
+.hm-timer-modal-body{padding:20px 22px 24px}
+.hm-timer-big{
+  padding:24px 16px 20px;
+  border:1px solid var(--line);
+  border-radius:21px;
+  background:var(--bg);
+  text-align:center;
+}
+.hm-timer-big-value{font-size:clamp(52px,9vw,72px);line-height:1;font-weight:930;letter-spacing:-.06em;font-variant-numeric:tabular-nums}
+.hm-timer-big-note{margin-top:9px;color:var(--muted);font-size:11px}
+.hm-timer-big-progress{height:7px;margin:17px auto 0;width:min(330px,86%);border-radius:999px;background:#e6ebf1;overflow:hidden}
+.hm-timer-big-progress>i{display:block;width:0;height:100%;border-radius:inherit;background:var(--ink);transition:width .35s linear}
+.hm-timer-presets{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:15px}
+.hm-timer-presets button,.hm-timer-tool{
+  border:1px solid var(--line);background:var(--card);color:var(--ink);
+  border-radius:13px;padding:10px 8px;font-size:11px;font-weight:820;
+}
+.hm-timer-custom{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-top:9px}
+.hm-timer-custom input{min-width:0;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:13px;padding:11px 12px;outline:none}
+.hm-timer-modal-actions{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin-top:16px}
+.hm-timer-modal-actions button{min-width:112px}
+.hm-timer-meta{display:flex;justify-content:center;flex-wrap:wrap;gap:7px;margin-top:12px}
+.hm-timer-meta span{font-size:9px;color:var(--muted);border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:6px 9px}
+.hm-timer-finish-box{margin-top:14px;padding:13px;border-radius:15px;background:var(--blue-soft);font-size:12px;font-weight:780;text-align:center}
+
+.hm-timer-notice{
+  position:fixed;
+  z-index:125;
+  top:calc(18px + env(safe-area-inset-top));
+  right:20px;
+  width:min(390px,calc(100vw - 40px));
+  padding:15px;
+  border:1px solid #cfd8e5;
+  border-radius:19px;
+  background:#fff;
+  color:#17243a;
+  box-shadow:0 22px 60px rgba(7,18,35,.24);
+  display:grid;
+  grid-template-columns:42px minmax(0,1fr) auto;
+  gap:11px;
+  align-items:center;
+}
+.hm-timer-notice-mark{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:#17243a;color:#fff;font-size:18px;font-weight:900}
+.hm-timer-notice-copy{min-width:0}
+.hm-timer-notice-copy strong{display:block;font-size:13px}
+.hm-timer-notice-copy span{display:block;margin-top:3px;color:#738094;font-size:10px;line-height:1.3}
+.hm-timer-notice-actions{display:flex;gap:5px}
+.hm-timer-notice-actions button{border:1px solid #d8e0ea;background:#fff;color:#24344b;border-radius:10px;padding:8px 9px;font-size:9px;font-weight:820}
+.hm-timer-notice-actions button:last-child{background:#17243a;color:#fff;border-color:#17243a}
+
+.hm-timer-page-banner{
+  margin:0 0 17px;padding:15px 16px;
+  border:1px solid var(--line);border-radius:18px;background:var(--card);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  box-shadow:var(--shadow);
+}
+.hm-timer-page-main{display:flex;align-items:center;gap:11px;min-width:0}
+.hm-timer-page-mark{width:40px;height:40px;border-radius:13px;background:var(--ink);color:var(--card);display:grid;place-items:center;font-weight:900}
+.hm-timer-page-copy strong{display:block;font-size:13px}
+.hm-timer-page-copy span{display:block;margin-top:3px;color:var(--muted);font-size:10px}
+.hm-timer-page-actions{display:flex;gap:7px}
+
+html[data-batu-theme="dark"] .hm-timer-modal-card,
+html[data-batu-theme="dark"] .hm-timer-modal-close,
+html[data-batu-theme="dark"] .hm-timer-presets button,
+html[data-batu-theme="dark"] .hm-timer-tool,
+html[data-batu-theme="dark"] .hm-timer-custom input,
+html[data-batu-theme="dark"] .hm-timer-page-banner,
+html[data-batu-theme="dark"] .hm-timer-mobile-dock{
+  background:#111316!important;border-color:#292f37!important;color:#f3f5f7!important;
+}
+html[data-batu-theme="dark"] .hm-timer-big,
+html[data-batu-theme="dark"] .hm-timer-meta span{background:#0d0f12!important;border-color:#292f37!important}
+html[data-batu-theme="dark"] .hm-timer-big-progress{background:#292f37!important}
+html[data-batu-theme="dark"] .hm-timer-big-progress>i{background:#f1f2f0!important}
+html[data-batu-theme="dark"] .hm-timer-finish-box{background:#1a1e24!important}
+html[data-batu-theme="dark"] .hm-timer-notice{background:#111316;color:#f3f5f7;border-color:#343a43;box-shadow:0 22px 60px rgba(0,0,0,.48)}
+html[data-batu-theme="dark"] .hm-timer-notice-mark{background:#f2f3f1;color:#08090a}
+html[data-batu-theme="dark"] .hm-timer-notice-copy span{color:#959da8}
+html[data-batu-theme="dark"] .hm-timer-notice-actions button{background:#171a1f;color:#e9ebee;border-color:#30363f}
+html[data-batu-theme="dark"] .hm-timer-notice-actions button:last-child{background:#f2f3f1;color:#08090a;border-color:#f2f3f1}
+
+@media(max-width:720px){
+  .hm-timer-dock{display:none!important}
+  .hm-timer-mobile-dock{display:block}
+  .hm-timer-modal{place-items:end center;padding:0}
+  .hm-timer-modal-card{width:100%;border-radius:24px 24px 0 0;border-bottom:0}
+  .hm-timer-notice{left:12px;right:12px;top:calc(12px + env(safe-area-inset-top));width:auto}
+  .hm-timer-page-banner{align-items:flex-start}
+  .hm-timer-page-actions{flex-direction:column}
+}
