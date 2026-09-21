@@ -1,0 +1,41 @@
+/* Hakuna — persistent silent countdown timer */
+.hm-timer-sidebar{margin:0 6px 12px;width:calc(100% - 12px);border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.055);color:#fff;border-radius:15px;padding:11px 12px;display:flex;align-items:center;gap:10px;text-align:left;transition:.16s ease}
+.hm-timer-sidebar:hover{background:rgba(255,255,255,.09)}
+.hm-timer-sidebar .hm-timer-icon{font-size:18px;line-height:1}
+.hm-timer-sidebar .hm-timer-side-copy{min-width:0;display:grid;gap:2px}
+.hm-timer-sidebar .hm-timer-side-title{font-size:12px;font-weight:850}
+.hm-timer-sidebar .hm-timer-side-value{font-size:10px;color:rgba(255,255,255,.58);font-variant-numeric:tabular-nums}
+.hm-timer-sidebar[data-state="finished"]{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3)}
+.hm-timer-sidebar[data-state="finished"] .hm-timer-side-value{color:#fff;font-weight:800}
+.hm-timer-mobile{display:none;position:fixed;z-index:42;right:14px;bottom:calc(82px + env(safe-area-inset-bottom));border:1px solid var(--line);background:var(--card);color:var(--ink);min-width:62px;height:48px;padding:0 13px;border-radius:16px;box-shadow:0 10px 28px rgba(17,31,52,.16);align-items:center;justify-content:center;gap:7px;font-weight:880;font-variant-numeric:tabular-nums}
+.hm-timer-mobile[data-state="finished"]{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.hm-timer-mobile-label{font-size:11px;white-space:nowrap}
+.hm-timer-overlay{position:fixed;inset:0;z-index:120;display:grid;place-items:center;padding:max(18px,env(safe-area-inset-top)) 18px max(18px,env(safe-area-inset-bottom));background:rgba(7,13,24,.48);backdrop-filter:blur(8px)}
+.hm-timer-panel{width:min(500px,100%);background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:26px;box-shadow:0 28px 80px rgba(6,15,31,.26);overflow:hidden}
+.hm-timer-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;padding:21px 22px 0}
+.hm-timer-kicker{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:850}
+.hm-timer-title{font-size:22px;font-weight:900;letter-spacing:-.035em;margin-top:3px}
+.hm-timer-close{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--muted);display:grid;place-items:center;font-weight:850}
+.hm-timer-body{padding:20px 22px 23px}
+.hm-timer-clock{padding:23px 16px;border:1px solid var(--line);background:var(--bg);border-radius:20px;text-align:center}
+.hm-timer-clock-value{font-size:clamp(46px,9vw,68px);line-height:1;letter-spacing:-.055em;font-weight:920;font-variant-numeric:tabular-nums}
+.hm-timer-clock-note{margin-top:8px;font-size:11px;color:var(--muted)}
+.hm-timer-presets{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.hm-timer-preset{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:13px;padding:10px;font-size:12px;font-weight:820}
+.hm-timer-custom{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px;margin-top:9px}
+.hm-timer-custom input{width:100%;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:13px;padding:11px 12px;outline:none}
+.hm-timer-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:16px}
+.hm-timer-actions button{min-width:110px}
+.hm-timer-meta{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:12px;color:var(--muted);font-size:10px}
+.hm-timer-meta span{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:6px 9px}
+.hm-timer-finished-copy{margin-top:12px;padding:12px 13px;border-radius:14px;background:var(--blue-soft);color:var(--ink);font-size:12px;font-weight:760;text-align:center}
+.hm-timer-finished-banner{margin:0 0 16px;padding:14px 15px;border:1px solid var(--line);border-radius:18px;background:var(--card);display:flex;justify-content:space-between;align-items:center;gap:12px;box-shadow:var(--shadow)}
+.hm-timer-finished-main{display:flex;align-items:center;gap:11px;min-width:0}
+.hm-timer-finished-mark{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:var(--ink);color:var(--card);font-weight:900}
+.hm-timer-finished-text strong{display:block;font-size:13px}
+.hm-timer-finished-text span{display:block;color:var(--muted);font-size:10px;margin-top:3px}
+.hm-timer-finished-actions{display:flex;gap:7px;flex:0 0 auto}
+html[data-batu-theme="dark"] .hm-timer-mobile,html[data-batu-theme="dark"] .hm-timer-panel,html[data-batu-theme="dark"] .hm-timer-close,html[data-batu-theme="dark"] .hm-timer-preset,html[data-batu-theme="dark"] .hm-timer-custom input,html[data-batu-theme="dark"] .hm-timer-finished-banner{background:#111316!important;border-color:#292f37!important;color:#f3f5f7!important}
+html[data-batu-theme="dark"] .hm-timer-clock,html[data-batu-theme="dark"] .hm-timer-meta span{background:#0d0f12!important;border-color:#292f37!important}
+html[data-batu-theme="dark"] .hm-timer-mobile[data-state="finished"],html[data-batu-theme="dark"] .hm-timer-finished-mark{background:#f3f4f2!important;color:#08090a!important}
+@media(max-width:720px){.hm-timer-sidebar{display:none!important}.hm-timer-mobile{display:flex}.hm-timer-overlay{place-items:end center;padding:0}.hm-timer-panel{width:100%;border-radius:24px 24px 0 0;border-bottom:0}.hm-timer-finished-banner{align-items:flex-start}.hm-timer-finished-actions{flex-direction:column}}
