@@ -1,0 +1,15 @@
+/* YKS kontenjan column */
+.yks-program-table th:nth-child(3),
+.yks-program-table td:nth-child(3),
+.yks-program-table th[data-yks-quota-head],
+.yks-program-table td[data-yks-quota-cell]{text-align:right}
+.yks-program-table th:nth-child(3){width:145px}
+.yks-program-table th[data-yks-quota-head]{width:95px}
+.yks-program-table td:nth-child(3)>strong,
+.yks-program-table td[data-yks-quota-cell]>strong{font-size:13px;font-variant-numeric:tabular-nums}
+.yks-program-table td[data-yks-quota-cell]>strong{color:var(--ink)}
+html[data-batu-theme="dark"] .yks-program-table td[data-yks-quota-cell]>strong{color:#f3f5f7!important}
+@media(max-width:720px){
+  .yks-program-table th:nth-child(3){width:105px}
+  .yks-program-table th[data-yks-quota-head]{width:78px}
+}
