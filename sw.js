@@ -1,4 +1,4 @@
-const CACHE='hakuna-matata-v45-yks-phase-2';
+const CACHE='hakuna-matata-v46-yks-final';
 const ASSETS=['./','./index.html','./styles.css','./performance.css','./mata.css','./ui-fixes.css','./today-agenda.css','./fixed-sidebar.css','./batu-dark-mode-v2.css','./yks-calculator.css','./main.js','./last-seen-v2.js','./admin-panel-v2.js','./batu-dark-mode-v2.js','./yks-calculator.js','./assets/batu-dark-logo-sidebar.svg','./assets/batu-dark-logo.svg','./deletion-guard-v2.js','./question-delete-fix.js','./account-sync-v2.js','./migration.js','./auto-debt.js','./debt-delete-guard.js','./performance-runtime.js','./app.js','./week-settings.js','./ui-fixes.js','./today-agenda.js','./today-marker-fix.js','./mata-fallback.js','./mata-loader.js','./mata-observer-guard.js','./mata-core-v2.js','./mata-nlu-v2.js','./mata-ui-v2.js','./plan-mode.js','./plan-mode-pure-cards.js','./immediate-debt-status.js','./manifest.webmanifest?v=final-logo-v2','./icons/hakuna-final.png?v=final-logo-v2','./icons/hakuna-brand-v3.png?v=brand-v3','./assets/mata.svg'];
 
 function patchApp(text){
