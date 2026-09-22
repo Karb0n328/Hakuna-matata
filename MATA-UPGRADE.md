@@ -76,7 +76,7 @@ yazarlarının eşzamanlılık sorunlarının tamamı bu değişiklikle çözül
 - Kayıt türüne uygun durum ve programa yerleştirme işlemleri.
 - “İptal” ile devam eden görüşmenin iptali; hesap değişiminde bağlamın temizlenmesi.
 
-Doğrulama: `node --test tests/*.test.cjs` — 48 test.
+Doğrulama: `node --test tests/*.test.cjs` — 52 test. Sürümlü JavaScript dosyaları için eski temel dosya önbelleğini kullanma hatası da giderildi.
 Kullanıcının “bitir artık” talebiyle ara aşama onayları kaldırıldı.
 GitHub bağlantısı yeniden çalıştı; güncel main sürümünün sayaç ve YKS kotası
 değişiklikleri korunarak birleştirildi. Önceki parçalardaki bağlantı hatası kaydı

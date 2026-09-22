@@ -103,7 +103,7 @@
       const op=intent(n),context=R.getContext();let kind=R.entity(n);
       if(!kind&&context&&/ikinc|birinc|ucunc|dordunc|besinc|ilk|\d+\.|numara|bunlar|bunlari|bunu|onu|hepsi/.test(n))kind=context.kind;
       if(!op)return fallback(state,text);
-      if(!kind)return {reply:'Hangi kayıt türüyle işlem yapayım: blok, plan kartı, görev, borç, soru veya deneme?'};
+      if(!kind){const legacy=fallback(state,text);if(legacy.actions?.length||legacy.pending)return legacy;return {reply:'Hangi kayıt türüyle işlem yapayım: blok, plan kartı, görev, borç, soru veya deneme?'};}
       // Preserve mature multi-block planning and time-shifting expressions.
       if(kind==='blocks'&&!context&&/kaydir|erkene|gece|dakika.*(ileri|geri)/.test(n))return fallback(state,text);
       if(op==='add'&&kind!=='planItems'){
