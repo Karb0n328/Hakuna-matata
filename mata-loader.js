@@ -15,11 +15,15 @@
       console.warn('Mata observer guard yüklenemedi.', err);
     }
 
-    await load('./mata-core-v2.js?v=3');
-    await load('./mata-nlu-v2.js?v=3');
+    await load('./mata-core-v2.js?v=4');
+    await load('./mata-nlu-v2.js?v=4');
     await load('./mata-insights-v1.js?v=2');
     await load('./mata-brain-v3.js?v=2');
-    await load('./mata-ui-v2.js?v=3');
+    await load('./mata-capabilities-v4.js?v=1');
+    await load('./mata-actions-v4.js?v=1');
+    await load('./mata-conversation-v4.js?v=1');
+    await load('./mata-action-editor-v4.js?v=1');
+    await load('./mata-ui-v2.js?v=4');
   })().catch(err => {
     console.error('Mata yüklenemedi.', err);
   });

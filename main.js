@@ -82,7 +82,7 @@ afterFirstPaint(()=>{
 const loadMata=()=>void (async()=>{
   try{
     await import('./mata-fallback.js');
-    await import('./mata-loader.js?v=5');
+    await import('./mata-loader.js?v=8');
   }catch(err){console.warn('Mata load',err);}
 })();
 
