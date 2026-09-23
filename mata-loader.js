@@ -23,7 +23,7 @@
     await load('./mata-actions-v4.js?v=1');
     await load('./mata-conversation-v4.js?v=2');
     await load('./mata-action-editor-v4.js?v=1');
-    await load('./mata-platform-v5.js?v=1');
+    await load('./mata-platform-v5.js?v=2');
     await load('./mata-ui-v2.js?v=5');
   })().catch(err => {
     console.error('Mata yüklenemedi.', err);
