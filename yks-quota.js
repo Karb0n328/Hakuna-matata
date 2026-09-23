@@ -226,6 +226,14 @@
     return null;
   }
 
+  window.HakunaYKSQuota={forPrograms:async(department,year,rows)=>{
+    const lookup=await loadDepartment(department);
+    return rows.map(row=>{
+      const key=trKey(row.university)+'|'+trKey(row.program)+'|'+year;
+      const rankKey=trKey(row.university)+'|'+year+'|'+String(row.baseRank);
+      return {...row,quota:lookup.exact.has(key)?lookup.exact.get(key):lookup.rank.get(rankKey)??null};
+    });
+  }};
   function ensureHeader(table){
     const headerRow=table.querySelector('thead tr');
     if(!headerRow)return;

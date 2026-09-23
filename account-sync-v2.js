@@ -78,4 +78,12 @@ supabase.auth.onAuthStateChange((_event,nextSession)=>{session=nextSession;const
 
 const view=document.querySelector('#view');if(view)new MutationObserver(()=>scheduleUI()).observe(view,{childList:true,subtree:true});
 window.addEventListener('online',()=>{schedulePush();checkRemote();});window.addEventListener('focus',()=>checkRemote());document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkRemote();});setInterval(observeLocal,1800);setInterval(checkRemote,45000);
+// Narrow assistant bridge: credentials and session tokens stay in this module.
+window.HakunaAccount=Object.freeze({
+  info:()=>({id:user?.id||null,label:user?accountLabel():'Yerel kullanım',sync:document.documentElement.dataset.hakunaCloudText||'Yerel kullanım'}),
+  open:mode=>openAccountModal(mode==='register'?'register':'login'),
+  logout,
+  sync:async()=>{if(!user?.id)throw new Error('Önce giriş yap.');if(!navigator.onLine)throw new Error('İnternet bağlantısı yok; verilerin yerelde duruyor.');if(syncBusy)throw new Error('Senkronizasyon sürüyor. Biraz sonra tekrar dene.');await pushLocalState();await checkRemote();},
+  plan:async body=>{if(!user?.id)throw new Error('Gelişmiş Mata için hesabına giriş yap.');const {data,error}=await supabase.functions.invoke('mata-planner',{body});if(error){let message='Mata model bağlantısı kurulamadı. Yerel modu kullanabilir veya tekrar deneyebilirsin.';try{const detail=await error.context.json();if(detail.error)message=detail.error;}catch{}throw new Error(message);}if(data?.error)throw new Error(data.error);return data;}
+});
 bootstrap().catch(error=>console.warn('Hakuna account bootstrap failed',error));

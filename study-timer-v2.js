@@ -401,5 +401,5 @@
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
   else init();
 
-  window.HakunaStudyTimer={open:openModal,close:closeModal,start:start,pause:pause,resume:resume,stop:stop,acknowledge:acknowledge,state:normalize};
+  window.HakunaStudyTimer={open:openModal,close:closeModal,start:start,pause:pause,resume:resume,stop:stop,addFive:addFive,acknowledge:acknowledge,state:normalize};
 })();

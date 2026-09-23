@@ -68,6 +68,15 @@ function startProgramLoad(force=false){
   }).catch(error=>{atlasError=error.message||'YÖK Atlas verisi yüklenemedi';throw error}).finally(()=>{programLoadPromise=null});
   return programLoadPromise;
 }
+api.searchPrograms=async function(query={}){
+  const rows=await startProgramLoad(),year=query.year??2025,ix={2026:4,2025:5,2024:6}[year];
+  if(!ix)throw new Error('Üniversite taban sıralamaları için 2024, 2025 veya 2026 seç.');
+  const offset=query.offset??0;if(!Number.isInteger(offset)||offset<0)throw new Error('Sayfa geçersiz.');
+  const fold=s=>String(s||'').toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ı/g,'i');
+  if(query.rank!==undefined&&(!Number.isInteger(query.rank)||query.rank<1))throw new Error('Sıralama pozitif tam sayı olmalı.');
+  const selected=rows.filter(r=>(!query.department||fold(r[0]).includes(fold(query.department)))&&(!query.university||fold(r[1]).includes(fold(query.university)))&&Number(r[ix])>0).sort((a,b)=>Number(a[ix])-Number(b[ix]));
+  return {year,source:'Uygulamadaki YÖK Atlas program veri kümesi',notice:'Taban sıralama karşılaştırması yerleşme garantisi değildir. SAY programlarıyla sınırlıdır.',total:selected.length,offset,nextOffset:offset+50<selected.length?offset+50:null,rows:selected.slice(offset,offset+50).map(r=>({department:r[0],university:r[1],program:r[2],baseRank:Number(r[ix]),...(query.rank?{mark:query.rank<=Number(r[ix])?'✅':'❌'}:{})}))};
+};
 function open(){doc.querySelector('#modalRoot').innerHTML='';render();populateTargetOptions();startProgramLoad().catch(error=>console.warn(error))}
 doc.addEventListener('click',e=>{const b=e.target.closest('[data-yks-nav]');if(b){e.preventDefault();e.stopPropagation();open();return}const n=e.target.closest('[data-nav]');if(n&&n.dataset.nav!=='more')active=false},true);
 function init(){addNavigation();new MutationObserver(addNavigation).observe(doc.body,{childList:true,subtree:true})}

@@ -43,7 +43,7 @@ async function importAccountSyncOptimized(){
     return nativeSetInterval.call(window,fn,next,...args);
   };
   try{
-    await import('./account-sync-v2.js?v=deletion-journal-1');
+    await import('./account-sync-v2.js?v=mata-bridge-1');
   }finally{
     window.setInterval=nativeSetInterval;
   }
@@ -82,7 +82,7 @@ afterFirstPaint(()=>{
 const loadMata=()=>void (async()=>{
   try{
     await import('./mata-fallback.js');
-    await import('./mata-loader.js?v=9');
+    await import('./mata-loader.js?v=10');
   }catch(err){console.warn('Mata load',err);}
 })();
 
