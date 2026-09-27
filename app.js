@@ -160,6 +160,40 @@
   function activeDebts() { return state.debts.slice().sort((a,b)=>b.createdAt.localeCompare(a.createdAt)); }
   function activeTasks() { return state.tasks.filter(t=>!t.completed).sort((a,b)=>b.createdAt.localeCompare(a.createdAt)); }
 
+  function debtTotals(debts=activeDebts()) {
+    const aliases=new Map([
+      ['dk','dakika'],['dak','dakika'],['dak.','dakika'],['minute','dakika'],['minutes','dakika'],
+      ['tests','test'],['sorular','soru'],['sayfalar','sayfa'],['bolum','bölüm'],['bölümler','bölüm']
+    ]);
+    const totals=new Map();
+    for (const debt of debts) {
+      const value=Number(debt?.value);
+      if(!Number.isFinite(value)||value<=0)continue;
+      const raw=String(debt?.unit||'').trim().toLocaleLowerCase('tr-TR');
+      if(!raw)continue;
+      const unit=aliases.get(raw)||raw;
+      totals.set(unit,(totals.get(unit)||0)+value);
+    }
+    const order=['dakika','test','soru','sayfa','bölüm'];
+    return [...totals.entries()].sort(([a],[b])=>{
+      const ai=order.indexOf(a),bi=order.indexOf(b);
+      if(ai===-1&&bi===-1)return a.localeCompare(b,'tr');
+      if(ai===-1)return 1;
+      if(bi===-1)return -1;
+      return ai-bi;
+    });
+  }
+
+  function debtTotalHTML(debts) {
+    const totals=debtTotals(debts);
+    if(!totals.length)return '';
+    const valueFmt=value=>Number(value).toLocaleString('tr-TR',{maximumFractionDigits:2});
+    return `<div class="debt-total-summary">
+      <div class="debt-total-copy"><span>Toplam kalan borç</span><strong>${totals.map(([unit,value])=>`${valueFmt(value)} ${esc(unit)}`).join(' · ')}</strong></div>
+      <div class="debt-total-count">${debts.length} kalem</div>
+    </div>`;
+  }
+
   function timelineHTML(date, compact=false) {
     const blocks=blocksFor(date);
     const totalHeight=((DAY_END-DAY_START)/60)*HOUR_HEIGHT;
@@ -328,7 +362,7 @@
       view.innerHTML=`<div class="card"><div class="card-head"><div><div class="card-title">Görev havuzu</div><div class="card-subtitle">Henüz belirli bir saate bağlamadığın çalışmalar.</div></div><span class="subject-badge">${activeTasks().length} aktif</span></div><div class="card-body">${tasks.length?`<div class="list-stack">${tasks.map(taskItemHTML).join('')}</div>`:emptyHTML('🗂️','Henüz görev yok','Bir görev ekle; istediğin zaman takvime yerleştir.')}</div></div>`;
     } else {
       const debts=activeDebts();
-      view.innerHTML=`<div class="card"><div class="card-head"><div><div class="card-title">📥 Haftalık borçlar</div><div class="card-subtitle">Sağa kaydır → çöp kutusu ile silebilirsin.</div></div><span class="subject-badge">${debts.length} borç</span></div><div class="card-body">${debts.length?`<div class="list-stack">${debts.map(debtItemHTML).join('')}</div>`:emptyHTML('✨','Borç yok','Tamamlanan günlerin tadını çıkar.')}</div></div>`;
+      view.innerHTML=`<div class="card"><div class="card-head"><div><div class="card-title">📥 Haftalık borçlar</div><div class="card-subtitle">Sağa kaydır → çöp kutusu ile silebilirsin.</div></div><span class="subject-badge">${debts.length} borç</span></div><div class="card-body">${debts.length?`${debtTotalHTML(debts)}<div class="list-stack">${debts.map(debtItemHTML).join('')}</div>`:emptyHTML('✨','Borç yok','Tamamlanan günlerin tadını çıkar.')}</div></div>`;
       bindDebtSwipe(view);
     }
     $$('[data-task-tab]').forEach(b=>b.onclick=()=>{taskTab=b.dataset.taskTab;render();});
