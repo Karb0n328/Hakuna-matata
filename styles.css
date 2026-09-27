@@ -121,6 +121,38 @@ h1 { margin: 3px 0 0; font-size: clamp(28px, 3vw, 40px); letter-spacing: -.045em
 .debt-delete-bg { position: absolute; left: 0; top: 0; bottom: 0; width: 86px; display: grid; place-items: center; color: white; background: #c95861; border-radius: 16px; font-size: 20px; }
 .debt-wrap { position: relative; overflow: hidden; border-radius: 16px; }
 
+.debt-total-summary {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  margin-bottom:14px;
+  padding:14px 15px;
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:var(--blue-soft);
+}
+.debt-total-copy { min-width:0; display:grid; gap:3px; }
+.debt-total-copy span { color:var(--muted); font-size:10px; font-weight:800; }
+.debt-total-copy strong {
+  color:var(--ink);
+  font-size:18px;
+  line-height:1.15;
+  letter-spacing:-.025em;
+  font-variant-numeric:tabular-nums;
+}
+.debt-total-count {
+  flex:0 0 auto;
+  padding:6px 9px;
+  border:1px solid var(--line);
+  border-radius:999px;
+  background:var(--card);
+  color:var(--muted);
+  font-size:9px;
+  font-weight:850;
+  white-space:nowrap;
+}
+
 .segmented { display: inline-flex; padding: 4px; background: #e9edf3; border-radius: 14px; gap: 3px; }
 .segmented button { border: 0; background: transparent; color: #6d7888; padding: 8px 12px; border-radius: 10px; font-weight: 750; }
 .segmented button.active { background: #fff; color: var(--ink); box-shadow: 0 2px 8px rgba(20,35,60,.08); }
