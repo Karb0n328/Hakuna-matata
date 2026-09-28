@@ -1,4 +1,4 @@
-const CACHE='hakuna-matata-v60-question-edit-delete';
+const CACHE='hakuna-matata-v61-question-swipe-edit-fix';
 const ASSETS=['./','./index.html','./styles.css','./performance.css','./mata.css','./ui-fixes.css','./today-agenda.css','./fixed-sidebar.css','./batu-dark-mode-v2.css','./yks-calculator.css','./main.js','./last-seen-v2.js','./admin-panel-v2.js','./batu-dark-mode-v2.js','./yks-calculator.js','./yks-quota.js','./yks-quota.css','./study-timer-v2.js','./study-timer-v2.css','./assets/batu-dark-logo-sidebar.svg','./assets/batu-dark-logo.svg','./deletion-guard-v2.js','./question-delete-fix.js','./account-sync-v2.js','./migration.js','./auto-debt.js','./debt-delete-guard.js','./performance-runtime.js','./app.js','./week-settings.js','./ui-fixes.js','./today-agenda.js','./today-marker-fix.js','./mata-fallback.js','./mata-loader.js','./mata-capabilities-v4.js','./mata-actions-v4.js','./mata-platform-v5.js','./mata-conversation-v4.js','./mata-action-editor-v4.js','./mata-insights-v1.js','./mata-brain-v3.js','./mata-observer-guard.js','./mata-core-v2.js','./mata-nlu-v2.js','./mata-ui-v2.js','./plan-mode.js','./plan-mode-pure-cards.js','./immediate-debt-status.js','./manifest.webmanifest?v=final-logo-v2','./icons/hakuna-final.png?v=final-logo-v2','./icons/hakuna-brand-v3.png?v=brand-v3','./assets/mata.svg'];
 
 function patchApp(text){
@@ -17,20 +17,6 @@ function patchApp(text){
   text=text.replace("    const last7=Array.from({length:7},(_,i)=>addDaysISO(todayISO(),i-6));","    const week=startOfWeekISO(todayISO());\n    const last7=Array.from({length:7},(_,i)=>addDaysISO(week,i));");
   text=text.replaceAll('Son 7 gün günlük ortalama','Bu hafta günlük ortalama');
   text=text.replaceAll('⏱ Son 7 gün tamamlanan çalışma','⏱ Bu haftanın tamamlanan çalışması');
-
-  const oldQuestionItem="  function questionItemHTML(q) { return `<div class=\"list-item\"><button class=\"circle-check ${q.status==='solved'?'done':''}\" data-q-toggle=\"${q.id}\">${q.status==='solved'?'✓':'?'}</button><div class=\"list-item-main\"><div class=\"list-item-title\">${subjectEmoji(q.subject)} ${esc(q.source)} · ${esc(q.reference)}</div><div class=\"list-item-meta\">${esc(q.subject)}${q.topic?` · ${esc(q.topic)}`:''}${q.note?` · ${esc(q.note)}`:''}</div></div><button class=\"icon-button\" data-q-delete=\"${q.id}\">🗑</button></div>`; }";
-  const newQuestionItem="  function questionItemHTML(q) { return `<div class=\"list-item\"><button class=\"circle-check ${q.status==='solved'?'done':''}\" data-q-toggle=\"${q.id}\">${q.status==='solved'?'✓':'?'}</button><div class=\"list-item-main\"><div class=\"list-item-title\">${subjectEmoji(q.subject)} ${esc(q.source)} · ${esc(q.reference)}</div><div class=\"list-item-meta\">${esc(q.subject)}${q.topic?` · ${esc(q.topic)}`:''}${q.note?` · ${esc(q.note)}`:''}</div></div><button class=\"pill-btn\" data-q-duplicate=\"${q.id}\" title=\"Soruyu çoğalt\">⧉ Çoğalt</button><button class=\"icon-button\" data-q-delete=\"${q.id}\">🗑</button></div>`; }";
-  if(text.includes(oldQuestionItem))text=text.replace(oldQuestionItem,newQuestionItem);
-
-  const oldQuestionDelete="    $$('[data-q-delete]').forEach(b=>b.onclick=async()=>{await mutate(s=>s.questions=s.questions.filter(x=>x.id!==b.dataset.qDelete));});";
-  const newQuestionDelete="    $$('[data-q-delete]').forEach(b=>b.onclick=async()=>{await mutate(s=>s.questions=s.questions.filter(x=>x.id!==b.dataset.qDelete));});\n    $$('[data-q-duplicate]').forEach(b=>b.onclick=()=>openQuestionDuplicate(b.dataset.qDuplicate));";
-  if(text.includes(oldQuestionDelete))text=text.replace(oldQuestionDelete,newQuestionDelete);
-
-  const questionFormMarker="  function openQuestionForm() {";
-  const questionDuplicateHelper="  function openQuestionDuplicate(id) {\n    const q=state.questions.find(x=>x.id===id); if(!q)return;\n    openQuestionForm();\n    const form=$('#questionForm'); if(!form)return;\n    form.elements.subject.value=q.subject||form.elements.subject.value;\n    form.elements.topic.value=q.topic||'';\n    form.elements.source.value=q.source||'';\n    form.elements.reference.value=q.reference||'';\n    form.elements.note.value=q.note||'';\n    const root=$('#modalRoot');\n    const title=$('.modal-title',root), eyebrow=$('.modal-eyebrow',root);\n    if(title) title.textContent='Soruyu çoğalt';\n    if(eyebrow) eyebrow.textContent='Kitap ve konu kopyalandı; sadece sayfa / test / soru bilgisini değiştir.';\n    const ref=form.elements.reference;\n    const label=ref?.closest('.field')?.querySelector('label');\n    if(label) label.textContent='Sayfa / test / soru — değiştir';\n    if(ref){\n      ref.focus({preventScroll:true});\n      const m=/sayfa\\s*(\\d+)/i.exec(ref.value||'');\n      if(m){\n        const start=m.index+m[0].lastIndexOf(m[1]);\n        ref.setSelectionRange(start,start+m[1].length);\n      } else ref.select();\n    }\n  }\n\n";
-  if(!text.includes('function openQuestionDuplicate(id)') && text.includes(questionFormMarker)){
-    text=text.replace(questionFormMarker,questionDuplicateHelper+questionFormMarker);
-  }
 
   const todayMarker="  function renderToday(view,actions) {";
   const smoothTodayHelper=`  function refreshTodaySurface() {
