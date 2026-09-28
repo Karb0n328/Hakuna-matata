@@ -521,7 +521,7 @@
   }
 
   function bindQuestionSwipe(root=document) {
-    $('[data-question-row]',root).forEach(row=>{
+    $$('[data-question-row]',root).forEach(row=>{
       let startX=0,current=0,drag=false;
       row.addEventListener('pointerdown',e=>{
         if(e.target.closest('button'))return;
@@ -557,12 +557,12 @@
       .filter(q=>questionFilter==='Tümü'||q.subject===questionFilter)
       .sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
     const openCount=state.questions.filter(q=>!hidden.has(String(q.id))).length;
-    view.innerHTML=`<div class="tabs-row">${filters.map(f=>`<button class="chip ${questionFilter===f?'active':''}" data-q-filter="${f}">${f}</button>`).join('')}</div><div style="height:12px"></div><div class="card"><div class="card-head"><div><div class="card-title">Sorulacak sorular</div><div class="card-subtitle">Çözünce tamamla; silmek için kartı sola kaydır.</div></div><span class="subject-badge">${openCount} açık</span></div><div class="card-body">${qs.length?`<div class="list-stack">${qs.map(questionItemHTML).join('')}</div>`:emptyHTML('❓','Bu filtrede soru yok','Takıldığın soruyu + ile ekle.')}</div></div>`;
+    view.innerHTML=`<div class="tabs-row">${filters.map(f=>`<button class="chip ${questionFilter===f?'active':''}" data-q-filter="${f}">${f}</button>`).join('')}</div><div style="height:12px"></div><div class="card"><div class="card-head"><div><div class="card-title">Sorulacak sorular</div><div class="card-subtitle">Çözünce tamamla; silmek için kartı sağa kaydır.</div></div><span class="subject-badge">${openCount} açık</span></div><div class="card-body">${qs.length?`<div class="list-stack">${qs.map(questionItemHTML).join('')}</div>`:emptyHTML('❓','Bu filtrede soru yok','Takıldığın soruyu + ile ekle.')}</div></div>`;
     $('[data-add-question]').onclick=openQuestionForm;
     $$('[data-q-filter]').forEach(b=>b.onclick=()=>{questionFilter=b.dataset.qFilter;render();});
     $$('[data-q-complete]').forEach(b=>b.onclick=()=>{void completeQuestion(b.dataset.qComplete);});
-    $$('[data-q-swipe-delete]').forEach(b=>b.onclick=e=>{e.stopPropagation();queueQuestionDelete(b.dataset.qSwipeDelete);});
-    $$('[data-q-duplicate]').forEach(b=>b.onclick=()=>openQuestionDuplicate(b.dataset.qDuplicate));
+    $('[data-q-duplicate]').forEach(b=>b.onclick=()=>openQuestionDuplicate(b.dataset.qDuplicate));
+    $('[data-q-edit]').forEach(b=>b.onclick=()=>openQuestionEdit(b.dataset.qEdit));
     bindQuestionSwipe(view);
   }
 
@@ -576,6 +576,7 @@
           <div class="list-item-meta">${esc(q.subject)}${q.topic?` · ${esc(q.topic)}`:''}${q.note?` · ${esc(q.note)}`:''}</div>
         </div>
         <div class="question-actions">
+          <button class="pill-btn question-edit-btn" data-q-edit="${q.id}" title="Soruyu düzenle">✎</button>
           <button class="pill-btn question-duplicate-btn" data-q-duplicate="${q.id}" title="Soruyu çoğalt">⧉</button>
           <button class="question-complete-btn" data-q-complete="${q.id}">✓ Tamamlandı</button>
         </div>
@@ -583,43 +584,91 @@
     </div>`;
   }
 
-  function openQuestionDuplicate(id) {
-    const q=state.questions.find(x=>x.id===id); if(!q)return;
-    openQuestionForm();
-    const form=$('#questionForm'); if(!form)return;
-    form.elements.subject.value=q.subject||form.elements.subject.value;
-    form.elements.topic.value=q.topic||'';
-    form.elements.source.value=q.source||'';
-    form.elements.reference.value=q.reference||'';
-    form.elements.note.value=q.note||'';
-    const root=$('#modalRoot');
-    const title=$('.modal-title',root), eyebrow=$('.modal-eyebrow',root);
-    if(title) title.textContent='Soruyu çoğalt';
-    if(eyebrow) eyebrow.textContent='Kitap ve konu kopyalandı; sadece sayfa / test / soru bilgisini değiştir.';
-    const ref=form.elements.reference;
-    const label=ref?.closest('.field')?.querySelector('label');
-    if(label) label.textContent='Sayfa / test / soru — değiştir';
-    if(ref){
-      ref.focus({preventScroll:true});
-      const m=/sayfa\s*(\d+)/i.exec(ref.value||'');
-      if(m){
-        const pos=m.index+m[0].lastIndexOf(m[1]);
-        ref.setSelectionRange(pos,pos+m[1].length);
-      } else ref.select();
-    }
+  function openQuestionEdit(id) {
+    const q=state.questions.find(x=>String(x.id)===String(id));
+    if(!q)return;
+    openQuestionForm(q,id);
   }
 
-  function openQuestionForm() {
-    openModal('Soru ekle','Çözdürülecek soruyu hızlıca kaydet.',`<form id="questionForm"><div class="form-grid"><div class="field"><label>Ders</label><select name="subject">${SUBJECTS.filter(x=>!['Deneme','Diğer'].includes(x)).map(s=>`<option>${s}</option>`).join('')}</select></div><div class="field"><label>Konu</label><input name="topic" placeholder="Türev"></div><div class="field"><label>Kaynak</label><input name="source" placeholder="Orijinal" required></div><div class="field"><label>Sayfa / test / soru</label><input name="reference" placeholder="Test 7 / Soru 4" required></div><div class="field full"><label>Not</label><textarea name="note" placeholder="Nerede takıldım?"></textarea></div></div><div class="form-actions"><button type="button" class="secondary-btn" data-close-modal>Vazgeç</button><button class="primary-btn">Ekle</button></div></form>`);
-    $('#questionForm').onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.currentTarget);await mutate(s=>s.questions.push({id:uid('q'),subject:fd.get('subject'),topic:String(fd.get('topic')||'').trim(),source:String(fd.get('source')).trim(),reference:String(fd.get('reference')).trim(),note:String(fd.get('note')||'').trim(),status:'open',createdAt:new Date().toISOString()}),false);closeModal();render();};
+  function openQuestionDuplicate(id) {
+    const q=state.questions.find(x=>String(x.id)===String(id)); if(!q)return;
+    openQuestionForm(q,null);
+    const root=$('#modalRoot');
+    const title=$('.modal-title',root), eyebrow=$('.modal-eyebrow',root);
+    if(title)title.textContent='Soruyu çoğalt';
+    if(eyebrow)eyebrow.textContent='Bilgiler kopyalandı; gerekli alanı değiştirip yeni soru olarak kaydet.';
+    const form=$('#questionForm');
+    const ref=form?.elements?.reference;
+    if(ref){ref.focus({preventScroll:true});ref.select?.();}
+  }
+
+  function openQuestionForm(pref={},editingId=null) {
+    const editing=editingId?state.questions.find(x=>String(x.id)===String(editingId)):null;
+    const q=editing||pref||{};
+    const subjects=SUBJECTS.filter(x=>!['Deneme','Diğer'].includes(x));
+    openModal(
+      editing?'Soruyu düzenle':'Soru ekle',
+      editing?'Soru bilgilerini güncelle.':'Çözdürülecek soruyu hızlıca kaydet.',
+      `<form id="questionForm">
+        <div class="form-grid">
+          <div class="field"><label>Ders</label><select name="subject">${subjects.map(s=>`<option ${s===q.subject?'selected':''}>${s}</option>`).join('')}</select></div>
+          <div class="field"><label>Konu</label><input name="topic" value="${esc(q.topic||'')}" placeholder="Türev"></div>
+          <div class="field"><label>Kaynak</label><input name="source" value="${esc(q.source||'')}" placeholder="Orijinal" required></div>
+          <div class="field"><label>Sayfa / test / soru</label><input name="reference" value="${esc(q.reference||'')}" placeholder="Test 7 / Soru 4" required></div>
+          <div class="field full"><label>Not</label><textarea name="note" placeholder="Nerede takıldım?">${esc(q.note||'')}</textarea></div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="secondary-btn" data-close-modal>Vazgeç</button>
+          <button class="primary-btn">${editing?'Kaydet':'Ekle'}</button>
+        </div>
+      </form>`
+    );
+
+    $('#questionForm').onsubmit=async e=>{
+      e.preventDefault();
+      const fd=new FormData(e.currentTarget);
+      const payload={
+        subject:fd.get('subject'),
+        topic:String(fd.get('topic')||'').trim(),
+        source:String(fd.get('source')).trim(),
+        reference:String(fd.get('reference')).trim(),
+        note:String(fd.get('note')||'').trim()
+      };
+      await mutate(s=>{
+        if(editing){
+          const target=s.questions.find(x=>String(x.id)===String(editingId));
+          if(target)Object.assign(target,payload,{updatedAt:new Date().toISOString()});
+        }else{
+          s.questions.push({
+            id:uid('q'),
+            ...payload,
+            status:'open',
+            createdAt:new Date().toISOString()
+          });
+        }
+      },false);
+      closeModal();
+      render();
+      if(editing)questionTopNotice('Soru güncellendi');
+    };
   }
 
   document.addEventListener('click',e=>{
+    const del=e.target.closest?.('[data-q-swipe-delete]');
+    if(del){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      queueQuestionDelete(del.dataset.qSwipeDelete);
+      return;
+    }
+
     const undo=e.target.closest?.('[data-question-undo-btn]');
-    if(!undo)return;
-    e.preventDefault();
-    e.stopPropagation();
-    cancelPendingQuestionDelete(undo.dataset.questionUndoBtn);
+    if(undo){
+      e.preventDefault();
+      e.stopPropagation();
+      cancelPendingQuestionDelete(undo.dataset.questionUndoBtn);
+    }
   },true);
 
   function renderAnalytics(view,actions) {
