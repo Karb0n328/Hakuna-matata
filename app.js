@@ -521,7 +521,7 @@
   }
 
   function bindQuestionSwipe(root=document) {
-    $$('[data-question-row]',root).forEach(row=>{
+    $('[data-question-row]',root).forEach(row=>{
       let startX=0,current=0,drag=false;
       row.addEventListener('pointerdown',e=>{
         if(e.target.closest('button'))return;
@@ -531,14 +531,13 @@
       });
       row.addEventListener('pointermove',e=>{
         if(!drag)return;
-        const delta=e.clientX-startX;
-        current=clamp(delta,-92,0);
+        current=clamp(e.clientX-startX,0,86);
         row.style.transform=`translateX(${current}px)`;
       });
       row.addEventListener('pointerup',()=>{
         if(!drag)return;
         drag=false;
-        current=current<-46?-92:0;
+        current=current>45?86:0;
         row.style.transform=`translateX(${current}px)`;
       });
       row.addEventListener('pointercancel',()=>{
@@ -569,7 +568,7 @@
 
   function questionItemHTML(q) {
     return `<div class="question-swipe-wrap" data-question-wrap="${q.id}">
-      <button type="button" class="question-delete-bg" data-q-swipe-delete="${q.id}" aria-label="Soruyu sil">🗑<span>Sil</span></button>
+      <button type="button" class="question-delete-bg" data-q-swipe-delete="${q.id}" aria-label="Soruyu sil">🗑</button>
       <div class="list-item question-row" data-question-row="${q.id}">
         <div class="question-mark">?</div>
         <div class="list-item-main">
