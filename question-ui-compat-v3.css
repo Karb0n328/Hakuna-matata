@@ -1,0 +1,46 @@
+/* Compatibility layer for old/new question markup */
+.question-swipe-wrap,
+[data-question-wrap] {
+  position:relative !important;
+  overflow:hidden !important;
+  border-radius:16px !important;
+}
+.question-row,
+[data-question-row] {
+  position:relative !important;
+  z-index:1 !important;
+  background:#fff;
+  touch-action:pan-y;
+  transition:transform .15s ease;
+  cursor:pointer;
+}
+.question-delete-bg,
+[data-q-swipe-delete] {
+  position:absolute !important;
+  left:0 !important;
+  top:0 !important;
+  bottom:0 !important;
+  width:86px !important;
+  min-width:86px !important;
+  height:auto !important;
+  margin:0 !important;
+  padding:0 !important;
+  border:0 !important;
+  border-radius:16px !important;
+  display:grid !important;
+  place-items:center !important;
+  background:#c95861 !important;
+  color:#fff !important;
+  box-shadow:none !important;
+  font-size:20px !important;
+  line-height:1 !important;
+  cursor:pointer;
+}
+.question-edit-btn,
+[data-q-edit] {
+  display:none !important;
+}
+html[data-batu-theme="dark"] .question-row,
+html[data-batu-theme="dark"] [data-question-row] {
+  background:#111316 !important;
+}
