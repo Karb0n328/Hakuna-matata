@@ -12,7 +12,7 @@ function showBootError(error){
 // cloud sync and enhancements are maintenance work and must never keep the PWA
 // on a blank screen during startup.
 try{
-  await import('./app.js?v=stable-core-2');
+  await import('./app.js?v=question-ui-3');
 }catch(error){
   showBootError(error);
 }
