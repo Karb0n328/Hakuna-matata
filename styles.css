@@ -168,6 +168,7 @@ h1 { margin: 3px 0 0; font-size: clamp(28px, 3vw, 40px); letter-spacing: -.045em
   align-items:center;
   gap:7px;
 }
+.question-edit-btn,
 .question-duplicate-btn {
   min-width:34px;
   padding-left:9px;
@@ -300,7 +301,7 @@ html[data-batu-theme="dark"] .question-top-notice-mark {
   .question-row { gap:9px; padding:12px; }
   .question-actions { gap:5px; }
   .question-complete-btn { padding:8px 8px; font-size:9px; }
-  .question-duplicate-btn { min-width:30px; padding:7px 8px; }
+  .question-edit-btn,.question-duplicate-btn { min-width:30px; padding:7px 8px; }
   .question-mark { width:29px; height:29px; }
   .question-undo-notice {
     left:12px;
