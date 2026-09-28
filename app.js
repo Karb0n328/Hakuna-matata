@@ -521,12 +521,14 @@
   }
 
   function bindQuestionSwipe(root=document) {
+    bindDebtSwipe(root);
     $$('[data-question-row]',root).forEach(row=>{
-      let startX=0,current=0,drag=false;
-      row.addEventListener('pointerdown',e=>{startX=e.clientX;drag=true;row.setPointerCapture?.(e.pointerId);});
-      row.addEventListener('pointermove',e=>{if(!drag)return;current=clamp(e.clientX-startX,0,86);row.style.transform=`translateX(${current}px)`;});
-      row.addEventListener('pointerup',()=>{drag=false;row.style.transform=current>45?'translateX(86px)':'translateX(0)';current=current>45?86:0;});
-      row.addEventListener('pointercancel',()=>{drag=false;row.style.transform='translateX(0)';current=0;});
+      row.addEventListener('click',e=>{
+        if(e.target.closest('button,[data-q-swipe-delete]'))return;
+        const moved=/translateX\((?:8[0-9]|[1-9]\d{2,})px\)/.test(row.style.transform||'');
+        if(moved)return;
+        openQuestionEdit(row.dataset.questionRow);
+      });
     });
   }
 
@@ -544,21 +546,19 @@
     $$('[data-q-filter]').forEach(b=>b.onclick=()=>{questionFilter=b.dataset.qFilter;render();});
     $$('[data-q-complete]').forEach(b=>b.onclick=()=>{void completeQuestion(b.dataset.qComplete);});
     $$('[data-q-duplicate]').forEach(b=>b.onclick=()=>openQuestionDuplicate(b.dataset.qDuplicate));
-    $$('[data-q-edit]').forEach(b=>b.onclick=()=>openQuestionEdit(b.dataset.qEdit));
     bindQuestionSwipe(view);
   }
 
   function questionItemHTML(q) {
-    return `<div class="question-swipe-wrap" data-question-wrap="${q.id}">
-      <button type="button" class="question-delete-bg" data-q-swipe-delete="${q.id}" aria-label="Soruyu sil">🗑</button>
-      <div class="list-item question-row" data-question-row="${q.id}">
+    return `<div class="debt-wrap question-swipe-wrap" data-question-wrap="${q.id}">
+      <div class="debt-delete-bg question-delete-bg" data-q-swipe-delete="${q.id}" role="button" tabindex="0" aria-label="Soruyu sil">🗑</div>
+      <div class="list-item debt-row question-row" data-debt-row="${q.id}" data-question-row="${q.id}" role="button" tabindex="0" aria-label="Soruyu düzenle">
         <div class="question-mark">?</div>
         <div class="list-item-main">
           <div class="list-item-title">${subjectEmoji(q.subject)} ${esc(q.source)} · ${esc(q.reference)}</div>
           <div class="list-item-meta">${esc(q.subject)}${q.topic?` · ${esc(q.topic)}`:''}${q.note?` · ${esc(q.note)}`:''}</div>
         </div>
         <div class="question-actions">
-          <button class="icon-button question-edit-btn" data-q-edit="${q.id}" title="Soruyu düzenle" aria-label="Soruyu düzenle">✎</button>
           <button class="pill-btn question-duplicate-btn" data-q-duplicate="${q.id}" title="Soruyu çoğalt">⧉</button>
           <button class="question-complete-btn" data-q-complete="${q.id}">✓ Tamamlandı</button>
         </div>
@@ -652,6 +652,22 @@
       cancelPendingQuestionDelete(undo.dataset.questionUndoBtn);
     }
   },true);
+
+  document.addEventListener('keydown',e=>{
+    const del=e.target.closest?.('[data-q-swipe-delete]');
+    if(del&&(e.key==='Enter'||e.key===' ')){
+      e.preventDefault();
+      queueQuestionDelete(del.dataset.qSwipeDelete);
+      return;
+    }
+    const row=e.target.closest?.('[data-question-row]');
+    if(row&&(e.key==='Enter'||e.key===' ')){
+      e.preventDefault();
+      const moved=/translateX\((?:8[0-9]|[1-9]\d{2,})px\)/.test(row.style.transform||'');
+      if(!moved)openQuestionEdit(row.dataset.questionRow);
+    }
+  },true);
+
 
   function renderAnalytics(view,actions) {
     const completed=state.blocks.filter(b=>b.status==='complete');
