@@ -121,6 +121,203 @@ h1 { margin: 3px 0 0; font-size: clamp(28px, 3vw, 40px); letter-spacing: -.045em
 .debt-delete-bg { position: absolute; left: 0; top: 0; bottom: 0; width: 86px; display: grid; place-items: center; color: white; background: #c95861; border-radius: 16px; font-size: 20px; }
 .debt-wrap { position: relative; overflow: hidden; border-radius: 16px; }
 
+/* Question completion / swipe-delete / undo */
+.question-swipe-wrap {
+  position:relative;
+  overflow:hidden;
+  border-radius:16px;
+}
+.question-row {
+  position:relative;
+  z-index:2;
+  touch-action:pan-y;
+  transition:transform .16s ease;
+  background:#fff;
+}
+.question-delete-bg {
+  position:absolute;
+  z-index:1;
+  right:0;
+  top:0;
+  bottom:0;
+  width:92px;
+  border:0;
+  border-radius:0 16px 16px 0;
+  background:#c95861;
+  color:#fff;
+  display:grid;
+  place-content:center;
+  justify-items:center;
+  gap:3px;
+  font-size:19px;
+  font-weight:850;
+}
+.question-delete-bg span {
+  font-size:9px;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+.question-mark {
+  flex:0 0 auto;
+  width:32px;
+  height:32px;
+  border-radius:50%;
+  border:1px solid var(--line);
+  background:var(--blue-soft);
+  color:#326db9;
+  display:grid;
+  place-items:center;
+  font-size:13px;
+  font-weight:900;
+}
+.question-actions {
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  gap:7px;
+}
+.question-duplicate-btn {
+  min-width:34px;
+  padding-left:9px;
+  padding-right:9px;
+}
+.question-complete-btn {
+  border:1px solid #b9dac8;
+  background:#eef8f2;
+  color:#39775a;
+  border-radius:12px;
+  padding:8px 10px;
+  white-space:nowrap;
+  font-size:10px;
+  font-weight:860;
+}
+.question-complete-btn:active { transform:scale(.98); }
+
+.question-top-notice {
+  position:fixed;
+  z-index:145;
+  top:calc(14px + env(safe-area-inset-top));
+  left:50%;
+  transform:translate(-50%,-14px);
+  opacity:0;
+  pointer-events:none;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  max-width:calc(100vw - 28px);
+  padding:11px 14px 11px 11px;
+  border:1px solid #b9dac8;
+  border-radius:15px;
+  background:#f4fbf7;
+  color:#285c43;
+  box-shadow:0 16px 38px rgba(15,45,31,.16);
+  transition:opacity .18s ease,transform .18s ease;
+}
+.question-top-notice.show {
+  opacity:1;
+  transform:translate(-50%,0);
+}
+.question-top-notice-mark {
+  width:28px;
+  height:28px;
+  border-radius:9px;
+  display:grid;
+  place-items:center;
+  background:#4b8b68;
+  color:#fff;
+  font-weight:900;
+}
+.question-top-notice strong {
+  font-size:12px;
+  white-space:nowrap;
+}
+
+.question-undo-notice {
+  position:fixed;
+  z-index:145;
+  right:18px;
+  bottom:calc(78px + env(safe-area-inset-bottom));
+  width:min(330px,calc(100vw - 28px));
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  padding:12px 12px 12px 14px;
+  border:1px solid #313f52;
+  border-radius:16px;
+  background:#17243a;
+  color:#fff;
+  box-shadow:0 18px 44px rgba(7,18,35,.28);
+  animation:questionUndoIn .18s ease;
+}
+.question-undo-copy { min-width:0; }
+.question-undo-copy strong {
+  display:block;
+  font-size:11px;
+}
+.question-undo-copy span {
+  display:block;
+  margin-top:2px;
+  color:#b9c4d3;
+  font-size:9px;
+}
+.question-undo-copy b {
+  color:#fff;
+  font-variant-numeric:tabular-nums;
+}
+.question-undo-notice button {
+  flex:0 0 auto;
+  border:1px solid rgba(255,255,255,.22);
+  border-radius:10px;
+  background:#fff;
+  color:#17243a;
+  padding:8px 10px;
+  font-size:10px;
+  font-weight:900;
+}
+@keyframes questionUndoIn {
+  from { opacity:0; transform:translateY(8px); }
+  to { opacity:1; transform:translateY(0); }
+}
+
+html[data-batu-theme="dark"] .question-row {
+  background:#111316!important;
+}
+html[data-batu-theme="dark"] .question-mark {
+  background:#1a1e24!important;
+  border-color:#292f37!important;
+  color:#f3f5f7!important;
+}
+html[data-batu-theme="dark"] .question-complete-btn {
+  background:#171d19!important;
+  border-color:#365342!important;
+  color:#cce6d7!important;
+}
+html[data-batu-theme="dark"] .question-top-notice {
+  background:#111713!important;
+  border-color:#31513d!important;
+  color:#d7efe1!important;
+  box-shadow:0 16px 38px rgba(0,0,0,.42);
+}
+html[data-batu-theme="dark"] .question-top-notice-mark {
+  background:#dbeee2!important;
+  color:#0b110d!important;
+}
+
+@media(max-width:720px) {
+  .question-row { gap:9px; padding:12px; }
+  .question-actions { gap:5px; }
+  .question-complete-btn { padding:8px 8px; font-size:9px; }
+  .question-duplicate-btn { min-width:30px; padding:7px 8px; }
+  .question-mark { width:29px; height:29px; }
+  .question-undo-notice {
+    left:12px;
+    right:12px;
+    width:auto;
+    bottom:calc(96px + env(safe-area-inset-bottom));
+  }
+}
+
 .debt-total-summary {
   display:flex;
   align-items:center;
