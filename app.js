@@ -521,7 +521,7 @@
   }
 
   function bindQuestionSwipe(root=document) {
-    $('[data-question-row]',root).forEach(row=>{
+    $$('[data-question-row]',root).forEach(row=>{
       let startX=0,current=0,drag=false;
       row.addEventListener('pointerdown',e=>{
         if(e.target.closest('button'))return;
