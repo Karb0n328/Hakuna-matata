@@ -122,33 +122,9 @@ h1 { margin: 3px 0 0; font-size: clamp(28px, 3vw, 40px); letter-spacing: -.045em
 .debt-wrap { position: relative; overflow: hidden; border-radius: 16px; }
 
 /* Question completion / swipe-delete / undo */
-.question-swipe-wrap {
-  position:relative;
-  overflow:hidden;
-  border-radius:16px;
-}
-.question-row {
-  position:relative;
-  z-index:2;
-  touch-action:pan-y;
-  transition:transform .16s ease;
-  background:#fff;
-}
-.question-delete-bg {
-  position:absolute;
-  z-index:1;
-  left:0;
-  top:0;
-  bottom:0;
-  width:86px;
-  border:0;
-  border-radius:16px;
-  background:#c95861;
-  color:#fff;
-  display:grid;
-  place-items:center;
-  font-size:20px;
-}
+.question-swipe-wrap { cursor:default; }
+.question-row { cursor:pointer; }
+.question-delete-bg { cursor:pointer; }
 .question-mark {
   flex:0 0 auto;
   width:32px;
@@ -168,7 +144,6 @@ h1 { margin: 3px 0 0; font-size: clamp(28px, 3vw, 40px); letter-spacing: -.045em
   align-items:center;
   gap:7px;
 }
-.question-edit-btn,
 .question-duplicate-btn {
   min-width:34px;
   padding-left:9px;
@@ -301,7 +276,7 @@ html[data-batu-theme="dark"] .question-top-notice-mark {
   .question-row { gap:9px; padding:12px; }
   .question-actions { gap:5px; }
   .question-complete-btn { padding:8px 8px; font-size:9px; }
-  .question-edit-btn,.question-duplicate-btn { min-width:30px; padding:7px 8px; }
+  .question-duplicate-btn { min-width:30px; padding:7px 8px; }
   .question-mark { width:29px; height:29px; }
   .question-undo-notice {
     left:12px;
