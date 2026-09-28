@@ -25,6 +25,7 @@
   let taskTab = 'tasks';
   let questionFilter = 'Tümü';
   let bridgePreview = null;
+  const pendingQuestionDeletes = new Map();
 
   const $ = (s, root = document) => root.querySelector(s);
   const $$ = (s, root = document) => [...root.querySelectorAll(s)];
@@ -432,21 +433,195 @@
     $('[data-delete-exam]').onclick=async()=>{if(confirm('Denemeyi silmek istiyor musun?')){await mutate(s=>s.exams=s.exams.filter(x=>x.id!==id),false);closeModal();render();}};
   }
 
+  function questionTopNotice(text) {
+    const old=document.querySelector('[data-question-top-notice]');
+    if(old)old.remove();
+    const el=document.createElement('div');
+    el.className='question-top-notice';
+    el.dataset.questionTopNotice='1';
+    el.innerHTML=`<span class="question-top-notice-mark">✓</span><strong>${esc(text)}</strong>`;
+    document.body.append(el);
+    requestAnimationFrame(()=>el.classList.add('show'));
+    setTimeout(()=>{el.classList.remove('show');setTimeout(()=>el.remove(),180);},2600);
+  }
+
+  function removeQuestionUndoNotice(id) {
+    const el=document.querySelector(`[data-question-undo="${CSS.escape(String(id))}"]`);
+    if(el)el.remove();
+  }
+
+  function renderQuestionUndoNotice(id) {
+    const pending=pendingQuestionDeletes.get(String(id));
+    if(!pending)return;
+    removeQuestionUndoNotice(id);
+    const el=document.createElement('div');
+    el.className='question-undo-notice';
+    el.dataset.questionUndo=String(id);
+    el.innerHTML=`<div class="question-undo-copy"><strong>Soru silindi</strong><span><b data-question-undo-seconds>5</b> sn içinde geri alabilirsin.</span></div><button type="button" data-question-undo-btn="${esc(id)}">Geri al</button>`;
+    document.body.append(el);
+
+    const update=()=>{
+      const item=pendingQuestionDeletes.get(String(id));
+      if(!item){el.remove();return;}
+      const left=Math.max(0,Math.ceil((item.deadline-Date.now())/1000));
+      const sec=el.querySelector('[data-question-undo-seconds]');
+      if(sec)sec.textContent=String(left);
+    };
+    update();
+    pending.noticeInterval=setInterval(update,200);
+  }
+
+  function cancelPendingQuestionDelete(id) {
+    id=String(id);
+    const pending=pendingQuestionDeletes.get(id);
+    if(!pending)return;
+    clearTimeout(pending.timer);
+    clearInterval(pending.noticeInterval);
+    pendingQuestionDeletes.delete(id);
+    removeQuestionUndoNotice(id);
+    if(currentPage==='questions')render();
+    toast('Soru geri alındı.');
+  }
+
+  async function commitQuestionDelete(id) {
+    id=String(id);
+    const pending=pendingQuestionDeletes.get(id);
+    if(!pending)return;
+    clearInterval(pending.noticeInterval);
+    pendingQuestionDeletes.delete(id);
+    removeQuestionUndoNotice(id);
+    await mutate(s=>{s.questions=s.questions.filter(q=>String(q.id)!==id);},false);
+    window.HakunaDeletionGuard?.mark?.('questions',id);
+    window.HakunaDebtDeleteGuard?.markQuestionDeleted?.(id);
+    if(currentPage==='questions')render();
+  }
+
+  function queueQuestionDelete(id) {
+    id=String(id);
+    if(pendingQuestionDeletes.has(id))return;
+    const question=state.questions.find(q=>String(q.id)===id);
+    if(!question)return;
+    const pending={question,deadline:Date.now()+5000,timer:null,noticeInterval:null};
+    pending.timer=setTimeout(()=>{void commitQuestionDelete(id);},5000);
+    pendingQuestionDeletes.set(id,pending);
+    renderQuestionUndoNotice(id);
+    if(currentPage==='questions')render();
+  }
+
+  async function completeQuestion(id) {
+    id=String(id);
+    if(pendingQuestionDeletes.has(id))cancelPendingQuestionDelete(id);
+    const exists=state.questions.some(q=>String(q.id)===id);
+    if(!exists)return;
+    await mutate(s=>{s.questions=s.questions.filter(q=>String(q.id)!==id);},false);
+    window.HakunaDeletionGuard?.mark?.('questions',id);
+    window.HakunaDebtDeleteGuard?.markQuestionDeleted?.(id);
+    if(currentPage==='questions')render();
+    questionTopNotice('Soru tamamlandı');
+  }
+
+  function bindQuestionSwipe(root=document) {
+    $('[data-question-row]',root).forEach(row=>{
+      let startX=0,current=0,drag=false;
+      row.addEventListener('pointerdown',e=>{
+        if(e.target.closest('button'))return;
+        startX=e.clientX;
+        drag=true;
+        row.setPointerCapture?.(e.pointerId);
+      });
+      row.addEventListener('pointermove',e=>{
+        if(!drag)return;
+        const delta=e.clientX-startX;
+        current=clamp(delta,-92,0);
+        row.style.transform=`translateX(${current}px)`;
+      });
+      row.addEventListener('pointerup',()=>{
+        if(!drag)return;
+        drag=false;
+        current=current<-46?-92:0;
+        row.style.transform=`translateX(${current}px)`;
+      });
+      row.addEventListener('pointercancel',()=>{
+        drag=false;
+        current=0;
+        row.style.transform='translateX(0)';
+      });
+    });
+  }
+
   function renderQuestions(view,actions) {
     actions.innerHTML='<button class="primary-btn" data-add-question>＋ Soru ekle</button>';
     const filters=['Tümü',...SUBJECTS.filter(x=>!['Deneme','Diğer'].includes(x))];
-    const qs=state.questions.filter(q=>questionFilter==='Tümü'||q.subject===questionFilter).sort((a,b)=>Number(a.status==='solved')-Number(b.status==='solved')||b.createdAt.localeCompare(a.createdAt));
-    view.innerHTML=`<div class="tabs-row">${filters.map(f=>`<button class="chip ${questionFilter===f?'active':''}" data-q-filter="${f}">${f}</button>`).join('')}</div><div style="height:12px"></div><div class="card"><div class="card-head"><div><div class="card-title">Sorulacak sorular</div><div class="card-subtitle">Kaynak + soru numarası yeter; çözdüğünde kapat.</div></div><span class="subject-badge">${state.questions.filter(q=>q.status!=='solved').length} açık</span></div><div class="card-body">${qs.length?`<div class="list-stack">${qs.map(questionItemHTML).join('')}</div>`:emptyHTML('❓','Bu filtrede soru yok','Takıldığın soruyu + ile ekle.')}</div></div>`;
+    const hidden=new Set(pendingQuestionDeletes.keys());
+    const qs=state.questions
+      .filter(q=>!hidden.has(String(q.id)))
+      .filter(q=>questionFilter==='Tümü'||q.subject===questionFilter)
+      .sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+    const openCount=state.questions.filter(q=>!hidden.has(String(q.id))).length;
+    view.innerHTML=`<div class="tabs-row">${filters.map(f=>`<button class="chip ${questionFilter===f?'active':''}" data-q-filter="${f}">${f}</button>`).join('')}</div><div style="height:12px"></div><div class="card"><div class="card-head"><div><div class="card-title">Sorulacak sorular</div><div class="card-subtitle">Çözünce tamamla; silmek için kartı sola kaydır.</div></div><span class="subject-badge">${openCount} açık</span></div><div class="card-body">${qs.length?`<div class="list-stack">${qs.map(questionItemHTML).join('')}</div>`:emptyHTML('❓','Bu filtrede soru yok','Takıldığın soruyu + ile ekle.')}</div></div>`;
     $('[data-add-question]').onclick=openQuestionForm;
     $$('[data-q-filter]').forEach(b=>b.onclick=()=>{questionFilter=b.dataset.qFilter;render();});
-    $$('[data-q-toggle]').forEach(b=>b.onclick=async()=>{await mutate(s=>{const q=s.questions.find(x=>x.id===b.dataset.qToggle);q.status=q.status==='solved'?'open':'solved';});});
-    $$('[data-q-delete]').forEach(b=>b.onclick=async()=>{await mutate(s=>s.questions=s.questions.filter(x=>x.id!==b.dataset.qDelete));});
+    $$('[data-q-complete]').forEach(b=>b.onclick=()=>{void completeQuestion(b.dataset.qComplete);});
+    $$('[data-q-swipe-delete]').forEach(b=>b.onclick=e=>{e.stopPropagation();queueQuestionDelete(b.dataset.qSwipeDelete);});
+    $$('[data-q-duplicate]').forEach(b=>b.onclick=()=>openQuestionDuplicate(b.dataset.qDuplicate));
+    bindQuestionSwipe(view);
   }
-  function questionItemHTML(q) { return `<div class="list-item"><button class="circle-check ${q.status==='solved'?'done':''}" data-q-toggle="${q.id}">${q.status==='solved'?'✓':'?'}</button><div class="list-item-main"><div class="list-item-title">${subjectEmoji(q.subject)} ${esc(q.source)} · ${esc(q.reference)}</div><div class="list-item-meta">${esc(q.subject)}${q.topic?` · ${esc(q.topic)}`:''}${q.note?` · ${esc(q.note)}`:''}</div></div><button class="icon-button" data-q-delete="${q.id}">🗑</button></div>`; }
+
+  function questionItemHTML(q) {
+    return `<div class="question-swipe-wrap" data-question-wrap="${q.id}">
+      <button type="button" class="question-delete-bg" data-q-swipe-delete="${q.id}" aria-label="Soruyu sil">🗑<span>Sil</span></button>
+      <div class="list-item question-row" data-question-row="${q.id}">
+        <div class="question-mark">?</div>
+        <div class="list-item-main">
+          <div class="list-item-title">${subjectEmoji(q.subject)} ${esc(q.source)} · ${esc(q.reference)}</div>
+          <div class="list-item-meta">${esc(q.subject)}${q.topic?` · ${esc(q.topic)}`:''}${q.note?` · ${esc(q.note)}`:''}</div>
+        </div>
+        <div class="question-actions">
+          <button class="pill-btn question-duplicate-btn" data-q-duplicate="${q.id}" title="Soruyu çoğalt">⧉</button>
+          <button class="question-complete-btn" data-q-complete="${q.id}">✓ Tamamlandı</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function openQuestionDuplicate(id) {
+    const q=state.questions.find(x=>x.id===id); if(!q)return;
+    openQuestionForm();
+    const form=$('#questionForm'); if(!form)return;
+    form.elements.subject.value=q.subject||form.elements.subject.value;
+    form.elements.topic.value=q.topic||'';
+    form.elements.source.value=q.source||'';
+    form.elements.reference.value=q.reference||'';
+    form.elements.note.value=q.note||'';
+    const root=$('#modalRoot');
+    const title=$('.modal-title',root), eyebrow=$('.modal-eyebrow',root);
+    if(title) title.textContent='Soruyu çoğalt';
+    if(eyebrow) eyebrow.textContent='Kitap ve konu kopyalandı; sadece sayfa / test / soru bilgisini değiştir.';
+    const ref=form.elements.reference;
+    const label=ref?.closest('.field')?.querySelector('label');
+    if(label) label.textContent='Sayfa / test / soru — değiştir';
+    if(ref){
+      ref.focus({preventScroll:true});
+      const m=/sayfa\s*(\d+)/i.exec(ref.value||'');
+      if(m){
+        const pos=m.index+m[0].lastIndexOf(m[1]);
+        ref.setSelectionRange(pos,pos+m[1].length);
+      } else ref.select();
+    }
+  }
+
   function openQuestionForm() {
     openModal('Soru ekle','Çözdürülecek soruyu hızlıca kaydet.',`<form id="questionForm"><div class="form-grid"><div class="field"><label>Ders</label><select name="subject">${SUBJECTS.filter(x=>!['Deneme','Diğer'].includes(x)).map(s=>`<option>${s}</option>`).join('')}</select></div><div class="field"><label>Konu</label><input name="topic" placeholder="Türev"></div><div class="field"><label>Kaynak</label><input name="source" placeholder="Orijinal" required></div><div class="field"><label>Sayfa / test / soru</label><input name="reference" placeholder="Test 7 / Soru 4" required></div><div class="field full"><label>Not</label><textarea name="note" placeholder="Nerede takıldım?"></textarea></div></div><div class="form-actions"><button type="button" class="secondary-btn" data-close-modal>Vazgeç</button><button class="primary-btn">Ekle</button></div></form>`);
     $('#questionForm').onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.currentTarget);await mutate(s=>s.questions.push({id:uid('q'),subject:fd.get('subject'),topic:String(fd.get('topic')||'').trim(),source:String(fd.get('source')).trim(),reference:String(fd.get('reference')).trim(),note:String(fd.get('note')||'').trim(),status:'open',createdAt:new Date().toISOString()}),false);closeModal();render();};
   }
+
+  document.addEventListener('click',e=>{
+    const undo=e.target.closest?.('[data-question-undo-btn]');
+    if(!undo)return;
+    e.preventDefault();
+    e.stopPropagation();
+    cancelPendingQuestionDelete(undo.dataset.questionUndoBtn);
+  },true);
 
   function renderAnalytics(view,actions) {
     const completed=state.blocks.filter(b=>b.status==='complete');
