@@ -407,7 +407,7 @@
     actions.innerHTML='<button class="primary-btn" data-add-exam>＋ Deneme ekle</button>';
     const exams=state.exams.slice().sort((a,b)=>b.date.localeCompare(a.date));
     view.innerHTML=exams.length?`<div class="exam-grid">${exams.map(examCardHTML).join('')}</div>`:`<div class="card"><div class="card-body">${emptyHTML('📊','Henüz deneme yok','İlk denemeni eklediğinde karnen ve grafiklerin burada oluşacak.')}</div></div>`;
-    $('[data-add-exam]').onclick=openExamForm;
+    $('[data-add-exam]').onclick=()=>openExamForm();
     $$('[data-exam-id]').forEach(x=>x.onclick=()=>openExamDetail(x.dataset.examId));
   }
   function examTotal(e) { return Math.round(e.rows.reduce((s,r)=>s+netFrom(r.correct,r.wrong),0)*100)/100; }
@@ -421,16 +421,107 @@
     const total=examTotal(e); return `<button class="card exam-card" data-exam-id="${e.id}" style="text-align:left"><div class="exam-top"><div><div class="exam-name">${esc(e.name)}</div><div class="exam-meta">${esc(formatDate(e.date,{day:'numeric',month:'long',year:'numeric'}))}</div></div><span class="exam-type">${esc(e.type)}</span></div><div class="exam-net">${total}<span> net</span></div><div class="exam-meta">${e.duration?`${e.duration} dk`:''}${e.ranking?` · ${esc(e.ranking)}`:''}</div><div class="exam-bars">${e.rows.slice(0,4).map(r=>{const n=netFrom(r.correct,r.wrong), max=maxBySubjectName(r.subject,e.type);return `<div class="mini-bar-row"><span>${esc(r.subject)}</span><div class="mini-bar"><i style="width:${clamp(n/max*100,0,100)}%"></i></div><strong>${n}</strong></div>`}).join('')}</div></button>`;
   }
   function defaultExamSubjects(type) { return type==='TYT'?['Türkçe','Sosyal','Matematik','Fen']:type==='AYT'?['Matematik','Fizik','Kimya','Biyoloji']:['Matematik']; }
-  function examRowsHTML(subjects) { return subjects.map((s,i)=>`<div class="exam-entry-row" data-exam-row><select name="subject_${i}">${SUBJECTS.filter(x=>x!=='Deneme'&&x!=='Diğer').concat(['Sosyal','Fen']).filter((x,idx,a)=>a.indexOf(x)===idx).map(x=>`<option ${x===s?'selected':''}>${x}</option>`).join('')}</select><input type="number" min="0" step="1" name="correct_${i}" placeholder="D"><input type="number" min="0" step="1" name="wrong_${i}" placeholder="Y"><input type="number" min="0" step="1" name="blank_${i}" placeholder="B"></div>`).join(''); }
-  function openExamForm() {
-    openModal('Deneme karnesi','Doğru / yanlış / boş gir; net otomatik hesaplanır.',`<form id="examForm"><div class="form-grid"><div class="field"><label>Tür</label><select name="type" id="examType"><option>TYT</option><option>AYT</option><option>Branş</option></select></div><div class="field"><label>Tarih</label><input type="date" name="date" value="${todayISO()}" required></div><div class="field full"><label>Deneme adı</label><input name="name" placeholder="Örn. 345 TYT-4" required></div><div class="field"><label>Süre (dk)</label><input type="number" min="0" name="duration"></div><div class="field"><label>Sıralama / not</label><input name="ranking" placeholder="18 / 124"></div></div><div style="height:16px"></div><div class="card-title">Ders sonuçları</div><div class="exam-entry-head"><span>Ders</span><span>D</span><span>Y</span><span>B</span></div><div id="examRows">${examRowsHTML(defaultExamSubjects('TYT'))}</div><div class="form-actions"><button type="button" class="secondary-btn" data-close-modal>Vazgeç</button><button class="primary-btn">Kaydet</button></div></form>`);
-    $('#examType').onchange=e=>{$('#examRows').innerHTML=examRowsHTML(defaultExamSubjects(e.target.value));};
-    $('#examForm').onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.currentTarget);const rows=$$('[data-exam-row]',e.currentTarget).map((row,i)=>({subject:fd.get(`subject_${i}`),correct:Number(fd.get(`correct_${i}`))||0,wrong:Number(fd.get(`wrong_${i}`))||0,blank:Number(fd.get(`blank_${i}`))||0}));await mutate(s=>s.exams.push({id:uid('exam'),type:fd.get('type'),date:fd.get('date'),name:String(fd.get('name')).trim(),duration:Number(fd.get('duration'))||null,ranking:String(fd.get('ranking')||'').trim(),rows,createdAt:new Date().toISOString()}),false);closeModal();render();toast('Deneme kaydedildi.');};
+  function examRowsHTML(items) {
+    return items.map((item,i)=>{
+      const row=typeof item==='string'?{subject:item,correct:'',wrong:'',blank:''}:item;
+      const val=v=>v===null||v===undefined?'':String(v);
+      return `<div class="exam-entry-row" data-exam-row>
+        <select name="subject_${i}">${SUBJECTS.filter(x=>x!=='Deneme'&&x!=='Diğer').concat(['Sosyal','Fen']).filter((x,idx,a)=>a.indexOf(x)===idx).map(x=>`<option ${x===row.subject?'selected':''}>${x}</option>`).join('')}</select>
+        <input type="number" min="0" step="1" name="correct_${i}" value="${esc(val(row.correct))}" placeholder="D">
+        <input type="number" min="0" step="1" name="wrong_${i}" value="${esc(val(row.wrong))}" placeholder="Y">
+        <input type="number" min="0" step="1" name="blank_${i}" value="${esc(val(row.blank))}" placeholder="B">
+      </div>`;
+    }).join('');
   }
+
+  function openExamForm(editingId=null) {
+    const editing=editingId?state.exams.find(x=>String(x.id)===String(editingId)):null;
+    const type=editing?.type||'TYT';
+    const rows=editing?.rows?.length?editing.rows:defaultExamSubjects(type);
+
+    openModal(
+      editing?'Denemeyi düzenle':'Deneme karnesi',
+      editing?'Deneme bilgilerini ve ders sonuçlarını güncelle.':'Doğru / yanlış / boş gir; net otomatik hesaplanır.',
+      `<form id="examForm">
+        <div class="form-grid">
+          <div class="field"><label>Tür</label><select name="type" id="examType">
+            <option ${type==='TYT'?'selected':''}>TYT</option>
+            <option ${type==='AYT'?'selected':''}>AYT</option>
+            <option ${type==='Branş'?'selected':''}>Branş</option>
+          </select></div>
+          <div class="field"><label>Tarih</label><input type="date" name="date" value="${esc(editing?.date||todayISO())}" required></div>
+          <div class="field full"><label>Deneme adı</label><input name="name" value="${esc(editing?.name||'')}" placeholder="Örn. 345 TYT-4" required></div>
+          <div class="field"><label>Süre (dk)</label><input type="number" min="0" name="duration" value="${editing?.duration??''}"></div>
+          <div class="field"><label>Sıralama / not</label><input name="ranking" value="${esc(editing?.ranking||'')}" placeholder="18 / 124"></div>
+        </div>
+        <div style="height:16px"></div>
+        <div class="card-title">Ders sonuçları</div>
+        <div class="exam-entry-head"><span>Ders</span><span>D</span><span>Y</span><span>B</span></div>
+        <div id="examRows">${examRowsHTML(rows)}</div>
+        <div class="form-actions">
+          <button type="button" class="secondary-btn" data-close-modal>Vazgeç</button>
+          <button class="primary-btn">${editing?'Değişiklikleri kaydet':'Kaydet'}</button>
+        </div>
+      </form>`
+    );
+
+    $('#examType').onchange=e=>{
+      $('#examRows').innerHTML=examRowsHTML(defaultExamSubjects(e.target.value));
+    };
+
+    $('#examForm').onsubmit=async e=>{
+      e.preventDefault();
+      const fd=new FormData(e.currentTarget);
+      const resultRows=$$('[data-exam-row]',e.currentTarget).map((row,i)=>({
+        subject:fd.get(`subject_${i}`),
+        correct:Number(fd.get(`correct_${i}`))||0,
+        wrong:Number(fd.get(`wrong_${i}`))||0,
+        blank:Number(fd.get(`blank_${i}`))||0
+      }));
+      const payload={
+        type:fd.get('type'),
+        date:fd.get('date'),
+        name:String(fd.get('name')).trim(),
+        duration:Number(fd.get('duration'))||null,
+        ranking:String(fd.get('ranking')||'').trim(),
+        rows:resultRows
+      };
+
+      await mutate(s=>{
+        if(editing){
+          const target=s.exams.find(x=>String(x.id)===String(editingId));
+          if(target)Object.assign(target,payload,{updatedAt:new Date().toISOString()});
+        }else{
+          s.exams.push({
+            id:uid('exam'),
+            ...payload,
+            createdAt:new Date().toISOString()
+          });
+        }
+      },false);
+
+      closeModal();
+      render();
+      toast(editing?'Deneme güncellendi.':'Deneme kaydedildi.');
+    };
+  }
+
   function openExamDetail(id) {
     const e=state.exams.find(x=>x.id===id); if(!e)return; const total=examTotal(e);
-    openModal(e.name,`${e.type} · ${formatDate(e.date)}`,`<div class="summary-grid"><div class="summary-box"><div class="summary-value">${total}</div><div class="summary-label">Toplam net</div></div><div class="summary-box"><div class="summary-value">${e.duration||'—'}</div><div class="summary-label">Dakika</div></div><div class="summary-box"><div class="summary-value" style="font-size:17px">${esc(e.ranking||'—')}</div><div class="summary-label">Sıralama / not</div></div></div><div style="height:16px"></div><div class="list-stack">${e.rows.map(r=>`<div class="list-item"><div class="list-item-main"><div class="list-item-title">${esc(r.subject)}</div><div class="list-item-meta">${r.correct} doğru · ${r.wrong} yanlış · ${r.blank} boş</div></div><strong>${netFrom(r.correct,r.wrong)} net</strong></div>`).join('')}</div><div class="form-actions"><button class="danger-btn" data-delete-exam>Denemeyi sil</button></div>`);
-    $('[data-delete-exam]').onclick=async()=>{if(confirm('Denemeyi silmek istiyor musun?')){await mutate(s=>s.exams=s.exams.filter(x=>x.id!==id),false);closeModal();render();}};
+    openModal(e.name,`${e.type} · ${formatDate(e.date)}`,`<div class="summary-grid"><div class="summary-box"><div class="summary-value">${total}</div><div class="summary-label">Toplam net</div></div><div class="summary-box"><div class="summary-value">${e.duration||'—'}</div><div class="summary-label">Dakika</div></div><div class="summary-box"><div class="summary-value" style="font-size:17px">${esc(e.ranking||'—')}</div><div class="summary-label">Sıralama / not</div></div></div><div style="height:16px"></div><div class="list-stack">${e.rows.map(r=>`<div class="list-item"><div class="list-item-main"><div class="list-item-title">${esc(r.subject)}</div><div class="list-item-meta">${r.correct} doğru · ${r.wrong} yanlış · ${r.blank} boş</div></div><strong>${netFrom(r.correct,r.wrong)} net</strong></div>`).join('')}</div><div class="form-actions"><button class="secondary-btn" data-edit-exam>✎ Düzenle</button><button class="danger-btn" data-delete-exam>Denemeyi sil</button></div>`);
+
+    $('[data-edit-exam]').onclick=()=>{
+      closeModal();
+      openExamForm(id);
+    };
+
+    $('[data-delete-exam]').onclick=async()=>{
+      if(confirm('Denemeyi silmek istiyor musun?')){
+        await mutate(s=>s.exams=s.exams.filter(x=>x.id!==id),false);
+        closeModal();
+        render();
+      }
+    };
   }
 
   function questionTopNotice(text) {
