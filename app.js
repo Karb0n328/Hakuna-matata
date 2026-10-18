@@ -666,6 +666,7 @@
         note:String(fd.get('note')||'').trim()
       };
       const id=editingId||uid('q');
+      const newPhotoSelected=!!form.querySelector('[data-book-image-editor] input[type="file"]')?.files?.length;
       let hasPhoto=!!editing?.hasPhoto;
       try{
         if(window.HakunaQuestionBooks?.savePhoto)hasPhoto=await window.HakunaQuestionBooks.savePhoto(form,id,hasPhoto);
@@ -674,12 +675,13 @@
         toast(error?.message||'Soru fotoğrafı kaydedilemedi.');
         return;
       }
+      const photoAddedAt=hasPhoto?(newPhotoSelected?new Date().toISOString():(editing?.photoAddedAt||editing?.createdAt||new Date().toISOString())):null;
       await mutate(s=>{
         if(editing){
           const target=s.questions.find(q=>String(q.id)===String(id));
-          if(target)Object.assign(target,payload,{hasPhoto,updatedAt:new Date().toISOString()});
+          if(target)Object.assign(target,payload,{hasPhoto,photoAddedAt,updatedAt:new Date().toISOString()});
         }else{
-          s.questions.push({id,...payload,hasPhoto,status:'open',createdAt:new Date().toISOString()});
+          s.questions.push({id,...payload,hasPhoto,photoAddedAt,status:'open',createdAt:new Date().toISOString()});
         }
       },false);
       closeModal();
