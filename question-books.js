@@ -273,9 +273,9 @@
     const questions=(state.questions||[]).filter(q=>q.hasPhoto);
     const stats=pageSubjects(questions);
     if(!stats.some(x=>x.subject===currentSubject&&x.count)&&stats.some(x=>x.count))currentSubject=stats.find(x=>x.count).subject;
-    const months=[...new Set(questions.filter(q=>q.subject===currentSubject).map(q=>String(q.createdAt||'').slice(0,7)).filter(Boolean))].sort().reverse();
+    const months=[...new Set(questions.filter(q=>q.subject===currentSubject).map(q=>String(q.photoAddedAt||q.createdAt||'').slice(0,7)).filter(Boolean))].sort().reverse();
     if(period!=='all'&&!months.includes(period))period='all';
-    const visible=questions.filter(q=>q.subject===currentSubject&&(period==='all'||String(q.createdAt||'').startsWith(period)))
+    const visible=questions.filter(q=>q.subject===currentSubject&&(period==='all'||String(q.photoAddedAt||q.createdAt||'').startsWith(period)))
       .filter(q=>[q.topic,q.source,q.reference,q.note].join(' ').toLocaleLowerCase('tr').includes(search.toLocaleLowerCase('tr')))
       .sort((a,b)=>String(a.createdAt||'').localeCompare(String(b.createdAt||'')));
     actions.innerHTML=`<button class="primary-btn" type="button" data-book-export ${visible.length?'':'disabled'}>↓ PDF kitapçık indir</button>`;
