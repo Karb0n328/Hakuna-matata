@@ -189,14 +189,28 @@
       url=URL.createObjectURL(f);
       wrap.querySelector('img').src=url;
       controls.hidden=false;
-      wrap.querySelector('[data-book-remove]')?.removeAttribute('checked');
+      const previous=wrap.querySelector('.book-existing-photo');
+      if(previous)previous.hidden=true;
+      wrap.querySelectorAll('[data-book-crop]').forEach(input=>{
+        input.value='0';
+        input.nextElementSibling.textContent='0%';
+      });
+      wrap.querySelector('.book-image-preview').style.clipPath='none';
+      const remove=wrap.querySelector('[data-book-remove]');
+      if(remove)remove.checked=false;
     });
     wrap.querySelector('[data-book-rotate]').onclick=()=>{
       rotated=(rotated+90)%360;
       wrap.querySelector('img').style.transform='rotate('+rotated+'deg)';
     };
+    const updateCropPreview=()=>{
+      const crop=Object.fromEntries([...wrap.querySelectorAll('[data-book-crop]')].map(el=>[el.dataset.bookCrop,el.value]));
+      const image=wrap.querySelector('.book-image-preview');
+      image.style.clipPath='inset('+crop.top+'% '+crop.right+'% '+crop.bottom+'% '+crop.left+'%)';
+    };
     wrap.querySelectorAll('[data-book-crop]').forEach(slider=>slider.addEventListener('input',()=>{
       slider.nextElementSibling.textContent=slider.value+'%';
+      updateCropPreview();
     }));
     wrap.getImageOptions=()=>({
       rotate:rotated,
