@@ -64,3 +64,6 @@ html[data-batu-theme="dark"] .book-thumb-wrap{background:#20252c}
   .book-file-label{display:grid}
   .book-file-label input{margin-left:0}
 }
+
+.book-existing-photo{margin:10px 0;border-radius:10px;padding:8px;background:var(--blue-soft,#f1f6ff)}
+.book-existing-photo img{display:block;max-width:100%;max-height:250px;object-fit:contain;margin:0 auto;border-radius:8px}
