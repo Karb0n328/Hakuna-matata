@@ -76,9 +76,10 @@
       try{
         const ratio=img.naturalHeight/img.naturalWidth;
         const wide=ratio<.67 || ratio>2.45;
-        const width=wide?fullW:colW;
-        const allowed=wide?BOTTOM-TOP-45:BOTTOM-TOP-45;
-        const height=Math.min(allowed,ratio*width);
+        const maxWidth=wide?fullW:colW;
+        const allowed=BOTTOM-TOP-45;
+        const width=Math.min(maxWidth,allowed/ratio);
+        const height=ratio*width;
         const need=height+47;
         let col=positions[0]<=positions[1]?0:1;
         if(wide){
@@ -90,7 +91,7 @@
             if(positions[col]+need>BOTTOM){await finish();newSheet();col=0;}
           }
         }
-        const x=LEFT+(wide?0:col*(colW+COL_GAP));
+        const x=LEFT+(wide?(fullW-width)/2:col*(colW+COL_GAP)+(colW-width)/2);
         const y=wide?TOP:positions[col];
         number++;
         writeQuestion(sheet.ctx,q,img,x,y,width,height,number);
