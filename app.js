@@ -24,6 +24,7 @@
   let currentPage = 'today';
   let taskTab = 'tasks';
   let questionFilter = 'Tümü';
+  let questionListMode = 'open';
   let bridgePreview = null;
   const pendingQuestionDeletes = new Map();
 
@@ -554,17 +555,42 @@
     if(currentPage==='questions')render();
   }
 
+  function isQuestionSolved(question) {
+    return question?.status==='solved'||question?.status==='complete'||question?.status==='completed';
+  }
+
   async function completeQuestion(id) {
     id=String(id);
-    if(pendingQuestionDeletes.has(id))cancelPendingQuestionDelete(id);
-    const exists=state.questions.some(q=>String(q.id)===id);
-    if(!exists)return;
-    await mutate(s=>{s.questions=s.questions.filter(q=>String(q.id)!==id);},false);
-    void window.HakunaQuestionBooks?.forgetPhoto?.(id);
-    window.HakunaDeletionGuard?.mark?.('questions',id);
-    window.HakunaDebtDeleteGuard?.markQuestionDeleted?.(id);
+    if(pendingQuestionDeletes.has(id))return;
+    const question=state.questions.find(q=>String(q.id)===id);
+    if(!question||isQuestionSolved(question))return;
+    // Keep the actual record and the photo. Only explicit deletion removes either.
+    await mutate(s=>{
+      const target=s.questions.find(q=>String(q.id)===id);
+      if(target){
+        target.status='solved';
+        target.completedAt=new Date().toISOString();
+        target.updatedAt=target.completedAt;
+      }
+    },false);
     if(currentPage==='questions')render();
-    questionTopNotice('Soru tamamlandı');
+    questionTopNotice('Soru tamamlandı · Kitapçıkta çözdürüldü olarak kaldı');
+  }
+
+  async function reopenQuestion(id) {
+    id=String(id);
+    const question=state.questions.find(q=>String(q.id)===id);
+    if(!question||!isQuestionSolved(question))return;
+    await mutate(s=>{
+      const target=s.questions.find(q=>String(q.id)===id);
+      if(target){
+        target.status='open';
+        target.completedAt=null;
+        target.updatedAt=new Date().toISOString();
+      }
+    },false);
+    if(currentPage==='questions')render();
+    toast('Soru tekrar sorulacaklara eklendi.');
   }
 
   function bindQuestionSwipe(root=document) {
@@ -583,15 +609,30 @@
     actions.innerHTML='<button class="primary-btn" data-add-question>＋ Soru ekle</button>';
     const filters=['Tümü',...SUBJECTS.filter(x=>!['Deneme','Diğer'].includes(x))];
     const hidden=new Set(pendingQuestionDeletes.keys());
-    const qs=state.questions
-      .filter(q=>!hidden.has(String(q.id)))
+    const available=state.questions.filter(q=>!hidden.has(String(q.id)));
+    const activeCount=available.filter(q=>!isQuestionSolved(q)).length;
+    const solvedCount=available.filter(isQuestionSolved).length;
+    const solvedTab=questionListMode==='solved';
+    const qs=available
+      .filter(q=>isQuestionSolved(q)===solvedTab)
       .filter(q=>questionFilter==='Tümü'||q.subject===questionFilter)
-      .sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
-    const openCount=state.questions.filter(q=>!hidden.has(String(q.id))).length;
-    view.innerHTML=`<div class="tabs-row">${filters.map(f=>`<button class="chip ${questionFilter===f?'active':''}" data-q-filter="${f}">${f}</button>`).join('')}</div><div style="height:12px"></div><div class="card"><div class="card-head"><div><div class="card-title">Sorulacak sorular</div><div class="card-subtitle">Çözünce tamamla; silmek için kartı sağa kaydır.</div></div><span class="subject-badge">${openCount} açık</span></div><div class="card-body">${qs.length?`<div class="list-stack">${qs.map(questionItemHTML).join('')}</div>`:emptyHTML('❓','Bu filtrede soru yok','Takıldığın soruyu + ile ekle.')}</div></div>`;
-    $('[data-add-question]').onclick=openQuestionForm;
+      .sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
+    view.innerHTML=`<div class="segmented question-mode-tabs">
+        <button class="${!solvedTab?'active':''}" data-q-mode="open">Sorulacaklar (${activeCount})</button>
+        <button class="${solvedTab?'active':''}" data-q-mode="solved">Çözdürülenler (${solvedCount})</button>
+      </div>
+      <div class="tabs-row">${filters.map(f=>`<button class="chip ${questionFilter===f?'active':''}" data-q-filter="${f}">${f}</button>`).join('')}</div>
+      <div style="height:12px"></div>
+      <div class="card"><div class="card-head"><div>
+        <div class="card-title">${solvedTab?'Çözdürülen sorular':'Sorulacak sorular'}</div>
+        <div class="card-subtitle">${solvedTab?'Kitapçıkta kalırlar; silmek istersen kartı sağa kaydır.':'Çözdürünce tamamla; silmek için kartı sağa kaydır.'}</div>
+      </div><span class="subject-badge">${solvedTab?solvedCount:activeCount} ${solvedTab?'çözdürüldü':'açık'}</span></div>
+      <div class="card-body">${qs.length?`<div class="list-stack">${qs.map(questionItemHTML).join('')}</div>`:emptyHTML('❓','Bu filtrede soru yok',solvedTab?'Sorular tamamlandığında burada görünecek.':'Takıldığın soruyu + ile ekle.')}</div></div>`;
+    $('[data-add-question]').onclick=()=>openQuestionForm();
+    $$('[data-q-mode]').forEach(b=>b.onclick=()=>{questionListMode=b.dataset.qMode;render();});
     $$('[data-q-filter]').forEach(b=>b.onclick=()=>{questionFilter=b.dataset.qFilter;render();});
     $$('[data-q-complete]').forEach(b=>b.onclick=()=>{void completeQuestion(b.dataset.qComplete);});
+    $$('[data-q-reopen]').forEach(b=>b.onclick=()=>{void reopenQuestion(b.dataset.qReopen);});
     $$('[data-q-duplicate]').forEach(b=>b.onclick=()=>openQuestionDuplicate(b.dataset.qDuplicate));
     bindQuestionSwipe(view);
   }
@@ -607,7 +648,9 @@
         </div>
         <div class="question-actions">
           <button class="pill-btn question-duplicate-btn" data-q-duplicate="${q.id}" title="Soruyu çoğalt">⧉</button>
-          <button class="question-complete-btn" data-q-complete="${q.id}">✓ Tamamlandı</button>
+          ${isQuestionSolved(q)
+            ?`<button class="question-complete-btn" data-q-reopen="${q.id}">↺ Yeniden aç</button>`
+            :`<button class="question-complete-btn" data-q-complete="${q.id}">✓ Tamamlandı</button>`}
         </div>
       </div>
     </div>`;
