@@ -162,7 +162,8 @@
     wrap.dataset.bookImageEditor='1';
     wrap.innerHTML=`<div class="card-title">📷 Soru fotoğrafı <span class="book-optional">(isteğe bağlı)</span></div>
       <p class="book-helper">Fotoğraf eklersen otomatik olarak ilgili dersin canlı kitapçığına girer.</p>
-      <label class="book-file-label">Fotoğraf çek / galeriden seç <input type="file" name="questionPhoto" accept="image/*" capture="environment"></label>
+      <label class="book-file-label">Fotoğraf çek / galeriden seç <input type="file" name="questionPhoto" accept="image/*"></label>
+      ${editing?.hasPhoto?'<div class="book-existing-photo"><p class="book-helper">Kaydedilmiş soru fotoğrafı</p><img data-book-existing alt="Mevcut soru fotoğrafı"></div>':''}
       <div class="book-image-controls" hidden>
         <img class="book-image-preview" alt="Yüklenecek soru fotoğrafı önizlemesi">
         <div class="book-image-actions">
@@ -203,7 +204,24 @@
       grayscale:wrap.querySelector('[data-book-gray]').checked,
       ...Object.fromEntries([...wrap.querySelectorAll('[data-book-crop]')].map(el=>[el.dataset.bookCrop,el.value]))
     });
-    form.addEventListener('book-cleanup',()=>{if(url)URL.revokeObjectURL(url);},{once:true});
+    let existingUrl=null;
+    if(editing?.hasPhoto){
+      void getPhoto(editing.id).then(blob=>{
+        if(!blob||!wrap.isConnected)return;
+        existingUrl=URL.createObjectURL(blob);
+        const img=wrap.querySelector('[data-book-existing]');
+        if(img)img.src=existingUrl;
+      });
+    }
+    const cleanup=()=>{
+      if(url)URL.revokeObjectURL(url);
+      if(existingUrl)URL.revokeObjectURL(existingUrl);
+      watch.disconnect();
+    };
+    const root=document.getElementById('modalRoot');
+    const watch=new MutationObserver(()=>{if(!form.isConnected)cleanup();});
+    if(root)watch.observe(root,{childList:true,subtree:true});
+    form.addEventListener('book-cleanup',cleanup,{once:true});
   }
 
   async function savePhoto(form,id,previous){
@@ -288,10 +306,17 @@
         });
         const name='Hakuna-'+currentSubject.replace(/\s+/g,'-')+'-Soru-Kitapcigi-'+new Date().toISOString().slice(0,10)+'.pdf';
         const file=new File([pdf],name,{type:'application/pdf'});
-        if(navigator.canShare?.({files:[file]})){
-          try{await navigator.share({files:[file],title:currentSubject+' Soru Kitapçığı'});}
-          catch(err){if(err.name!=='AbortError')throw err;}
-        }else{
+        let handled=false;
+        if(navigator.share&&navigator.canShare?.({files:[file]})){
+          try{
+            await navigator.share({files:[file],title:currentSubject+' Soru Kitapçığı'});
+            handled=true;
+          }catch(err){
+            if(err.name==='AbortError')handled=true;
+            else console.warn('PDF paylaşımı yerine indirme deneniyor',err);
+          }
+        }
+        if(!handled){
           const url=URL.createObjectURL(pdf),a=document.createElement('a');
           a.href=url;a.download=name;document.body.append(a);a.click();a.remove();
           setTimeout(()=>URL.revokeObjectURL(url),60000);
