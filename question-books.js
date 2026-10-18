@@ -287,6 +287,7 @@
   }
 
   function render(view,actions,state){
+    releasePreviews();
     const questions=(state.questions||[]).filter(q=>q.hasPhoto);
     const stats=pageSubjects(questions);
     if(!stats.some(x=>x.subject===currentSubject&&x.count)&&stats.some(x=>x.count))currentSubject=stats.find(x=>x.count).subject;
