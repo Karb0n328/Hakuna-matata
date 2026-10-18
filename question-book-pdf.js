@@ -45,7 +45,21 @@
   }
 
   function writeQuestion(ctx,q,img,x,y,width,height,i){
-    drawText(ctx,String(i)+'.  '+q.subject+' / '+(q.topic||q.source||'Soru'),x,y+12,9,'#1d3758','700');
+    const solved=['solved','complete','completed'].includes(q.status);
+    const badgeWidth=76;
+    const title=String(i)+'.  '+q.subject+' / '+(q.topic||q.source||'Soru');
+    const maxTitleWidth=Math.max(55,width-(solved?badgeWidth+9:0));
+    ctx.font='700 9px system-ui, sans-serif';
+    let short=title;
+    while(short.length>6&&ctx.measureText(short).width>maxTitleWidth){
+      short=short.slice(0,-2)+'…';
+    }
+    drawText(ctx,short,x,y+12,9,'#1d3758','700');
+    if(solved){
+      ctx.fillStyle='#e4f4e9';
+      ctx.fillRect(x+width-badgeWidth,y,badgeWidth,16);
+      drawText(ctx,'✓ Çözdürüldü',x+width-badgeWidth+5,y+11,8,'#236340','700');
+    }
     ctx.strokeStyle='#d8e1eb';ctx.lineWidth=.6;
     ctx.strokeRect(x,y+20,width,height);
     ctx.drawImage(img,x+1,y+21,width-2,height-2);
