@@ -12,7 +12,7 @@ function showBootError(error){
 // cloud sync and enhancements are maintenance work and must never keep the PWA
 // on a blank screen during startup.
 try{
-  await import('./app.js?v=exam-edit-2');
+  await import('./app.js?v=question-books-1');
 }catch(error){
   showBootError(error);
 }
@@ -43,7 +43,7 @@ async function importAccountSyncOptimized(){
     return nativeSetInterval.call(window,fn,next,...args);
   };
   try{
-    await import('./account-sync-v2.js?v=mata-bridge-1');
+    await import('./account-sync-v2.js?v=question-books-1');
   }finally{
     window.setInterval=nativeSetInterval;
   }
