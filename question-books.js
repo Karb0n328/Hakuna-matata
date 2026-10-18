@@ -2,7 +2,7 @@
   'use strict';
   const DB='hakuna-question-image-cache',STORE='photos';
   const SUBJECTS=['Türkçe','Matematik','Geometri','Fizik','Kimya','Biyoloji','Tarih','Coğrafya','Felsefe','Din'];
-  let currentSubject='Matematik',period='all',search='',syncing=false;
+  let currentSubject='Matematik',period='all',bookStatus='all',search='',syncing=false;
   const previewUrls=new Set(),loading=new Map();
   let bookImageObserver=null;
 
@@ -282,6 +282,10 @@
     img.onload=()=>{if(img.isConnected)return;URL.revokeObjectURL(url);previewUrls.delete(url);};
   }
 
+  function isSolved(question){
+    return question?.status==='solved'||question?.status==='complete'||question?.status==='completed';
+  }
+
   function pageSubjects(questions){
     return SUBJECTS.map(subject=>({subject,count:questions.filter(q=>q.subject===subject&&q.hasPhoto).length}));
   }
@@ -294,22 +298,29 @@
     const months=[...new Set(questions.filter(q=>q.subject===currentSubject).map(q=>String(q.photoAddedAt||q.createdAt||'').slice(0,7)).filter(Boolean))].sort().reverse();
     if(period!=='all'&&!months.includes(period))period='all';
     const visible=questions.filter(q=>q.subject===currentSubject&&(period==='all'||String(q.photoAddedAt||q.createdAt||'').startsWith(period)))
+      .filter(q=>bookStatus==='all'||(bookStatus==='solved' ? isSolved(q):!isSolved(q)))
       .filter(q=>[q.topic,q.source,q.reference,q.note].join(' ').toLocaleLowerCase('tr').includes(search.toLocaleLowerCase('tr')))
       .sort((a,b)=>String(a.createdAt||'').localeCompare(String(b.createdAt||'')));
     actions.innerHTML=`<button class="primary-btn" type="button" data-book-export ${visible.length?'':'disabled'}>↓ PDF kitapçık indir</button>`;
     view.innerHTML=`<section class="book-intro card"><div class="card-body">
         <div class="book-kicker">KİŞİSEL SORU BANKAN</div><div class="book-title">Soru Kitaplığım</div>
-        <p>Fotoğraflı sorular kaydedildikleri anda derslerine göre otomatik eklenir. Kitapçık her zaman güncel kalır.</p><p class="book-storage-note">${accountId()?"☁️ Fotoğraflar hesabına özel alanda yedeklenir.":"📱 Hesap bağlanmadıysa fotoğraflar bu cihazda saklanır; cihaz değiştirirken hesabına bağlan."}</p>
+        <p>Fotoğraflı sorular derslerine göre otomatik eklenir. Çözdürülenler ✓ işaretlenerek kitapçıkta kalır; yalnızca silinen sorular çıkar.</p><p class="book-storage-note">${accountId()?"☁️ Fotoğraflar hesabına özel alanda yedeklenir.":"📱 Hesap bağlanmadıysa fotoğraflar bu cihazda saklanır; cihaz değiştirirken hesabına bağlan."}</p>
       </div></section>
       <div class="book-subjects">${stats.map(x=>`<button class="book-subject ${x.subject===currentSubject?'selected':''}" type="button" data-book-subject="${esc(x.subject)}">${esc(x.subject)} <strong>${x.count}</strong></button>`).join('')}</div>
       <section class="card"><div class="card-head"><div><div class="card-title">${esc(currentSubject)} • ${visible.length} soru</div><div class="card-subtitle">Canlı kitapçık · PDF oluşturduğunda güncel sorular kullanılır</div></div></div>
         <div class="card-body">
           <div class="book-filters"><label>Dönem<select data-book-period><option value="all">Tüm zamanlar</option>${months.map(m=>`<option value="${m}" ${period===m?'selected':''}>${m}</option>`).join('')}</select></label>
+          <label>Durum<select data-book-status>
+            <option value="all" ${bookStatus==='all'?'selected':''}>Tümü</option>
+            <option value="open" ${bookStatus==='open'?'selected':''}>Henüz çözdürülmedi</option>
+            <option value="solved" ${bookStatus==='solved'?'selected':''}>✓ Çözdürüldü</option>
+          </select></label>
           <label>Sorularda ara<input type="search" data-book-search value="${esc(search)}" placeholder="Kaynak, konu, soru…"></label></div>
-          ${visible.length?`<div class="book-grid">${visible.map((q,i)=>`<article class="book-question" data-book-card="${esc(q.id)}"><div class="book-question-head"><strong>${i+1}. ${esc(q.topic||q.subject)}</strong><span>${esc(q.reference||'')}</span></div><div class="book-thumb-wrap"><img data-book-preview="${esc(q.id)}" alt="Soru fotoğrafı" loading="lazy"></div><div class="book-question-foot">${esc(q.source||'Kaynak belirtilmedi')}</div></article>`).join('')}</div>`:'<div class="empty-state">Bu ders ve filtre için fotoğraflı soru yok. Sorular bölümünden fotoğraf ekle.</div>'}
+          ${visible.length?`<div class="book-grid">${visible.map((q,i)=>`<article class="book-question" data-book-card="${esc(q.id)}"><div class="book-question-head"><strong>${i+1}. ${esc(q.topic||q.subject)}</strong><span>${esc(q.reference||'')}</span></div><div class="book-thumb-wrap"><img data-book-preview="${esc(q.id)}" alt="Soru fotoğrafı" loading="lazy"></div><div class="book-question-foot"><span>${esc(q.source||'Kaynak belirtilmedi')}</span>${isSolved(q)?'<span class="book-solved-badge">✓ Çözdürüldü</span>':'<span class="book-unsolved-badge">Henüz çözdürülmedi</span>'}</div></article>`).join('')}</div>`:'<div class="empty-state">Bu ders ve filtre için fotoğraflı soru yok. Sorular bölümünden fotoğraf ekle.</div>'}
         </div></section>`;
     view.querySelectorAll('[data-book-subject]').forEach(btn=>btn.onclick=()=>{currentSubject=btn.dataset.bookSubject;period='all';search='';releasePreviews();render(view,actions,state);});
     view.querySelector('[data-book-period]').onchange=e=>{period=e.target.value;releasePreviews();render(view,actions,state);};
+    view.querySelector('[data-book-status]').onchange=e=>{bookStatus=e.target.value;releasePreviews();render(view,actions,state);};
     view.querySelector('[data-book-search]').onchange=e=>{search=e.target.value;releasePreviews();render(view,actions,state);};
     const thumbnails=[...view.querySelectorAll('[data-book-preview]')];
     if('IntersectionObserver' in window){
