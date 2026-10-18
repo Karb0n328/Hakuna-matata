@@ -295,7 +295,7 @@
     actions.innerHTML=`<button class="primary-btn" type="button" data-book-export ${visible.length?'':'disabled'}>↓ PDF kitapçık indir</button>`;
     view.innerHTML=`<section class="book-intro card"><div class="card-body">
         <div class="book-kicker">KİŞİSEL SORU BANKAN</div><div class="book-title">Soru Kitaplığım</div>
-        <p>Fotoğraflı sorular kaydedildikleri anda derslerine göre otomatik eklenir. Kitapçık her zaman güncel kalır.</p>
+        <p>Fotoğraflı sorular kaydedildikleri anda derslerine göre otomatik eklenir. Kitapçık her zaman güncel kalır.</p><p class="book-storage-note">${accountId()?"☁️ Fotoğraflar hesabına özel alanda yedeklenir.":"📱 Hesap bağlanmadıysa fotoğraflar bu cihazda saklanır; cihaz değiştirirken hesabına bağlan."}</p>
       </div></section>
       <div class="book-subjects">${stats.map(x=>`<button class="book-subject ${x.subject===currentSubject?'selected':''}" type="button" data-book-subject="${esc(x.subject)}">${esc(x.subject)} <strong>${x.count}</strong></button>`).join('')}</div>
       <section class="card"><div class="card-head"><div><div class="card-title">${esc(currentSubject)} • ${visible.length} soru</div><div class="card-subtitle">Canlı kitapçık · PDF oluşturduğunda güncel sorular kullanılır</div></div></div>
