@@ -172,7 +172,7 @@
           <label><input type="checkbox" data-book-gray> Siyah-beyaz netleştir</label>
         </div>
         <details><summary>Kırpmayı elle ayarla</summary>
-          <div class="book-crop-grid">${['Sol','Sağ','Üst','Alt'].map((label,i)=>`<label>${label}<input type="range" data-book-crop="${['left','right','top','bottom'][i]}" min="0" max="35" value="0"><output>0%</output></label>`).join('')}</div>
+          <div class="book-crop-grid">${['Sol','Sağ','Üst','Alt'].map((label,i)=>`<label>${label}<input type="range" data-book-crop="${['left','right','top','bottom'][i]}" min="0" max="80" value="0"><output>0%</output></label>`).join('')}</div>
           <p class="book-helper">Birden fazla soru fotoğraftaysa sadece istediğin soruyu bırakacak şekilde kenarları kırp.</p>
         </details>
       </div>
