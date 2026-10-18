@@ -4,6 +4,7 @@
   const SUBJECTS=['Türkçe','Matematik','Geometri','Fizik','Kimya','Biyoloji','Tarih','Coğrafya','Felsefe','Din'];
   let currentSubject='Matematik',period='all',search='',syncing=false;
   const previewUrls=new Set(),loading=new Map();
+  let bookImageObserver=null;
 
   const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   function notify(s){
@@ -268,6 +269,8 @@
   }
 
   function releasePreviews(){
+    bookImageObserver?.disconnect();
+    bookImageObserver=null;
     for(const url of previewUrls)URL.revokeObjectURL(url);
     previewUrls.clear();
   }
@@ -307,7 +310,20 @@
     view.querySelectorAll('[data-book-subject]').forEach(btn=>btn.onclick=()=>{currentSubject=btn.dataset.bookSubject;period='all';search='';releasePreviews();render(view,actions,state);});
     view.querySelector('[data-book-period]').onchange=e=>{period=e.target.value;releasePreviews();render(view,actions,state);};
     view.querySelector('[data-book-search]').onchange=e=>{search=e.target.value;releasePreviews();render(view,actions,state);};
-    view.querySelectorAll('[data-book-preview]').forEach(img=>void showPhoto(img,img.dataset.bookPreview));
+    const thumbnails=[...view.querySelectorAll('[data-book-preview]')];
+    if('IntersectionObserver' in window){
+      bookImageObserver?.disconnect();
+      bookImageObserver=new IntersectionObserver(entries=>{
+        for(const entry of entries){
+          if(!entry.isIntersecting)continue;
+          bookImageObserver?.unobserve(entry.target);
+          void showPhoto(entry.target,entry.target.dataset.bookPreview);
+        }
+      },{rootMargin:'350px'});
+      thumbnails.forEach(img=>bookImageObserver.observe(img));
+    }else{
+      thumbnails.slice(0,32).forEach(img=>void showPhoto(img,img.dataset.bookPreview));
+    }
 
     actions.querySelector('[data-book-export]').onclick=async event=>{
       const btn=event.currentTarget;btn.disabled=true;const initial=btn.textContent;
