@@ -81,6 +81,26 @@ window.addEventListener('online',()=>{schedulePush();checkRemote();});window.add
 // Narrow assistant bridge: credentials and session tokens stay in this module.
 window.HakunaAccount=Object.freeze({
   info:()=>({id:user?.id||null,label:user?accountLabel():'Yerel kullanım',sync:document.documentElement.dataset.hakunaCloudText||'Yerel kullanım'}),
+  photoUpload:async(id,blob)=>{
+    if(!user?.id)throw new Error('Fotoğraf buluta yüklemek için giriş yap.');
+    const path=user.id+'/'+String(id).replace(/[^A-Za-z0-9_-]/g,'')+'.jpg';
+    const {error}=await supabase.storage.from('hakuna-question-photos').upload(path,blob,{contentType:'image/jpeg',upsert:true});
+    if(error)throw error;
+    return path;
+  },
+  photoDownload:async(id)=>{
+    if(!user?.id)throw new Error('Bulut fotoğrafı için giriş yap.');
+    const path=user.id+'/'+String(id).replace(/[^A-Za-z0-9_-]/g,'')+'.jpg';
+    const {data,error}=await supabase.storage.from('hakuna-question-photos').download(path);
+    if(error)throw error;
+    return data;
+  },
+  photoDelete:async(id)=>{
+    if(!user?.id)return;
+    const path=user.id+'/'+String(id).replace(/[^A-Za-z0-9_-]/g,'')+'.jpg';
+    const {error}=await supabase.storage.from('hakuna-question-photos').remove([path]);
+    if(error)throw error;
+  },
   open:mode=>openAccountModal(mode==='register'?'register':'login'),
   logout,
   sync:async()=>{if(!user?.id)throw new Error('Önce giriş yap.');if(!navigator.onLine)throw new Error('İnternet bağlantısı yok; verilerin yerelde duruyor.');if(syncBusy)throw new Error('Senkronizasyon sürüyor. Biraz sonra tekrar dene.');await pushLocalState();await checkRemote();},
