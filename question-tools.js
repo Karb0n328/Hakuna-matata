@@ -143,11 +143,22 @@
       field.append(help);
     }
 
+    const coreQuestionSubmit=form.onsubmit;
     form.onsubmit=async e=>{
       e.preventDefault();
       const fd=new FormData(form);
       const refs=parseReferences(fd.get('reference'));
       if(!refs.length)return toast('En az bir sayfa / test / soru gir.');
+      const photoSelected=!!form.querySelector('[data-book-image-editor] input[type="file"]')?.files?.length;
+      const hasExistingPhoto=!!form.querySelector('[data-book-existing]');
+      const isEditing=document.querySelector('#modalRoot .modal-title')?.textContent==='Soruyu düzenle';
+      if((photoSelected||hasExistingPhoto)&&refs.length>1){
+        return toast('Fotoğraflı soruları tek tek kaydet; her soru için ayrı kırpma kullanılır.');
+      }
+      // Keep the core photo/editor flow for single questions and edits.
+      if((refs.length===1||isEditing||photoSelected||hasExistingPhoto)&&typeof coreQuestionSubmit==='function'){
+        return coreQuestionSubmit.call(form,e);
+      }
       const subject=String(fd.get('subject')||'');
       const topic=String(fd.get('topic')||'').trim();
       const source=String(fd.get('source')||'').trim();
