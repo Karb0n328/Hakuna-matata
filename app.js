@@ -9,7 +9,7 @@
   const UNITS = ['dakika','test','soru','sayfa','bölüm'];
   const NAV = [
     ['today','🏠','Bugün'], ['plan','📅','Plan'], ['tasks','✓','Görevler'], ['exams','📊','Denemeler'],
-    ['questions','❓','Sorular'], ['analytics','📈','Analiz'], ['settings','⚙️','Ayarlar']
+    ['questions','❓','Sorular'], ['books','📚','Soru Kitaplığım'], ['analytics','📈','Analiz'], ['settings','⚙️','Ayarlar']
   ];
   const MOBILE_NAV = [['today','🏠','Bugün'],['plan','📅','Plan'],['tasks','✓','Görevler'],['exams','📊','Deneme'],['more','•••','Daha']];
   const DB_NAME = 'hakuna-matata-db';
@@ -115,7 +115,7 @@
 
   function renderNavigation() {
     $('#sidebarNav').innerHTML=navButtons(NAV);
-    $('#bottomNav').innerHTML=MOBILE_NAV.map(([id,icon,label]) => `<button class="${currentPage===id || (id==='more' && ['questions','analytics','settings'].includes(currentPage))?'active':''}" data-nav="${id}"><span class="nav-icon">${icon}</span><span>${label}</span></button>`).join('');
+    $('#bottomNav').innerHTML=MOBILE_NAV.map(([id,icon,label]) => `<button class="${currentPage===id || (id==='more' && ['questions','books','analytics','settings'].includes(currentPage))?'active':''}" data-nav="${id}"><span class="nav-icon">${icon}</span><span>${label}</span></button>`).join('');
     $$('[data-nav]').forEach(b=>b.onclick=()=>{
       const id=b.dataset.nav;
       if (id==='more') return openMoreMenu();
@@ -126,7 +126,7 @@
   function pageMeta() {
     const map={
       today:['Günlük çalışma merkezi','Bugün'], plan:['Haftayı tek bakışta gör','Plan'], tasks:['Görev havuzu + haftalık borçlar','Görevler'],
-      exams:['Netlerini ve gelişimini kaydet','Denemeler'], questions:['Çözdürülecek soruları kaybetme','Sorular'], analytics:['Gerçek çalışma verin','Analiz'], settings:['Cihaz, yedek ve ChatGPT köprüsü','Ayarlar']
+      exams:['Netlerini ve gelişimini kaydet','Denemeler'], questions:['Çözdürülecek soruları kaybetme','Sorular'], books:['Kişisel soru bankan ve PDF kitapçıkların','Soru Kitaplığım'], analytics:['Gerçek çalışma verin','Analiz'], settings:['Cihaz, yedek ve ChatGPT köprüsü','Ayarlar']
     };
     return map[currentPage]||map.today;
   }
@@ -140,6 +140,7 @@
     else if (currentPage==='tasks') renderTasks(view,actions);
     else if (currentPage==='exams') renderExams(view,actions);
     else if (currentPage==='questions') renderQuestions(view,actions);
+    else if (currentPage==='books') { if(window.HakunaQuestionBooks) window.HakunaQuestionBooks.render(view,actions,state); else view.innerHTML='<div class="card"><div class="card-body">Soru kitaplığı yükleniyor…</div></div>'; }
     else if (currentPage==='analytics') renderAnalytics(view,actions);
     else if (currentPage==='settings') renderSettings(view,actions);
   }
@@ -535,6 +536,7 @@
     pendingQuestionDeletes.delete(id);
     removeQuestionUndoNotice(id);
     await mutate(s=>{s.questions=s.questions.filter(q=>String(q.id)!==id);},false);
+    void window.HakunaQuestionBooks?.forgetPhoto?.(id);
     window.HakunaDeletionGuard?.mark?.('questions',id);
     window.HakunaDebtDeleteGuard?.markQuestionDeleted?.(id);
     if(currentPage==='questions')render();
@@ -558,6 +560,7 @@
     const exists=state.questions.some(q=>String(q.id)===id);
     if(!exists)return;
     await mutate(s=>{s.questions=s.questions.filter(q=>String(q.id)!==id);},false);
+    void window.HakunaQuestionBooks?.forgetPhoto?.(id);
     window.HakunaDeletionGuard?.mark?.('questions',id);
     window.HakunaDebtDeleteGuard?.markQuestionDeleted?.(id);
     if(currentPage==='questions')render();
@@ -600,7 +603,7 @@
         <div class="question-mark">?</div>
         <div class="list-item-main">
           <div class="list-item-title">${subjectEmoji(q.subject)} ${esc(q.source)} · ${esc(q.reference)}</div>
-          <div class="list-item-meta">${esc(q.subject)}${q.topic?` · ${esc(q.topic)}`:''}${q.note?` · ${esc(q.note)}`:''}</div>
+          <div class="list-item-meta">${esc(q.subject)}${q.topic?` · ${esc(q.topic)}`:''}${q.note?` · ${esc(q.note)}`:''}${q.hasPhoto?' · 📷 Fotoğraflı':''}</div>
         </div>
         <div class="question-actions">
           <button class="pill-btn question-duplicate-btn" data-q-duplicate="${q.id}" title="Soruyu çoğalt">⧉</button>
@@ -650,32 +653,39 @@
       </form>`
     );
 
-    $('#questionForm').onsubmit=async e=>{
-      e.preventDefault();
-      const fd=new FormData(e.currentTarget);
+    window.HakunaQuestionBooks?.mountQuestionForm?.($('#questionForm'),editing);
+    $('#questionForm').onsubmit=async event=>{
+      event.preventDefault();
+      const form=event.currentTarget;
+      const fd=new FormData(form);
       const payload={
         subject:fd.get('subject'),
         topic:String(fd.get('topic')||'').trim(),
-        source:String(fd.get('source')).trim(),
-        reference:String(fd.get('reference')).trim(),
+        source:String(fd.get('source')||'').trim(),
+        reference:String(fd.get('reference')||'').trim(),
         note:String(fd.get('note')||'').trim()
       };
+      const id=editingId||uid('q');
+      let hasPhoto=!!editing?.hasPhoto;
+      try{
+        if(window.HakunaQuestionBooks?.savePhoto)hasPhoto=await window.HakunaQuestionBooks.savePhoto(form,id,hasPhoto);
+      }catch(error){
+        console.error('Soru fotoğrafı kaydedilemedi',error);
+        toast(error?.message||'Soru fotoğrafı kaydedilemedi.');
+        return;
+      }
       await mutate(s=>{
         if(editing){
-          const target=s.questions.find(x=>String(x.id)===String(editingId));
-          if(target)Object.assign(target,payload,{updatedAt:new Date().toISOString()});
+          const target=s.questions.find(q=>String(q.id)===String(id));
+          if(target)Object.assign(target,payload,{hasPhoto,updatedAt:new Date().toISOString()});
         }else{
-          s.questions.push({
-            id:uid('q'),
-            ...payload,
-            status:'open',
-            createdAt:new Date().toISOString()
-          });
+          s.questions.push({id,...payload,hasPhoto,status:'open',createdAt:new Date().toISOString()});
         }
       },false);
       closeModal();
       render();
-      if(editing)questionTopNotice('Soru güncellendi');
+      toast(editing?'Soru güncellendi.':'Soru kaydedildi.');
+      if(hasPhoto)void window.HakunaQuestionBooks?.syncPending?.(state);
     };
   }
 
@@ -880,7 +890,7 @@ YANIT KURALI
     const tpl=$('#modalTemplate').content.cloneNode(true); $('.modal-title',tpl).textContent=title; $('.modal-eyebrow',tpl).textContent=eyebrow; $('.modal-body',tpl).innerHTML=html; const root=$('#modalRoot');root.innerHTML='';root.append(tpl); $$('[data-close-modal]',root).forEach(x=>x.onclick=closeModal); }
   function closeModal() { $('#modalRoot').innerHTML=''; }
   function openMoreMenu() {
-    openModal('Daha fazla','Hakuna Matata',`<div class="status-options"><button class="status-option" data-more-nav="questions"><div class="status-emoji">❓</div><div><strong>Sorular</strong><span>Çözdürülecek soru havuzu</span></div></button><button class="status-option" data-more-nav="analytics"><div class="status-emoji">📈</div><div><strong>Analiz</strong><span>Çalışma ve deneme gelişimi</span></div></button><button class="status-option" data-more-nav="settings"><div class="status-emoji">⚙️</div><div><strong>Ayarlar</strong><span>Hakuna Bridge ve yedek</span></div></button></div>`);
+    openModal('Daha fazla','Hakuna Matata',`<div class="status-options"><button class="status-option" data-more-nav="questions"><div class="status-emoji">❓</div><div><strong>Sorular</strong><span>Çözdürülecek soru havuzu</span></div></button><button class="status-option" data-more-nav="books"><div class="status-emoji">📚</div><div><strong>Soru Kitaplığım</strong><span>Fotoğraflı sorular ve PDF kitapçık</span></div></button><button class="status-option" data-more-nav="analytics"><div class="status-emoji">📈</div><div><strong>Analiz</strong><span>Çalışma ve deneme gelişimi</span></div></button><button class="status-option" data-more-nav="settings"><div class="status-emoji">⚙️</div><div><strong>Ayarlar</strong><span>Hakuna Bridge ve yedek</span></div></button></div>`);
     $$('[data-more-nav]').forEach(b=>b.onclick=()=>{currentPage=b.dataset.moreNav;closeModal();render();});
   }
 
