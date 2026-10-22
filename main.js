@@ -12,7 +12,7 @@ function showBootError(error){
 // cloud sync and enhancements are maintenance work and must never keep the PWA
 // on a blank screen during startup.
 try{
-  await import('./app.js?v=solved-book-v1');
+  await import('./app.js?v=question-answers-v1');
 }catch(error){
   showBootError(error);
 }
@@ -70,7 +70,7 @@ afterFirstPaint(()=>{
   void (async()=>{
     try{
       await import('./week-settings.js?v=2');
-      await import('./question-tools.js?v=4');
+      await import('./question-tools.js?v=question-answers-v1');
       await import('./question-delete-fix.js?v=4');
       await import('./plan-mode.js?v=3');
       await import('./plan-mode-pure-cards.js?v=2');
