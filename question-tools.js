@@ -149,6 +149,8 @@
       const fd=new FormData(form);
       const refs=parseReferences(fd.get('reference'));
       if(!refs.length)return toast('En az bir sayfa / test / soru gir.');
+      const answer=/^[A-E]$/.test(String(fd.get('correctAnswer')||''))?String(fd.get('correctAnswer')):null;
+      if(refs.length>1&&answer)return toast('Farklı soruların cevapları farklı olabilir. Birden çok soru eklerken cevap şıkkını boş bırak veya soruları ayrı kaydet.');
       const photoSelected=!!form.querySelector('[data-book-image-editor] input[type="file"]')?.files?.length;
       const hasExistingPhoto=!!form.querySelector('[data-book-existing]');
       const isEditing=document.querySelector('#modalRoot .modal-title')?.textContent==='Soruyu düzenle';
@@ -167,7 +169,7 @@
       try{
         await updateState(s=>{
           const base=Date.now();
-          refs.forEach((reference,i)=>s.questions.push({id:uid('q'),subject,topic,source,reference,note,status:'open',createdAt:new Date(base+i).toISOString()}));
+          refs.forEach((reference,i)=>s.questions.push({id:uid('q'),subject,topic,source,reference,note,correctAnswer:null,status:'open',createdAt:new Date(base+i).toISOString()}));
         });
         await returnToQuestions(refs.length===1?'Soru eklendi.':`${refs.length} soru ayrı ayrı eklendi.`);
       }catch(err){console.error(err);toast('Sorular kaydedilemedi.');}
