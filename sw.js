@@ -1,4 +1,4 @@
-const CACHE='hakuna-matata-v71-solved-books';
+const CACHE='hakuna-matata-v72-question-answers';
 const ASSETS=['./','./index.html','./styles.css','./performance.css','./mata.css','./ui-fixes.css','./today-agenda.css','./fixed-sidebar.css','./batu-dark-mode-v2.css','./yks-calculator.css','./main.js','./last-seen-v2.js','./admin-panel-v2.js','./batu-dark-mode-v2.js','./yks-calculator.js','./yks-quota.js','./yks-quota.css','./study-timer-v2.js','./study-timer-v2.css','./question-ui-compat-v3.js','./question-ui-compat-v3.css','./question-books.js','./question-books.css','./question-book-pdf.js','./assets/batu-dark-logo-sidebar.svg','./assets/batu-dark-logo.svg','./deletion-guard-v2.js','./question-delete-fix.js','./account-sync-v2.js','./migration.js','./auto-debt.js','./debt-delete-guard.js','./performance-runtime.js','./app.js','./week-settings.js','./ui-fixes.js','./today-agenda.js','./today-marker-fix.js','./mata-fallback.js','./mata-loader.js','./mata-capabilities-v4.js','./mata-actions-v4.js','./mata-platform-v5.js','./mata-conversation-v4.js','./mata-action-editor-v4.js','./mata-insights-v1.js','./mata-brain-v3.js','./mata-observer-guard.js','./mata-core-v2.js','./mata-nlu-v2.js','./mata-ui-v2.js','./plan-mode.js','./plan-mode-pure-cards.js','./immediate-debt-status.js','./manifest.webmanifest?v=final-logo-v2','./icons/hakuna-final.png?v=final-logo-v2','./icons/hakuna-brand-v3.png?v=brand-v3','./assets/mata.svg'];
 
 function patchApp(text){
@@ -120,7 +120,8 @@ self.addEventListener('fetch',event=>{
     });
     event.waitUntil(network.then(()=>{}).catch(()=>{}));
     event.respondWith((async()=>{
-      const cached=await caches.match(event.request,{ignoreSearch:true});
+      // Honor the version in app.js?v=...; older base cache must not shadow new features.
+      const cached=await caches.match(event.request,{ignoreSearch:!url.search});
       if(cached)return responseFromText(cached,patchApp(await cached.text()));
       try{return await network;}catch{return new Response('Hakuna core unavailable',{status:503,headers:{'Content-Type':'text/javascript'}});}
     })());
