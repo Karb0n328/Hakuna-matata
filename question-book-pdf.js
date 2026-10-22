@@ -28,14 +28,14 @@
     ctx.fillText(String(text),x,y);
   };
 
-  function createSheet(subject,count,pageNumber,period,answerKey=false){
+  function createSheet(subject,count,pageNumber,period){
     const canvas=document.createElement('canvas');
     canvas.width=Math.round(W*SCALE);canvas.height=Math.round(H*SCALE);
     const ctx=canvas.getContext('2d',{alpha:false});
     ctx.scale(SCALE,SCALE);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
     ctx.fillStyle='#1d3758';ctx.fillRect(0,0,W,8);
     drawText(ctx,'HAKUNA MATATA   /   KİŞİSEL SORU KİTAPÇIĞI',LEFT,31,9,'#637187','700');
-    drawText(ctx,answerKey?'Cevap Anahtarı':subject+' • Soru Kitapçığı',LEFT,62,19,'#11263f','700');
+    drawText(ctx,subject+' • Soru Kitapçığı',LEFT,62,19,'#11263f','700');
     drawText(ctx,period+'   |   '+count+' soru   |   '+dateTR(),LEFT,82,10,'#64748b');
     ctx.strokeStyle='#e1e6ee';ctx.lineWidth=.8;ctx.beginPath();ctx.moveTo(LEFT,93);ctx.lineTo(W-LEFT,93);ctx.stroke();
     ctx.beginPath();ctx.moveTo(LEFT,H-35);ctx.lineTo(W-LEFT,H-35);ctx.stroke();
@@ -63,8 +63,21 @@
     ctx.strokeStyle='#d8e1eb';ctx.lineWidth=.6;
     ctx.strokeRect(x,y+20,width,height);
     ctx.drawImage(img,x+1,y+21,width-2,height-2);
+    const answer=/^[A-E]$/.test(String(q.correctAnswer||'').toUpperCase())?String(q.correctAnswer).toUpperCase():'';
+    const label=answer?'Doğru cevap: '+answer:'';
     const meta=[q.source,q.reference].filter(Boolean).join(' • ');
-    drawText(ctx,meta.length>60?meta.slice(0,58)+'…':meta,x,y+height+34,8,'#627184');
+    const maxMetaWidth=width-(answer?78:0);
+    ctx.font='400 8px system-ui, sans-serif';
+    let shortMeta=meta;
+    while(shortMeta.length>4 && ctx.measureText(shortMeta).width>maxMetaWidth){
+      shortMeta=shortMeta.slice(0,-2)+'…';
+    }
+    drawText(ctx,shortMeta,x,y+height+34,8,'#627184');
+    if(answer){
+      ctx.fillStyle='#e9f1fb';
+      ctx.fillRect(x+width-77,y+height+23,77,17);
+      drawText(ctx,label,x+width-73,y+height+34,8,'#164578','700');
+    }
   }
 
   async function createPages(items,{subject,period}={}){
@@ -72,7 +85,6 @@
     const pages=[];
     const colW=(W-2*LEFT-COL_GAP)/2,fullW=W-2*LEFT;
     let sheet=createSheet(subject,items.length,1,period),positions=[TOP,TOP],number=0;
-    const answers=[];
 
     async function finish(){
       const blob=await new Promise((resolve,reject)=>sheet.canvas.toBlob(b=>b?resolve(b):reject(new Error('Sayfa görüntüsü üretilemedi.')),'image/jpeg',.91));
@@ -110,7 +122,6 @@
         const y=wide?TOP:positions[col];
         number++;
         writeQuestion(sheet.ctx,q,img,x,y,width,height,number);
-        answers.push({number,answer:/^[A-E]$/.test(String(q.correctAnswer||'').toUpperCase())?String(q.correctAnswer).toUpperCase():null});
         if(wide){
           positions=[BOTTOM,BOTTOM];
         }else{
@@ -120,33 +131,7 @@
     }
     if(number===0)throw new Error('Kitapçık için açılabilir soru fotoğrafı yok.');
     await finish();
-    return {pages,answers};
-  }
-
-  async function appendAnswerKey(pages,answers,{subject,period}={}){
-    // Always render after the question pages, including numbered blanks for unknown keys.
-    const cols=4,rowsPerCol=27,perPage=cols*rowsPerCol;
-    const width=(W-2*LEFT)/cols;
-    for(let start=0;start<answers.length;start+=perPage){
-      const {canvas,ctx}=createSheet(subject,answers.length,pages.length+1,period,true);
-      drawText(ctx,'Sorular kitapçıktaki numaralara göre listelenmiştir.',LEFT,110,9,'#64748b');
-      ctx.strokeStyle='#dce5ed';
-      for(let col=1;col<cols;col++){
-        ctx.beginPath();ctx.moveTo(LEFT+col*width,127);ctx.lineTo(LEFT+col*width,744);ctx.stroke();
-      }
-      const group=answers.slice(start,start+perPage);
-      group.forEach((entry,i)=>{
-        const col=Math.floor(i/rowsPerCol),row=i%rowsPerCol;
-        const x=LEFT+col*width+9,y=145+row*22;
-        const n=String(entry.number).padStart(3,' ');
-        drawText(ctx,n+'.',x,y,10,'#64748b','700');
-        drawText(ctx,entry.answer||'—',x+43,y,11,entry.answer?'#183857':'#9da8b3','700');
-      });
-      drawText(ctx,'— : Doğru cevap henüz girilmemiş.',LEFT,774,9,'#64748b');
-      const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('Cevap anahtarı üretilemedi.')),'image/jpeg',.94));
-      pages.push({bytes:new Uint8Array(await blob.arrayBuffer()),w:canvas.width,h:canvas.height});
-      canvas.width=1;canvas.height=1;
-    }
+    return pages;
   }
 
   function pdfFromPages(pages){
@@ -186,8 +171,9 @@
   }
 
   async function build(items,options={}){
-    const {pages,answers}=await createPages(items,options);
-    await appendAnswerKey(pages,answers,options);
+    // The answer belongs to the same question object as the image.
+    // Questions without readable images are skipped together with their answers.
+    const pages=await createPages(items,options);
     return pdfFromPages(pages);
   }
   window.HakunaBookPDF=Object.freeze({build});
