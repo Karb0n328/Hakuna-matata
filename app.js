@@ -690,13 +690,11 @@
           <div class="field full"><label>Not</label><textarea name="note" placeholder="Nerede takıldım?">${esc(q.note||'')}</textarea></div>
           <div class="field full answer-choice-field">
             <label>Doğru cevap <span class="answer-choice-optional">(isteğe bağlı)</span></label>
-            <div class="answer-choice-group" role="radiogroup" aria-label="Sorunun doğru cevabı">
-              ${['','A','B','C','D','E'].map(letter=>`<label class="answer-choice">
-                <input type="radio" name="correctAnswer" value="${letter}" ${String(q.correctAnswer||'').toUpperCase()===letter?'checked':''}>
-                <span>${letter||'Bilmiyorum'}</span>
-              </label>`).join('')}
+            <input type="hidden" name="correctAnswer" value="${/^[A-E]$/.test(String(q.correctAnswer||'').toUpperCase())?String(q.correctAnswer).toUpperCase():''}">
+            <div class="answer-choice-group" role="group" aria-label="Sorunun doğru cevabı">
+              ${['A','B','C','D','E'].map(letter=>`<button class="answer-choice ${String(q.correctAnswer||'').toUpperCase()===letter?'selected':''}" type="button" data-question-answer="${letter}" aria-pressed="${String(q.correctAnswer||'').toUpperCase()===letter}">${letter}</button>`).join('')}
             </div>
-            <p class="answer-choice-help">Tek dokunuşla seç; PDF kitapçığının en sonuna cevap anahtarı eklenir.</p>
+            <p class="answer-choice-help">Doğru şıkkı işaretle; aynı şıkka yeniden dokunarak seçimi kaldırabilirsin. PDF'de cevabı kendi sorusunun yanında göreceksin.</p>
           </div>
         </div>
         <div class="form-actions">
@@ -706,7 +704,20 @@
       </form>`
     );
 
-    window.HakunaQuestionBooks?.mountQuestionForm?.($('#questionForm'),editing);
+    const answerForm=$('#questionForm');
+    answerForm?.querySelectorAll('[data-question-answer]').forEach(button=>{
+      button.addEventListener('click',()=>{
+        const input=answerForm.elements.correctAnswer;
+        const nextValue=input.value===button.dataset.questionAnswer?'':button.dataset.questionAnswer;
+        input.value=nextValue;
+        answerForm.querySelectorAll('[data-question-answer]').forEach(choice=>{
+          const selected=choice.dataset.questionAnswer===nextValue;
+          choice.classList.toggle('selected',selected);
+          choice.setAttribute('aria-pressed',String(selected));
+        });
+      });
+    });
+    window.HakunaQuestionBooks?.mountQuestionForm?.(answerForm,editing);
     $('#questionForm').onsubmit=async event=>{
       event.preventDefault();
       const form=event.currentTarget;
