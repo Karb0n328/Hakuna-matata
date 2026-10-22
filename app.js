@@ -644,7 +644,7 @@
         <div class="question-mark">?</div>
         <div class="list-item-main">
           <div class="list-item-title">${subjectEmoji(q.subject)} ${esc(q.source)} · ${esc(q.reference)}</div>
-          <div class="list-item-meta">${esc(q.subject)}${q.topic?` · ${esc(q.topic)}`:''}${q.note?` · ${esc(q.note)}`:''}${q.hasPhoto?' · 📷 Fotoğraflı':''}</div>
+          <div class="list-item-meta">${esc(q.subject)}${q.topic?` · ${esc(q.topic)}`:''}${q.note?` · ${esc(q.note)}`:''}${q.hasPhoto?' · 📷 Fotoğraflı':''}${q.correctAnswer?' · Cevap kayıtlı':''}</div>
         </div>
         <div class="question-actions">
           <button class="pill-btn question-duplicate-btn" data-q-duplicate="${q.id}" title="Soruyu çoğalt">⧉</button>
@@ -688,6 +688,16 @@
           <div class="field"><label>Kaynak</label><input name="source" value="${esc(q.source||'')}" placeholder="Orijinal" required></div>
           <div class="field"><label>Sayfa / test / soru</label><input name="reference" value="${esc(q.reference||'')}" placeholder="Test 7 / Soru 4" required></div>
           <div class="field full"><label>Not</label><textarea name="note" placeholder="Nerede takıldım?">${esc(q.note||'')}</textarea></div>
+          <div class="field full answer-choice-field">
+            <label>Doğru cevap <span class="answer-choice-optional">(isteğe bağlı)</span></label>
+            <div class="answer-choice-group" role="radiogroup" aria-label="Sorunun doğru cevabı">
+              ${['','A','B','C','D','E'].map(letter=>`<label class="answer-choice">
+                <input type="radio" name="correctAnswer" value="${letter}" ${String(q.correctAnswer||'').toUpperCase()===letter?'checked':''}>
+                <span>${letter||'Bilmiyorum'}</span>
+              </label>`).join('')}
+            </div>
+            <p class="answer-choice-help">Tek dokunuşla seç; PDF kitapçığının en sonuna cevap anahtarı eklenir.</p>
+          </div>
         </div>
         <div class="form-actions">
           <button type="button" class="secondary-btn" data-close-modal>Vazgeç</button>
@@ -706,7 +716,8 @@
         topic:String(fd.get('topic')||'').trim(),
         source:String(fd.get('source')||'').trim(),
         reference:String(fd.get('reference')||'').trim(),
-        note:String(fd.get('note')||'').trim()
+        note:String(fd.get('note')||'').trim(),
+        correctAnswer:/^[A-E]$/.test(String(fd.get('correctAnswer')||''))?String(fd.get('correctAnswer')):null
       };
       const id=editingId||uid('q');
       const newPhotoSelected=!!form.querySelector('[data-book-image-editor] input[type="file"]')?.files?.length;
