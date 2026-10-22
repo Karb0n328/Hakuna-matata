@@ -87,3 +87,23 @@ html[data-batu-theme="dark"] .book-unsolved-badge{
   background:#1b242e!important;border-color:#38434e!important;color:#b8c6d8!important
 }
 .question-mode-tabs{margin-bottom:12px}
+
+/* Optional answer selection: tap once to select, tap same letter to clear. */
+.answer-choice-field{margin-top:3px}
+.answer-choice-optional{font-size:11px;font-weight:500;color:var(--muted,#718096)}
+.answer-choice-group{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:9px}
+.answer-choice{
+  appearance:none;display:grid;place-items:center;min-width:0;min-height:42px;
+  padding:7px 0;border:1px solid var(--line,#d4e0eb);border-radius:11px;
+  background:var(--card,#fff);color:var(--ink,#1c314f);
+  font-size:15px;font-weight:800;cursor:pointer;
+  transition:background .12s ease,color .12s ease,border-color .12s ease
+}
+.answer-choice.selected,.answer-choice[aria-pressed="true"]{
+  background:#246cbd!important;border-color:#246cbd!important;color:#fff!important
+}
+.answer-choice-help{font-size:11px;line-height:1.45;color:var(--muted,#718096);margin:8px 0 0}
+.book-question-answer{padding:7px 12px 12px;color:#225d9a;font-size:11px;font-weight:700}
+.book-question-answer strong{display:inline-flex;align-items:center;justify-content:center;background:#e9f2ff;border-radius:7px;min-width:22px;min-height:22px;padding:1px 5px;font-size:12px}
+html[data-batu-theme="dark"] .book-question-answer{color:#bad9ff}
+html[data-batu-theme="dark"] .book-question-answer strong{background:#1e3956;color:#e3f1ff}
