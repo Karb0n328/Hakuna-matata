@@ -3,13 +3,14 @@ name: Build Hakuna Android APK
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     paths:
       - 'android/**'
       - 'icons/hakuna-final.png'
-      - '.github/workflows/build-android-apk.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -169,3 +170,19 @@ jobs:
           name: Hakuna-Matata-APK
           path: Hakuna Matata.apk
           retention-days: 30
+
+      - name: Publish a shareable APK download
+        if: github.ref == 'refs/heads/main'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VERSION=$(sed -n "s/^[[:space:]]*versionName '\([^']*\)'.*/\1/p" android/app/build.gradle | head -n1)
+          test -n "$VERSION"
+          TAG="android-v$VERSION"
+          gh release create "$TAG" "Hakuna Matata.apk#Hakuna-Matata-Android.apk" \
+            --target "$GITHUB_SHA" \
+            --title "Hakuna Matata Android v$VERSION" \
+            --notes "Hakuna Matata Android uygulamasının arkadaşlarla paylaşılabilir APK kurulum dosyası. Uygulama çevrimiçi Hakuna Matata sitesini açar. Bu sürüm test amaçlıdır; mağaza sürümü değildir." \
+            --prerelease
