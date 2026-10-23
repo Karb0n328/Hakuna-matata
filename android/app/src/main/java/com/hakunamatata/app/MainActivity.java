@@ -30,7 +30,7 @@ import java.io.OutputStream;
 
 public class MainActivity extends Activity {
     private static final int FILE_CHOOSER_REQUEST = 1107;
-    private static final String HOME_URL = "https://karb0n328.github.io/Hakuna-matata/?native=1.0.4";
+    private static final String HOME_URL = "https://karb0n328.github.io/Hakuna-matata/?native=1.0.5";
 
     private WebView webView;
     private ValueCallback<Uri[]> filePathCallback;
@@ -59,7 +59,7 @@ public class MainActivity extends Activity {
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
-        settings.setUserAgentString(settings.getUserAgentString() + " HakunaMatataAndroid/1.0.4");
+        settings.setUserAgentString(settings.getUserAgentString() + " HakunaMatataAndroid/1.0.5");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         }
