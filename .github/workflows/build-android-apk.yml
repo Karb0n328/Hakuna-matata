@@ -181,8 +181,12 @@ jobs:
           VERSION=$(sed -n "s/^[[:space:]]*versionName '\([^']*\)'.*/\1/p" android/app/build.gradle | head -n1)
           test -n "$VERSION"
           TAG="android-v$VERSION"
-          gh release create "$TAG" "Hakuna Matata.apk#Hakuna-Matata-Android.apk" \
-            --target "$GITHUB_SHA" \
-            --title "Hakuna Matata Android v$VERSION" \
-            --notes "Hakuna Matata Android uygulamasının arkadaşlarla paylaşılabilir APK kurulum dosyası. Uygulama çevrimiçi Hakuna Matata sitesini açar. Bu sürüm test amaçlıdır; mağaza sürümü değildir." \
-            --prerelease
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "Hakuna Matata.apk#Hakuna-Matata-Android.apk" --clobber
+          else
+            gh release create "$TAG" "Hakuna Matata.apk#Hakuna-Matata-Android.apk" \
+              --target "$GITHUB_SHA" \
+              --title "Hakuna Matata Android v$VERSION" \
+              --notes "Hakuna Matata Android uygulamasının arkadaşlarla paylaşılabilir APK kurulum dosyası. Uygulama çevrimiçi Hakuna Matata sitesini açar. Bu sürüm test amaçlıdır; mağaza sürümü değildir." \
+              --prerelease
+          fi
