@@ -1,5 +1,5 @@
-const CACHE='hakuna-matata-v73-public-darkmode';
-const ASSETS=['./','./index.html','./styles.css','./performance.css','./mata.css','./ui-fixes.css','./today-agenda.css','./fixed-sidebar.css','./batu-dark-mode-v2.css','./yks-calculator.css','./main.js','./last-seen-v2.js','./admin-panel-v2.js','./batu-dark-mode-v2.js','./yks-calculator.js','./yks-quota.js','./yks-quota.css','./study-timer-v2.js','./study-timer-v2.css','./question-ui-compat-v3.js','./question-ui-compat-v3.css','./question-books.js','./question-books.css','./question-book-pdf.js','./assets/batu-dark-logo-sidebar.svg','./assets/batu-dark-logo.svg','./deletion-guard-v2.js','./question-delete-fix.js','./account-sync-v2.js','./migration.js','./auto-debt.js','./debt-delete-guard.js','./performance-runtime.js','./app.js','./week-settings.js','./ui-fixes.js','./today-agenda.js','./today-marker-fix.js','./mata-fallback.js','./mata-loader.js','./mata-capabilities-v4.js','./mata-actions-v4.js','./mata-platform-v5.js','./mata-conversation-v4.js','./mata-action-editor-v4.js','./mata-insights-v1.js','./mata-brain-v3.js','./mata-observer-guard.js','./mata-core-v2.js','./mata-nlu-v2.js','./mata-ui-v2.js','./plan-mode.js','./plan-mode-pure-cards.js','./immediate-debt-status.js','./manifest.webmanifest?v=final-logo-v2','./icons/hakuna-final.png?v=final-logo-v2','./icons/hakuna-brand-v3.png?v=brand-v3','./assets/mata.svg'];
+const CACHE='hakuna-matata-v74-password-recovery';
+const ASSETS=['./','./index.html','./reset-password.html','./styles.css','./performance.css','./mata.css','./ui-fixes.css','./today-agenda.css','./fixed-sidebar.css','./batu-dark-mode-v2.css','./yks-calculator.css','./main.js','./last-seen-v2.js','./admin-panel-v2.js','./batu-dark-mode-v2.js','./yks-calculator.js','./yks-quota.js','./yks-quota.css','./study-timer-v2.js','./study-timer-v2.css','./question-ui-compat-v3.js','./question-ui-compat-v3.css','./question-books.js','./question-books.css','./question-book-pdf.js','./assets/batu-dark-logo-sidebar.svg','./assets/batu-dark-logo.svg','./deletion-guard-v2.js','./question-delete-fix.js','./account-sync-v2.js','./migration.js','./auto-debt.js','./debt-delete-guard.js','./performance-runtime.js','./app.js','./week-settings.js','./ui-fixes.js','./today-agenda.js','./today-marker-fix.js','./mata-fallback.js','./mata-loader.js','./mata-capabilities-v4.js','./mata-actions-v4.js','./mata-platform-v5.js','./mata-conversation-v4.js','./mata-action-editor-v4.js','./mata-insights-v1.js','./mata-brain-v3.js','./mata-observer-guard.js','./mata-core-v2.js','./mata-nlu-v2.js','./mata-ui-v2.js','./plan-mode.js','./plan-mode-pure-cards.js','./immediate-debt-status.js','./manifest.webmanifest?v=final-logo-v2','./icons/hakuna-final.png?v=final-logo-v2','./icons/hakuna-brand-v3.png?v=brand-v3','./assets/mata.svg'];
 
 function patchApp(text){
   const oldWeek="  function startOfWeekISO(iso) {\n    const d=parseISODate(iso); const wd=(d.getDay()+6)%7; d.setDate(d.getDate()-wd); return isoDate(d);\n  }";
@@ -92,6 +92,16 @@ self.addEventListener('fetch',event=>{
   // Migration tooling is intentionally isolated from the normal app cache.
   if(url.origin===self.location.origin && (url.pathname.endsWith('/migration-v2.html') || url.pathname.includes('/v2-migration/'))){
     event.respondWith(fetch(event.request,{cache:'no-store'}));
+    return;
+  }
+
+  // Recovery email links must reach the dedicated reset page, not the PWA
+  // home-screen navigation cache. Only fall back to that page's own cache.
+  if(url.origin===self.location.origin && url.pathname.endsWith('/reset-password.html')){
+    event.respondWith(fetch(event.request,{cache:'no-store'}).then(resp=>{
+      if(resp.ok)event.waitUntil(cachePut('./reset-password.html',resp));
+      return resp;
+    }).catch(()=>caches.match('./reset-password.html').then(cached=>cached||new Response('Şifre sıfırlama sayfası çevrimdışı açılamıyor.',{status:503}))));
     return;
   }
 
