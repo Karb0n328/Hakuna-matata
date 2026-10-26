@@ -8,3 +8,38 @@
 @media(max-width:900px){.gd-layout{grid-template-columns:1fr}.gd-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:600px){.gd-list,.gd-side{padding:15px}.gd-summary{gap:8px}.gd-summary>div{padding:13px}.gd-summary strong{font-size:24px}.gd-task-bottom{align-items:flex-start}.gd-actions{flex-wrap:wrap}}
 
 .gd-side.gd-editing{border:2px solid var(--ink);box-shadow:0 12px 35px rgba(0,0,0,.12);scroll-margin-top:90px}.gd-edit-hint{font-size:12px;color:var(--muted);margin:10px 0}.gd-feedback{font-size:12px;font-weight:650;color:var(--ink);line-height:1.5}.gd-form button:disabled{opacity:.5;cursor:wait}
+
+
+/* Ayzos-only playful theme. Batu and other users retain the original look. */
+body.ayzos-kid-mode{--kid-ink:#25315c;--kid-purple:#7359e9;--kid-pink:#f567aa;--kid-blue:#5ba9fa;--kid-yellow:#ffd76c}
+body.ayzos-kid-mode #view{background:radial-gradient(ellipse at 95% 2%,#fff1c9 0%,transparent 33%),radial-gradient(ellipse at 0% 45%,#e6ddff 0%,transparent 42%),#f8f8ff;border-radius:22px;padding:clamp(10px,2vw,22px)}
+body.ayzos-kid-mode #sidebarNav .nav-button.active,body.ayzos-kid-mode #bottomNav button.active{background:#eee7ff;color:#6848d8}
+body.ayzos-kid-mode .gd-student{color:var(--kid-ink);gap:14px}
+body.ayzos-kid-mode .gd-kid-hero{position:relative;overflow:hidden;border-radius:24px;padding:clamp(22px,4vw,34px);color:#fff;background:linear-gradient(118deg,#7964f4 0%,#ac70e7 52%,#f48db5 100%);box-shadow:0 14px 32px rgba(119,85,211,.22)}
+body.ayzos-kid-mode .gd-kid-hero:after{content:'✦';position:absolute;font-size:115px;right:-10px;bottom:-35px;color:rgba(255,255,255,.11);pointer-events:none}
+body.ayzos-kid-mode .gd-kid-sparkles{font-size:26px;letter-spacing:12px;margin-bottom:13px}
+body.ayzos-kid-mode .gd-kid-eyebrow{font-size:10px;font-weight:850;letter-spacing:.17em;opacity:.85}
+body.ayzos-kid-mode .gd-kid-hero h2{color:white;font-size:clamp(24px,4vw,34px);line-height:1.18;letter-spacing:-.035em;margin:9px 0}
+body.ayzos-kid-mode .gd-kid-hero p{font-size:14px;line-height:1.5;color:white;margin:0 0 19px;opacity:.95}
+body.ayzos-kid-mode .gd-kid-progress{height:13px;border-radius:20px;background:rgba(255,255,255,.3);overflow:hidden;margin-bottom:9px}
+body.ayzos-kid-mode .gd-kid-progress span{display:block;height:100%;border-radius:20px;background:linear-gradient(90deg,#fff1a0,#fff);transition:width .4s ease}
+body.ayzos-kid-mode .gd-kid-hero small{font-size:11px;font-weight:800;color:white}
+body.ayzos-kid-mode .gd-heading{padding:6px 4px 0}
+body.ayzos-kid-mode .gd-heading h2{color:var(--kid-ink)}
+body.ayzos-kid-mode .gd-summary>div{border:0;box-shadow:0 4px 13px rgba(67,70,140,.06);border-radius:17px}
+body.ayzos-kid-mode .gd-summary>div:nth-child(1){background:#e9e3ff}
+body.ayzos-kid-mode .gd-summary>div:nth-child(2){background:#dcf8e9}
+body.ayzos-kid-mode .gd-summary>div:nth-child(3){background:#fff0d5}
+body.ayzos-kid-mode .gd-summary>div:nth-child(4){background:#ffe2ed}
+body.ayzos-kid-mode .gd-summary strong{color:#35406e}
+body.ayzos-kid-mode .gd-student .gd-list,body.ayzos-kid-mode .gd-student .gd-side{border:1px solid #e7e4fa;border-radius:19px;background:#fff;box-shadow:0 5px 22px rgba(90,83,140,.05)}
+body.ayzos-kid-mode .gd-student .gd-task{background:#f8f7ff;border-color:#ece8ff;border-left:5px solid #a28bf6;border-radius:14px;transition:transform .2s ease}
+body.ayzos-kid-mode .gd-student .gd-task:nth-child(3n+2){border-left-color:#64b9ed;background:#f4fbff}
+body.ayzos-kid-mode .gd-student .gd-task:nth-child(3n+3){border-left-color:#f6aa6e;background:#fffaf2}
+body.ayzos-kid-mode .gd-student .gd-task.gd-complete{background:#edfbf1;border-left-color:#58c58e;opacity:1}
+body.ayzos-kid-mode .gd-student .gd-task.gd-complete strong{text-decoration:line-through;text-decoration-color:#71c49a}
+body.ayzos-kid-mode .gd-student .gd-actions button{background:#7054e8;color:#fff;border:0;border-radius:11px;padding:10px 15px;font-weight:800}
+body.ayzos-kid-mode .gd-student .gd-form .primary-btn{background:linear-gradient(110deg,#7955ed,#e778bc);color:#fff;border:0;border-radius:12px;padding:12px 20px;box-shadow:0 5px 13px #bca3e76e}
+body.ayzos-kid-mode .gd-student .gd-form input:focus,body.ayzos-kid-mode .gd-student .gd-form textarea:focus,body.ayzos-kid-mode .gd-student .gd-form select:focus{outline:2px solid #aa8df7;outline-offset:2px}
+@media(max-width:600px){body.ayzos-kid-mode #view{padding:10px}body.ayzos-kid-mode .gd-kid-hero{border-radius:19px}body.ayzos-kid-mode .gd-kid-sparkles{font-size:22px}body.ayzos-kid-mode .gd-student .gd-summary strong{font-size:23px}}
+@media(prefers-reduced-motion:reduce){body.ayzos-kid-mode .gd-kid-progress span,body.ayzos-kid-mode .gd-student .gd-task{transition:none}}
