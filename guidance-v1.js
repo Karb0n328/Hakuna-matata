@@ -13,7 +13,8 @@ const headers=()=>{const s=session();if(!s)throw Error('Önce hesabına giriş y
 async function api(path,method='GET',body){
  const r=await fetch(URL+'/rest/v1/'+path,{method,headers:{...headers(),...(method==='POST'?{'Prefer':'return=representation'}:{})},...(body===undefined?{}:{body:JSON.stringify(body)})});
  if(!r.ok){let m='İşlem başarısız';try{const e=await r.json();m=e.message||e.error||m}catch{}throw Error(m)}
- return r.status===204?[]:r.json();
+ if(r.status===204||r.status===205)return [];
+ const raw=await r.text();return raw?JSON.parse(raw):[];
 }
 async function rpc(id,completed){
  const r=await fetch(URL+'/rest/v1/rpc/guidance_set_completion',{method:'POST',headers:headers(),body:JSON.stringify({p_id:id,p_completed:completed})});
@@ -30,15 +31,15 @@ function cards(items,mentor){
 }
 const summary=items=>{const done=items.filter(x=>x.completed).length;return '<div class="gd-summary"><div><small>TOPLAM</small><strong>'+items.length+'</strong></div><div><small>TAMAMLANAN</small><strong>'+done+'</strong></div><div><small>BEKLEYEN</small><strong>'+(items.length-done)+'</strong></div><div><small>İLERLEME</small><strong>%'+(items.length?Math.round(done/items.length*100):0)+'</strong></div></div>'};
 function bindForm(view,mentor,item){
- const f=view.querySelector('#guidance-form');if(!f)return;
- f.onsubmit=async e=>{e.preventDefault();const b=f.querySelector('[type=submit]');b.disabled=true;
+ const f=view.querySelector('.gd-side #guidance-form');if(!f)return;
+ f.onsubmit=async e=>{e.preventDefault();const b=f.querySelector('[type=submit]');b.disabled=true;let msg=f.querySelector('.gd-feedback');if(!msg){msg=document.createElement('div');msg.className='gd-feedback';msg.setAttribute('role','status');f.append(msg)}msg.textContent='Kaydediliyor…';
  try{const data=new FormData(f);const payload={title:String(data.get('title')).trim(),subject:String(data.get('subject')),details:String(data.get('details')).trim(),due_date:data.get('due_date')||null};
  if(item){if(!mentor)throw Error('Düzenleme yetkin yok.');await api('guidance_homework?id=eq.'+encodeURIComponent(item.id),'PATCH',payload)}
  else await api('guidance_homework','POST',{...payload,student_id:AYZOS,created_by:session().user.id});
  await draw(view,mentor?'guidance':'tasks');
- }catch(err){alert(err.message);b.disabled=false}
+ }catch(err){msg.textContent='Kaydedilemedi: '+err.message;b.disabled=false}
  };
- view.querySelector('[data-cancel-edit]')?.addEventListener('click',()=>draw(view,'guidance'));
+ f.querySelector('[data-cancel-edit]')?.addEventListener('click',()=>draw(view,'guidance'));
 }
 async function draw(view,page){
  const r=role();if(!r)return;const mentor=r==='mentor';view.innerHTML='<div class="gd-loading">Ödevler yükleniyor…</div>';
@@ -50,7 +51,7 @@ async function draw(view,page){
  bindForm(view,mentor);
  view.querySelector('[data-refresh]').onclick=()=>draw(view,page);
  view.querySelectorAll('[data-complete]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{const t=items.find(x=>x.id===b.dataset.complete);await rpc(t.id,!t.completed);await draw(view,page)}catch(err){alert(err.message);b.disabled=false}});
- view.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{if(!mentor)return;const item=items.find(x=>x.id===b.dataset.edit);const side=view.querySelector('.gd-side');side.innerHTML='<h3>Ödevi düzenle</h3>'+form(item);bindForm(view,mentor,item)});
+ view.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{if(!mentor)return;const item=items.find(x=>x.id===b.dataset.edit);const side=view.querySelector('.gd-side');side.innerHTML='<h3>✎ Ödevi düzenle</h3><p class="gd-edit-hint">Değişikliklerini yapıp Kaydet butonuna bas.</p>'+form(item);side.classList.add('gd-editing');bindForm(view,mentor,item);side.scrollIntoView({behavior:'smooth',block:'start'});side.querySelector('[name=title]')?.focus({preventScroll:true})});
  view.querySelectorAll('[data-delete]').forEach(b=>b.onclick=async()=>{if(!mentor||!confirm('Bu ödev silinsin mi?'))return;b.disabled=true;try{await api('guidance_homework?id=eq.'+encodeURIComponent(b.dataset.delete),'DELETE');await draw(view,page)}catch(err){alert(err.message);b.disabled=false}});
  }catch(err){view.innerHTML='<div class="card"><div class="card-body">Ödevler yüklenemedi: '+esc(err.message)+' <button class="secondary-btn" data-retry>Yeniden dene</button></div></div>';view.querySelector('[data-retry]').onclick=()=>draw(view,page)}
 }
