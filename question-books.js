@@ -246,6 +246,7 @@
     const remove=!!editor.querySelector('[data-book-remove]')?.checked;
     if(file){
       const blob=await processPhoto(file,editor.getImageOptions());
+      await store(id+'.original',file).catch(e=>console.warn('Orijinal fotoğraf yedeklenemedi',e));
       await store(id,blob);
       const uid=accountId();
       if(uid)localStorage.removeItem(uploadedKey(uid,id));
@@ -255,6 +256,7 @@
     }
     if(remove){
       await erase(id);
+      await erase(id+'.original').catch(()=>{});
       void account()?.photoDelete?.(id).catch(e=>console.warn('Photo cleanup',e));
       form.dispatchEvent(new Event('book-cleanup'));
       return false;
@@ -264,7 +266,7 @@
   }
 
   async function forgetPhoto(id){
-    try{await erase(id);}catch{}
+    try{await erase(id);await erase(id+'.original');}catch{}
     try{await account()?.photoDelete?.(id);}catch{}
   }
 
