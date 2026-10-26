@@ -147,6 +147,46 @@
     else if (currentPage==='analytics') renderAnalytics(view,actions);
     else if (currentPage==='suggestions') renderSuggestions(view,actions);
     else if (currentPage==='settings') renderSettings(view,actions);
+    if(isGeesPreviewUser()&&currentPage!=='today')decorateGeesPanel(view);
+  }
+
+  function decorateGeesPanel(view){
+    if(!view||view.querySelector('.nx-section-banner'))return;
+    const config={
+      plan:['Haftalık çalışma haritası','Haftanın tüm günlerini, bloklarını ve çalışma yoğunluğunu tek bakışta gör.','HAFTALIK PLAN'],
+      tasks:['Görev merkezi','Planlanmamış işler ve haftalık borçlar tek çalışma alanında.','GÖREV YÖNETİMİ'],
+      exams:['Deneme arşivi','TYT ve AYT performansını karşılaştır, ilerlemeni izle.','PERFORMANS'],
+      questions:['Soru merkezi','Çözülecek ve çözülen sorularını filtreleyerek yönet.','SORU TAKİBİ'],
+      books:['Soru kitaplığı','Kaynaklarını ve PDF soru kitapçıklarını bir arada yönet.','KÜTÜPHANE'],
+      analytics:['İlerleme analizi','Çalışma süreleri, denemeler ve hedeflerin tek yerde.','ANALİTİK'],
+      suggestions:['Fikirlerini paylaş','Önerilerini ve karşılaştığın sorunları doğrudan ilet.','GERİ BİLDİRİM'],
+      settings:['Tercihler ve veriler','Hesap, görünüm ve yedekleme işlemlerini yönet.','AYARLAR']
+    };
+    const info=config[currentPage];if(!info)return;
+    const banner=document.createElement('div');banner.className='nx-section-banner';
+    banner.innerHTML='<div><span class="nx-eyebrow">'+esc(info[2])+'</span><h2>'+esc(info[0])+'</h2><p>'+esc(info[1])+'</p></div><div class="nx-section-mark" aria-hidden="true">GEES<span> / 26</span></div>';
+    view.prepend(banner);
+    if(currentPage==='tasks'){
+      const bar=document.createElement('div');bar.className='nx-section-summary';
+      bar.innerHTML='<div><small>BEKLEYEN GÖREV</small><strong>'+activeTasks().length+'</strong></div><div><small>HAFTALIK BORÇ</small><strong>'+activeDebts().length+'</strong></div><div><small>PLANLANAN BLOK</small><strong>'+state.blocks.filter(b=>b.status==='pending').length+'</strong></div>';
+      banner.after(bar);
+    }else if(currentPage==='exams'){
+      const bar=document.createElement('div');bar.className='nx-section-summary';
+      const list=state.exams;const last=list.slice().sort((a,b)=>b.date.localeCompare(a.date))[0];
+      bar.innerHTML='<div><small>TOPLAM DENEME</small><strong>'+list.length+'</strong></div><div><small>SON NET</small><strong>'+(last?examTotal(last):'—')+'</strong></div><div><small>ORTALAMA NET</small><strong>'+(list.length?(list.reduce((s,e)=>s+examTotal(e),0)/list.length).toFixed(1):'—')+'</strong></div>';
+      banner.after(bar);
+    }else if(currentPage==='questions'){
+      const bar=document.createElement('div');bar.className='nx-section-summary';
+      const solved=state.questions.filter(isQuestionSolved).length;
+      bar.innerHTML='<div><small>BEKLEYEN SORU</small><strong>'+(state.questions.length-solved)+'</strong></div><div><small>ÇÖZÜLEN</small><strong>'+solved+'</strong></div><div><small>TOPLAM</small><strong>'+state.questions.length+'</strong></div>';
+      banner.after(bar);
+    }else if(currentPage==='plan'){
+      const week=startOfWeekISO(state.selectedDate),days=Array.from({length:7},(_,i)=>addDaysISO(week,i));
+      const bs=state.blocks.filter(b=>days.includes(b.date));const done=bs.filter(b=>b.status==='complete').length;
+      const bar=document.createElement('div');bar.className='nx-section-summary';
+      bar.innerHTML='<div><small>HAFTALIK BLOK</small><strong>'+bs.length+'</strong></div><div><small>TAMAMLANAN</small><strong>'+done+'</strong></div><div><small>İLERLEME</small><strong>%'+(bs.length?Math.round(done/bs.length*100):0)+'</strong></div>';
+      banner.after(bar);
+    }
   }
 
   function dateControlHTML() {
@@ -269,44 +309,55 @@
 
   function renderToday(view,actions) {
     if(!isGeesPreviewUser())return renderTodayLegacy(view,actions);
-    actions.innerHTML=`${dateControlHTML()}<button class="primary-btn" data-add-block>＋ Yeni blok</button>`;
-    const date=state.selectedDate,blocks=blocksFor(date),debts=activeDebts(),tasks=activeTasks();
-    const complete=blocks.filter(b=>b.status==='complete').length;
-    const pct=blocks.length?Math.round(complete/blocks.length*100):0;
-    const planned=blocks.reduce((sum,b)=>sum+durationMinutes(b.start,b.end),0);
-    const now=new Date(),today=todayISO(),clock=now.getHours()*60+now.getMinutes();
-    const sorted=[...blocks].sort((a,b)=>a.start.localeCompare(b.start));
-    const ongoing=date===today?sorted.find(b=>minuteFromTime(b.start)<=clock&&minuteFromTime(b.end)>clock&&b.status!=='complete'):null;
-    const upcoming=sorted.find(b=>b.status!=='complete'&&(date!==today||minuteFromTime(b.end)>clock));
-    const focus=ongoing||upcoming;
-    const focusLabel=ongoing?'ŞU ANDA':'SIRADAKİ ÇALIŞMA';
-    view.innerHTML=`<div class="gees-home">
-      <section class="gees-hero">
-        <div class="gees-hero-head"><div><span class="gees-overline">GEES / DAILY WORKSPACE</span><h2>Bugünün odağı<span class="gees-period">.</span></h2><p>${esc(formatDate(date))} · Bir sonraki işe odaklan, gerisini sistem takip etsin.</p></div><span class="gees-hero-index">${String(blocks.length).padStart(2,'0')} / PLAN</span></div>
-        <div class="gees-focus-panel">
-          <div class="gees-focus-copy"><span class="gees-focus-label"><span class="gees-live-dot"></span>${focus?focusLabel:'GÜNÜN PLANI'}</span>
-            <h3>${focus?esc(focus.title):'Yeni bir çalışma bloğu oluştur.'}</h3>
-            <p>${focus?esc(focus.subject)+' · '+esc(focus.start)+' — '+esc(focus.end):'Planını oluşturmak için ilk bloğunu ekle.'}</p>
-          </div>
-          <button class="gees-focus-action" ${focus?'data-gees-open-focus="'+esc(focus.id)+'"':'data-add-block'}>${focus?'Bloğu aç ↗':'Blok ekle ＋'}</button>
+    const date=state.selectedDate,blocks=blocksFor(date),tasks=activeTasks(),debts=activeDebts();
+    const completed=blocks.filter(b=>b.status==='complete'),pct=blocks.length?Math.round(completed.length/blocks.length*100):0;
+    const planned=blocks.reduce((s,b)=>s+durationMinutes(b.start,b.end),0);
+    const done=completed.reduce((s,b)=>s+durationMinutes(b.start,b.end),0);
+    const exams=state.exams.slice().sort((a,b)=>b.date.localeCompare(a.date));
+    const recent=exams.slice(0,5).reverse(),latest=exams[0],average=exams.length?(exams.reduce((s,e)=>s+examTotal(e),0)/exams.length).toFixed(1):'—';
+    const activeQuestions=state.questions.filter(q=>!isQuestionSolved(q)).length;
+    const name=(()=>{try{const p=JSON.parse(localStorage.getItem('hakuna.cloud.profile')||'{}');return p?.username?String(p.username).split(/[ _-]/)[0]:'Batu';}catch{return 'Batu';}})();
+    const hour=new Date().getHours(),greeting=hour<11?'Günaydın':hour<18?'İyi günler':'İyi akşamlar';
+    const current=date===todayISO()?new Date().getHours()*60+new Date().getMinutes():-1;
+    const ordered=[...blocks].sort((a,b)=>a.start.localeCompare(b.start));
+    const next=ordered.find(b=>b.status!=='complete'&&(current<0||minuteFromTime(b.end)>current));
+    const series=recent.map(e=>({label:formatDate(e.date,{day:'numeric',month:'short'}),value:examTotal(e)}));
+    const subjects=['Türkçe','Matematik','Fen','Sosyal'];
+    const counts=subjects.map(s=>({name:s,n:completed.filter(b=>s==='Fen'?['Fizik','Kimya','Biyoloji'].includes(b.subject):s==='Sosyal'?['Tarih','Coğrafya','Felsefe','Din'].includes(b.subject):b.subject===s).reduce((n,b)=>n+durationMinutes(b.start,b.end),0)}));
+    const totalSubject=counts.reduce((s,x)=>s+x.n,0)||1;
+    actions.innerHTML=`${dateControlHTML()}<button class="primary-btn" data-add-block>＋ Blok ekle</button>`;
+    view.innerHTML=`<div class="gees-nexus">
+      <div class="nx-greeting"><div><div class="nx-date">${esc(formatDate(date,{weekday:'long',day:'numeric',month:'long'}))}</div><h2>${greeting}, ${esc(name)}.</h2><p>Bugün disiplin, yarın özgürlük.</p></div><div class="nx-week-target"><span>HAFTALIK PLAN</span><strong>${Math.round(planned/60*10)/10} saat</strong><small>Bugün planlanan</small></div></div>
+      <div class="nx-stats">
+        <div class="nx-stat"><span class="nx-stat-icon">◷</span><div><small>Çalışma süresi</small><strong>${fmtDuration(done)}</strong><span>Plan ${fmtDuration(planned)}</span></div><div class="nx-ring" style="--percent:${planned?Math.round(done/planned*100):0}"></div></div>
+        <div class="nx-stat"><span class="nx-stat-icon">✓</span><div><small>Tamamlanan blok</small><strong>${completed.length} / ${blocks.length}</strong><div class="nx-meter"><i style="width:${pct}%"></i></div></div></div>
+        <div class="nx-stat"><span class="nx-stat-icon">▤</span><div><small>Bekleyen sorular</small><strong>${activeQuestions} soru</strong><span>Soru kitaplığında</span></div></div>
+        <div class="nx-stat"><span class="nx-stat-icon">▥</span><div><small>Deneme ortalaması</small><strong>${average}</strong><span>${exams.length} kayıt</span></div></div>
+      </div>
+      <div class="nx-main-grid">
+        <section class="nx-panel nx-agenda"><header class="nx-panel-head"><div><span class="nx-eyebrow">GÜNLÜK AKIŞ</span><h3>Bugünün planı</h3></div><div class="nx-panel-actions"><span class="nx-day-date">${esc(formatDate(date,{day:'numeric',month:'short'}))}</span><button class="nx-icon-btn" data-add-block title="Yeni blok">＋</button></div></header>
+          <div class="nx-schedule">${ordered.length?ordered.map(b=>`<button class="nx-schedule-row ${b.status==='complete'?'nx-done':''} ${next?.id===b.id?'nx-next':''}" data-nx-block="${esc(b.id)}"><time>${esc(b.start)}</time><span class="nx-schedule-content"><span class="nx-schedule-subject">${esc(b.subject)}</span><strong>${esc(b.title)}</strong><small>${esc(b.start)} – ${esc(b.end)}</small></span><span class="nx-status">${b.status==='complete'?'✓':b.status==='partial'?'◐':b.status==='incomplete'?'×':next?.id===b.id?'▶':'○'}</span></button>`).join(''):`<div class="nx-empty">Henüz plan yok. İlk çalışma bloğunu ekle.</div>`}</div>
+          <div class="nx-agenda-foot"><span>${blocks.length} blok · %${pct} tamamlandı</span><button data-nx-plan>Haftalık plana git ↗</button></div>
+        </section>
+        <div class="nx-right">
+          <section class="nx-panel"><header class="nx-panel-head"><h3>Görevler</h3><button data-nx-tasks>Tümü ↗</button></header><div class="nx-tab-strip"><span>Bugün <b>${tasks.length}</b></span><span>Borçlar <b>${debts.length}</b></span></div><div class="nx-compact-list">${[...tasks.slice(0,4).map(t=>({label:t.title,sub:t.subject,type:'task',id:t.id})),...debts.slice(0,3).map(d=>({label:d.title,sub:d.subject,type:'debt',id:d.id}))].slice(0,6).map(x=>`<div class="nx-compact-item"><span class="nx-compact-check">○</span><span><strong>${esc(x.label)}</strong><small>${esc(x.sub)}</small></span><button data-nx-tasks aria-label="Görevlere git">···</button></div>`).join('')||'<div class="nx-empty">Bekleyen görev bulunmuyor.</div>'}</div></section>
+          <section class="nx-panel"><header class="nx-panel-head"><h3>Deneme performansı</h3><button data-nx-exams>Tümünü gör ↗</button></header><div class="nx-performance"><div class="nx-chart">${series.length>1?lineChartSVG(series):'<div class="nx-empty">Grafik için iki deneme ekle.</div>'}</div><div class="nx-score"><small>Son deneme</small><strong>${latest?examTotal(latest):'—'}</strong><span>NET</span></div></div></section>
         </div>
-        <div class="gees-metrics"><div><span>İLERLEME</span><strong>%${pct}</strong></div><div><span>TAMAMLANAN</span><strong>${complete}<small> / ${blocks.length}</small></strong></div><div><span>PLANLANAN</span><strong>${planned?Math.round(planned/60*10)/10:0}<small> saat</small></strong></div></div>
-        <div class="gees-progress"><div style="width:${pct}%"></div></div>
-      </section>
-      <div class="gees-workspace">
-        <section class="card timeline-wrap gees-agenda"><div class="timeline-toolbar"><div><span class="gees-section-kicker">01 / PROGRAM</span><div class="card-title">Günlük akış</div><div class="card-subtitle">Saatlere dokunarak blok ekleyebilir veya düzenleyebilirsin.</div></div><span class="gees-count">${blocks.length} BLOK</span></div><div class="timeline-scroll">${timelineHTML(date)}</div></section>
-        <aside class="gees-rail">
-          <section class="card gees-rail-card"><div class="card-head"><div><span class="gees-section-kicker">02 / TAKİP</span><div class="card-title">Haftalık borçlar</div></div><button class="pill-btn" data-open-debts>Tümü ↗</button></div><div class="card-body">${debts.length?'<div class="list-stack">'+debts.slice(0,4).map(debtItemHTML).join('')+'</div>':emptyHTML('✓','Borç yok','Şu an bekleyen borcun bulunmuyor.')}</div></section>
-          <section class="card gees-rail-card"><div class="card-head"><div><span class="gees-section-kicker">03 / HAVUZ</span><div class="card-title">Bekleyen görevler</div></div><button class="pill-btn" data-open-tasks>Tümü ↗</button></div><div class="card-body">${tasks.length?'<div class="list-stack">'+tasks.slice(0,4).map(taskItemHTML).join('')+'</div>':emptyHTML('＋','Havuz boş','Yeni görevler burada görünür.')}</div></section>
-        </aside>
+      </div>
+      <div class="nx-bottom-grid">
+        <section class="nx-panel"><header class="nx-panel-head"><h3>Ders dağılımı</h3><span class="nx-muted">Bugün</span></header><div class="nx-subject-bars">${counts.map((x,i)=>`<div><span>${x.name}</span><div class="nx-meter"><i style="width:${Math.round(x.n/totalSubject*100)}%"></i></div><strong>%${Math.round(x.n/totalSubject*100)}</strong></div>`).join('')}</div></section>
+        <section class="nx-panel"><header class="nx-panel-head"><h3>Hedef takibi</h3><button data-nx-analytics>Analize git ↗</button></header><div class="nx-target-list"><div><span>Günlük plan</span><div class="nx-meter"><i style="width:${pct}%"></i></div><strong>%${pct}</strong></div><div><span>Çalışma</span><div class="nx-meter"><i style="width:${planned?Math.round(done/planned*100):0}%"></i></div><strong>${fmtDuration(done)}</strong></div></div></section>
+        <section class="nx-panel"><header class="nx-panel-head"><h3>Sıradaki çalışma</h3><button data-nx-plan>Planı aç ↗</button></header><div class="nx-next-card"><small>${next?esc(next.start+' – '+next.end):'PLAN HAZIR'}</small><strong>${next?esc(next.title):'Tüm bloklar tamamlandı'}</strong><span>${next?esc(next.subject):'Yeni bir blok ekleyebilirsin.'}</span></div></section>
       </div>
     </div>`;
-    bindDateControls();bindTimeline(view);bindCommonListActions(view);
-    view.querySelector('[data-gees-open-focus]')?.addEventListener('click',()=>openBlockDetail(focus.id));
-    view.querySelectorAll('[data-add-block]').forEach(el=>el.addEventListener('click',()=>openBlockForm({date})));
+    bindDateControls();
     $('[data-add-block]')?.addEventListener('click',()=>openBlockForm({date}));
-    $('[data-open-debts]')?.addEventListener('click',()=>{currentPage='tasks';taskTab='debts';render();});
-    $('[data-open-tasks]')?.addEventListener('click',()=>{currentPage='tasks';taskTab='tasks';render();});
+    view.querySelectorAll('[data-add-block]').forEach(el=>el.onclick=()=>openBlockForm({date}));
+    view.querySelectorAll('[data-nx-block]').forEach(el=>el.onclick=()=>openBlockDetail(el.dataset.nxBlock));
+    view.querySelectorAll('[data-nx-plan]').forEach(el=>el.onclick=()=>{currentPage='plan';render();});
+    view.querySelectorAll('[data-nx-tasks]').forEach(el=>el.onclick=()=>{currentPage='tasks';render();});
+    view.querySelectorAll('[data-nx-exams]').forEach(el=>el.onclick=()=>{currentPage='exams';render();});
+    view.querySelectorAll('[data-nx-analytics]').forEach(el=>el.onclick=()=>{currentPage='analytics';render();});
   }
 
   function emptyHTML(emoji,title,desc) { return `<div class="empty-state"><div class="empty-emoji">${emoji}</div><div class="empty-title">${esc(title)}</div><div>${esc(desc)}</div></div>`; }

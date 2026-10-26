@@ -12,7 +12,7 @@ function showBootError(error){
 // cloud sync and enhancements are maintenance work and must never keep the PWA
 // on a blank screen during startup.
 try{
-  await import('./app.js?v=gees-batu-ui-v3');
+  await import('./app.js?v=gees-layout-v4');
 }catch(error){
   showBootError(error);
 }
