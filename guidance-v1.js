@@ -44,7 +44,9 @@ function bindForm(view,mentor,item){
 async function draw(view,page){
  const r=role();if(!r)return;const mentor=r==='mentor';document.body.classList.toggle('ayzos-kid-mode',!mentor);view.innerHTML='<div class="gd-loading">Ödevler yükleniyor…</div>';
  try{
- const items=await fetchAll();const today=date(),todays=items.filter(x=>!x.due_date||x.due_date<=today);
+ const items=await fetchAll();
+ if(window.HakunaWeekly){await window.HakunaWeekly.render(view,page,items,mentor);return;}
+ const today=date(),todays=items.filter(x=>!x.due_date||x.due_date<=today);
  const list=page==='today'?todays:page==='plan'?items:items;
  const title=mentor?'Ayzos · Rehberlik':page==='today'?'Bugünkü maceram 🌈':page==='plan'?'Görev haritam 🗺️':'Görevlerim 🚀';
  const finished=items.filter(x=>x.completed).length;
