@@ -98,10 +98,15 @@ self.addEventListener('fetch',event=>{
   // Recovery email links must reach the dedicated reset page, not the PWA
   // home-screen navigation cache. Only fall back to that page's own cache.
   if(url.origin===self.location.origin && url.pathname.endsWith('/reset-password.html')){
-    event.respondWith(fetch(event.request,{cache:'no-store'}).then(resp=>{
-      if(resp.ok)event.waitUntil(cachePut('./reset-password.html',resp));
-      return resp;
-    }).catch(()=>caches.match('./reset-password.html').then(cached=>cached||new Response('Şifre sıfırlama sayfası çevrimdışı açılamıyor.',{status:503}))));
+    event.respondWith((async()=>{
+      try{
+        const resp=await fetch(event.request,{cache:'no-store'});
+        if(resp.ok)await cachePut('./reset-password.html',resp);
+        return resp;
+      }catch{
+        return await caches.match('./reset-password.html')||new Response('Şifre sıfırlama sayfası çevrimdışı açılamıyor.',{status:503});
+      }
+    })());
     return;
   }
 
