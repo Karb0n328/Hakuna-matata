@@ -62,7 +62,12 @@
     }
     ctx.strokeStyle='#d8e1eb';ctx.lineWidth=.6;
     ctx.strokeRect(x,y+20,width,height);
-    ctx.drawImage(img,x+1,y+21,width-2,height-2);
+    // Preserve every pixel of the stored image; never stretch or crop it in the PDF.
+    const iw=img.naturalWidth||img.width,ih=img.naturalHeight||img.height;
+    const fit=Math.min((width-2)/iw,(height-2)/ih);
+    const dw=iw*fit,dh=ih*fit;
+    ctx.fillStyle='#fff';ctx.fillRect(x+1,y+21,width-2,height-2);
+    ctx.drawImage(img,x+(width-dw)/2,y+21+(height-2-dh)/2,dw,dh);
     const answer=/^[A-E]$/.test(String(q.correctAnswer||'').toUpperCase())?String(q.correctAnswer).toUpperCase():'';
     const label=answer?'Doğru cevap: '+answer:'';
     const meta=[q.source,q.reference].filter(Boolean).join(' • ');
