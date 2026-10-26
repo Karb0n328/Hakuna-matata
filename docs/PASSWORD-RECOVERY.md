@@ -23,6 +23,35 @@ Sistem Supabase Auth `resetPasswordForEmail(email, {redirectTo})` ile e-posta is
    - SMTP gizli bilgilerini **GitHub koduna veya web sayfasına koyma**; yalnızca Supabase kontrol panelindeki gizli alanlara gir.
    - Resmi dokümantasyon: https://supabase.com/docs/guides/auth/auth-smtp
 
+
+## Çalışmayan e-posta bağlantılarının kesin yönlendirme ayarı
+
+26 Ekim 2026 Supabase Auth kayıtlarında `/recover` işlemi 200 ve `mail.send` olayı başarılı. Buna karşılık `/verify` için "One-time token not found" görülüyor; ayrıca sunucu olaylarında `http://localhost:3000` referer bilgisi var. Bu, yanlış yönlendirme veya daha önce kullanılmış/otomatik açılmış tek kullanımlık bağlantı göstergesi olabilir.
+
+**1. Supabase → Authentication → URL Configuration:**
+
+- **Site URL**: `https://karb0n328.github.io/Hakuna-matata/`
+- **Redirect URLs**: `https://karb0n328.github.io/Hakuna-matata/reset-password.html`
+- Eğer başka kullanımdan kalan `localhost` adresleri varsa onları canlı Site URL olarak kullanma.
+
+**2. Supabase → Authentication → Email Templates → Reset Password:**
+
+E-postanın eski GoTrue `/verify` URL'sine gidip başka adrese yönlenmesi yerine doğrudan uygulamanın sıfırlama sayfasını açması için **yalnızca Reset Password şablonundaki buton bağlantısını** aşağıdaki gibi güncelle:
+
+```html
+<a href="https://karb0n328.github.io/Hakuna-matata/reset-password.html?type=recovery&amp;token_hash={{ .TokenHash }}">Hakuna Matata — Şifremi Sıfırla</a>
+```
+
+Yeni sayfa `verifyOtp({token_hash,type:'recovery'})` ile tokenı doğrular; doğrulama **kullanıcının butona basmasıyla** gerçekleşir, sadece URL önizlemesiyle değil. Böylece bağlantı önizleme/tarama servislerinin tek kullanımlık tokenı tüketme olasılığı azalır. Şablonda `{{ .TokenHash }}` tam olarak bu şekilde korunmalıdır; `{{ .ConfirmationURL }}` artık bu buton için kullanılmamalıdır.
+
+**3. Kullanıcı için geçici yöntem (yönetici ayarları düzelene kadar):**
+
+- `https://karb0n328.github.io/Hakuna-matata/reset-password.html` sayfasında e-posta ile **yeni bağlantı** iste.
+- E-postadaki bağlantıya **dokunmadan** basılı tutup "Bağlantıyı kopyala" seç.
+- Sıfırlama sayfasında "Maildeki bağlantı çalışmıyor mu?" alanını açıp bağlantıyı yapıştır ve doğrula.
+- Tek kullanımlık eski bağlantıları yeniden kullanma.
+- Bağlantıyı asla destek kişilerine veya mesajlaşma uygulamalarına gönderme; kimlik doğrulama sırrı içerir.
+
 ## Canlı kontrol
 
 1. Hesabının e-postasıyla sıfırlama sayfasını aç.
