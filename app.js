@@ -127,7 +127,7 @@
   function pageMeta() {
     const map={
       today:['Günlük çalışma merkezi','Bugün'], plan:['Haftayı tek bakışta gör','Plan'], tasks:['Görev havuzu + haftalık borçlar','Görevler'],
-      exams:['Netlerini ve gelişimini kaydet','Denemeler'], questions:['Çözdürülecek soruları kaybetme','Sorular'], books:['Kişisel soru bankan ve PDF kitapçıkların','Soru Kitaplığım'], analytics:['Gerçek çalışma verin','Analiz'], settings:['Cihaz, yedek ve ChatGPT köprüsü','Ayarlar']
+      exams:['Netlerini ve gelişimini kaydet','Denemeler'], questions:['Çözdürülecek soruları kaybetme','Sorular'], books:['Kişisel soru bankan ve PDF kitapçıkların','Soru Kitaplığım'], analytics:['Gerçek çalışma verin','Analiz'], settings:['Cihaz ve veri yedeği','Ayarlar']
     };
     return map[currentPage]||map.today;
   }
@@ -236,7 +236,10 @@
     });
   }
 
-  function renderToday(view,actions) {
+  function isGeesPreviewUser(){
+    try{const s=JSON.parse(localStorage.getItem('sb-zyrbbkbwrijnnykbgjvc-auth-token')||'null');return s?.user?.id==='8f2cf782-f4f2-4c85-a9e9-a560c623e6d5'&&!!s.access_token;}catch{return false;}
+  }
+  function renderTodayLegacy(view,actions) {
     actions.innerHTML=`${dateControlHTML()}<button class="primary-btn" data-add-block>＋ Çalışma bloğu</button>`;
     const date=state.selectedDate; const blocks=blocksFor(date); const debts=activeDebts(); const tasks=activeTasks();
     const complete=blocks.filter(b=>b.status==='complete').length; const pct=blocks.length?Math.round(complete/blocks.length*100):0;
@@ -256,6 +259,48 @@
       </aside>
     </div>`;
     bindDateControls(); bindTimeline(view); bindCommonListActions(view);
+    $('[data-add-block]')?.addEventListener('click',()=>openBlockForm({date}));
+    $('[data-open-debts]')?.addEventListener('click',()=>{currentPage='tasks';taskTab='debts';render();});
+    $('[data-open-tasks]')?.addEventListener('click',()=>{currentPage='tasks';taskTab='tasks';render();});
+  }
+
+  function renderToday(view,actions) {
+    if(!isGeesPreviewUser())return renderTodayLegacy(view,actions);
+    actions.innerHTML=`${dateControlHTML()}<button class="primary-btn" data-add-block>＋ Yeni blok</button>`;
+    const date=state.selectedDate,blocks=blocksFor(date),debts=activeDebts(),tasks=activeTasks();
+    const complete=blocks.filter(b=>b.status==='complete').length;
+    const pct=blocks.length?Math.round(complete/blocks.length*100):0;
+    const planned=blocks.reduce((sum,b)=>sum+durationMinutes(b.start,b.end),0);
+    const now=new Date(),today=todayISO(),clock=now.getHours()*60+now.getMinutes();
+    const sorted=[...blocks].sort((a,b)=>a.start.localeCompare(b.start));
+    const ongoing=date===today?sorted.find(b=>minuteFromTime(b.start)<=clock&&minuteFromTime(b.end)>clock&&b.status!=='complete'):null;
+    const upcoming=sorted.find(b=>b.status!=='complete'&&(date!==today||minuteFromTime(b.end)>clock));
+    const focus=ongoing||upcoming;
+    const focusLabel=ongoing?'ŞU ANDA':'SIRADAKİ ÇALIŞMA';
+    view.innerHTML=`<div class="gees-home">
+      <section class="gees-hero">
+        <div class="gees-hero-head"><div><span class="gees-overline">GEES / DAILY WORKSPACE</span><h2>Bugünün odağı<span class="gees-period">.</span></h2><p>${esc(formatDate(date))} · Bir sonraki işe odaklan, gerisini sistem takip etsin.</p></div><span class="gees-hero-index">${String(blocks.length).padStart(2,'0')} / PLAN</span></div>
+        <div class="gees-focus-panel">
+          <div class="gees-focus-copy"><span class="gees-focus-label"><span class="gees-live-dot"></span>${focus?focusLabel:'GÜNÜN PLANI'}</span>
+            <h3>${focus?esc(focus.title):'Yeni bir çalışma bloğu oluştur.'}</h3>
+            <p>${focus?esc(focus.subject)+' · '+esc(focus.start)+' — '+esc(focus.end):'Planını oluşturmak için ilk bloğunu ekle.'}</p>
+          </div>
+          <button class="gees-focus-action" ${focus?'data-gees-open-focus="'+esc(focus.id)+'"':'data-add-block'}>${focus?'Bloğu aç ↗':'Blok ekle ＋'}</button>
+        </div>
+        <div class="gees-metrics"><div><span>İLERLEME</span><strong>%${pct}</strong></div><div><span>TAMAMLANAN</span><strong>${complete}<small> / ${blocks.length}</small></strong></div><div><span>PLANLANAN</span><strong>${planned?Math.round(planned/60*10)/10:0}<small> saat</small></strong></div></div>
+        <div class="gees-progress"><div style="width:${pct}%"></div></div>
+      </section>
+      <div class="gees-workspace">
+        <section class="card timeline-wrap gees-agenda"><div class="timeline-toolbar"><div><span class="gees-section-kicker">01 / PROGRAM</span><div class="card-title">Günlük akış</div><div class="card-subtitle">Saatlere dokunarak blok ekleyebilir veya düzenleyebilirsin.</div></div><span class="gees-count">${blocks.length} BLOK</span></div><div class="timeline-scroll">${timelineHTML(date)}</div></section>
+        <aside class="gees-rail">
+          <section class="card gees-rail-card"><div class="card-head"><div><span class="gees-section-kicker">02 / TAKİP</span><div class="card-title">Haftalık borçlar</div></div><button class="pill-btn" data-open-debts>Tümü ↗</button></div><div class="card-body">${debts.length?'<div class="list-stack">'+debts.slice(0,4).map(debtItemHTML).join('')+'</div>':emptyHTML('✓','Borç yok','Şu an bekleyen borcun bulunmuyor.')}</div></section>
+          <section class="card gees-rail-card"><div class="card-head"><div><span class="gees-section-kicker">03 / HAVUZ</span><div class="card-title">Bekleyen görevler</div></div><button class="pill-btn" data-open-tasks>Tümü ↗</button></div><div class="card-body">${tasks.length?'<div class="list-stack">'+tasks.slice(0,4).map(taskItemHTML).join('')+'</div>':emptyHTML('＋','Havuz boş','Yeni görevler burada görünür.')}</div></section>
+        </aside>
+      </div>
+    </div>`;
+    bindDateControls();bindTimeline(view);bindCommonListActions(view);
+    view.querySelector('[data-gees-open-focus]')?.addEventListener('click',()=>openBlockDetail(focus.id));
+    view.querySelectorAll('[data-add-block]').forEach(el=>el.addEventListener('click',()=>openBlockForm({date})));
     $('[data-add-block]')?.addEventListener('click',()=>openBlockForm({date}));
     $('[data-open-debts]')?.addEventListener('click',()=>{currentPage='tasks';taskTab='debts';render();});
     $('[data-open-tasks]')?.addEventListener('click',()=>{currentPage='tasks';taskTab='tasks';render();});
@@ -809,28 +854,35 @@
   }
 
   function renderSettings(view,actions) {
-    const ctx=makeBridgeContext(state.selectedDate);
-    const guide=bridgeGuideText();
-    view.innerHTML=`<div class="settings-grid"><section class="card settings-section"><div class="card-title">⚙️ Genel</div><div class="settings-row"><div><div class="settings-row-title">Ana ekrana ekle</div><div class="settings-row-desc">Safari → Paylaş → Ana Ekrana Ekle. Sonra tam ekran uygulama gibi açılır.</div></div><span>📲</span></div><div class="settings-row"><div><div class="settings-row-title">Yerel veri</div><div class="settings-row-desc">Program, denemeler ve sorular bu cihazın tarayıcı depolamasında tutulur.</div></div><span>🔒</span></div><div class="settings-row"><div><div class="settings-row-title">Veri yedeği</div><div class="settings-row-desc">Bulut yok; bu yüzden ara sıra JSON yedeği almak iyi fikir.</div></div><div style="display:flex;gap:6px"><button class="secondary-btn" data-backup>Yedekle</button><button class="secondary-btn" data-restore>Geri yükle</button><input id="restoreFile" type="file" accept="application/json" hidden></div></div><div class="settings-row"><div><div class="settings-row-title">Tüm veriyi sıfırla</div><div class="settings-row-desc">Cihazdaki Hakuna Matata kayıtlarını temizler.</div></div><button class="danger-btn" data-reset>Sil</button></div></section>
-      <div class="bridge-stack">
-        <section class="terminal terminal-guide"><div class="terminal-title">🤖 YENİ CHATGPT’YE HAKUNA’YI ÖĞRET</div><div class="terminal-help">Başka bir ChatGPT’ye geçtiğinde bu metni bir kez gönder. Hakuna Bridge’in nasıl çalıştığını, hangi JSON’u okuyacağını ve sana hangi komutu geri vermesi gerektiğini anlatır.</div><textarea id="bridgeGuide" readonly></textarea><div class="terminal-actions"><button class="secondary-btn" data-copy-guide>📋 Tanıtım metnini kopyala</button><button class="secondary-btn" data-copy-guide-context>📦 Tanıtım + bugünkü kod</button></div></section>
-        <section class="terminal"><div class="terminal-title">🧩 HAKUNA BRIDGE / ChatGPT Köprüsü</div><div class="terminal-help">Mevcut gününü kopyala → ChatGPT’ye gönder → gelen <code>hakuna.command.v1</code> JSON’unu aşağıya yapıştır.</div><div class="terminal-actions"><button class="secondary-btn" data-copy-context>📋 Günün kodunu kopyala</button><button class="secondary-btn" data-share-context>↗︎ Paylaş</button></div><div style="height:10px"></div><textarea id="bridgeInput" placeholder='ChatGPT’den gelen { "schema": "hakuna.command.v1", ... } kodunu buraya yapıştır'></textarea><div class="terminal-actions"><button class="secondary-btn" data-paste-bridge>Panodan yapıştır</button><button class="primary-btn" data-preview-bridge>Önizle</button></div></section>
-      </div></div>`;
-    $('#bridgeGuide').value=guide;
-    $('[data-copy-guide]').onclick=()=>copyText(guide,'Hakuna tanıtım metni kopyalandı.');
-    $('[data-copy-guide-context]').onclick=()=>copyText(`${guide}\n\n--- HAKUNA MATATA GÜNCEL GÜN KODU ---\n${JSON.stringify(ctx,null,2)}`,'Tanıtım + günün kodu kopyalandı.');
-    $('[data-copy-context]').onclick=()=>copyText(JSON.stringify(ctx,null,2),'Günün kodu kopyalandı.');
-    $('[data-share-context]').onclick=()=>shareText('Hakuna Matata — Günlük bağlam',JSON.stringify(ctx,null,2));
-    $('[data-paste-bridge]').onclick=async()=>{try{$('#bridgeInput').value=await navigator.clipboard.readText();}catch{toast('Panoya erişemedim; uzun basıp Yapıştır kullan.');}};
-    $('[data-preview-bridge]').onclick=()=>previewBridge($('#bridgeInput').value);
-    $('[data-backup]').onclick=backupData; $('[data-restore]').onclick=()=>$('#restoreFile').click(); $('#restoreFile').onchange=restoreData;
-    $('[data-reset]').onclick=async()=>{if(confirm('Hakuna Matata içindeki tüm yerel veriler silinsin mi?')){state=defaultState();await save();render();toast('Veriler sıfırlandı.');}};
+    const suggestionCard='<section class="card settings-section"><div class="card-title">✦ Öneriler</div><div class="card-subtitle" style="margin:8px 0 14px">GEES için fikrini veya karşılaştığın sorunu doğrudan geliştiriciye gönder.</div><form id="geesSuggestionForm"><label for="geesSuggestionCategory">Tür</label><select id="geesSuggestionCategory" style="width:100%;margin:8px 0 12px;padding:12px"><option value="suggestion">Öneri</option><option value="bug">Hata bildirimi</option><option value="other">Diğer</option></select><label for="geesSuggestionText">Mesajın</label><textarea id="geesSuggestionText" required minlength="5" maxlength="2000" rows="5" style="width:100%;margin:8px 0 12px;padding:12px" placeholder="Neyi geliştirmemizi istersin?"></textarea><button type="submit" class="primary-btn" id="geesSuggestionSend">Öneriyi gönder</button><div id="geesSuggestionStatus" role="status" style="margin-top:10px"></div></form></section>';
+    view.innerHTML=`<div class="settings-grid"><section class="card settings-section"><div class="card-title">⚙️ Genel</div><div class="settings-row"><div><div class="settings-row-title">Ana ekrana ekle</div><div class="settings-row-desc">Safari → Paylaş → Ana Ekrana Ekle.</div></div><span>📲</span></div><div class="settings-row"><div><div class="settings-row-title">Veri yedeği</div><div class="settings-row-desc">Verilerini JSON olarak yedekleyebilirsin.</div></div><div style="display:flex;gap:6px"><button class="secondary-btn" data-backup>Yedekle</button><button class="secondary-btn" data-restore>Geri yükle</button><input id="restoreFile" type="file" accept="application/json" hidden></div></div><div class="settings-row"><div><div class="settings-row-title">Tüm veriyi sıfırla</div><div class="settings-row-desc">Bu cihazdaki GEES kayıtlarını temizler.</div></div><button class="danger-btn" data-reset>Sil</button></div></section></div>`;
+    view.querySelector('.settings-grid').insertAdjacentHTML('beforeend',suggestionCard);
+    document.getElementById('geesSuggestionForm').addEventListener('submit',async event=>{
+      event.preventDefault();
+      const button=document.getElementById('geesSuggestionSend'),status=document.getElementById('geesSuggestionStatus');
+      button.disabled=true;status.textContent='Gönderiliyor…';
+      try{
+        const keys=Object.keys(localStorage).filter(k=>k.startsWith('sb-')&&k.endsWith('-auth-token'));
+        const session=keys.map(k=>{try{return JSON.parse(localStorage.getItem(k))}catch{return null}}).find(x=>x?.access_token&&x?.user?.id);
+        if(!session)throw new Error('Öneri göndermek için hesabına giriş yap.');
+        const res=await fetch('https://zyrbbkbwrijnnykbgjvc.supabase.co/rest/v1/gees_suggestions',{
+          method:'POST',headers:{'Content-Type':'application/json',apikey:'sb_publishable_OW-03s1ExuA2GwmmL7HtRQ_IHOPxyGL',Authorization:'Bearer '+session.access_token,Prefer:'return=minimal'},
+          body:JSON.stringify({user_id:session.user.id,category:document.getElementById('geesSuggestionCategory').value,message:document.getElementById('geesSuggestionText').value.trim()})
+        });
+        if(!res.ok)throw new Error('Gönderilemedi. Oturumunu yenileyip tekrar dene.');
+        status.textContent='Önerin admin paneline iletildi. Teşekkürler!';document.getElementById('geesSuggestionText').value='';
+      }catch(err){status.textContent=err.message;}finally{button.disabled=false;}
+    });
+    $('[data-backup]').onclick=backupData;
+    $('[data-restore]').onclick=()=>$('#restoreFile').click();
+    $('#restoreFile').onchange=restoreData;
+    $('[data-reset]').onclick=async()=>{if(confirm('GEES içindeki tüm yerel veriler silinsin mi?')){state=defaultState();await save();render();toast('Veriler sıfırlandı.');}};
   }
 
   function bridgeGuideText() {
     return `HAKUNA MATATA — CHATGPT KÖPRÜ TALİMATI (v1)
 
-Ben Hakuna Matata adlı kişisel ders planlama uygulamasını kullanıyorum. Uygulamaya doğrudan erişimin yok. Uygulamayla yalnızca kopyala-yapıştır JSON köprüsü üzerinden çalışacaksın.
+Ben GEES adlı kişisel ders planlama uygulamasını kullanıyorum. Uygulamaya doğrudan erişimin yok. Uygulamayla yalnızca kopyala-yapıştır JSON köprüsü üzerinden çalışacaksın.
 
 NASIL ÇALIŞIR
 1. Ben uygulamadan sana "schema": "hakuna.context.v1" olan bir JSON göndereceğim. Bu, seçtiğim günün mevcut programını, aktif borçlarımı ve görev havuzumu içerir.
@@ -943,8 +995,8 @@ YANIT KURALI
 
   async function backupData() {
     const payload=JSON.stringify({schema:'hakuna.backup.v1',exported_at:new Date().toISOString(),state},null,2);
-    const file=new File([payload],`Hakuna-Matata-Yedek-${todayISO()}.json`,{type:'application/json'});
-    try { if(navigator.canShare?.({files:[file]})) return await navigator.share({files:[file],title:'Hakuna Matata yedeği'}); } catch {}
+    const file=new File([payload],`GEES-Yedek-${todayISO()}.json`,{type:'application/json'});
+    try { if(navigator.canShare?.({files:[file]})) return await navigator.share({files:[file],title:'GEES yedeği'}); } catch {}
     const url=URL.createObjectURL(file); const a=document.createElement('a');a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000); toast('Yedek indirildi.');
   }
   async function restoreData(e) {
@@ -957,7 +1009,7 @@ YANIT KURALI
     const tpl=$('#modalTemplate').content.cloneNode(true); $('.modal-title',tpl).textContent=title; $('.modal-eyebrow',tpl).textContent=eyebrow; $('.modal-body',tpl).innerHTML=html; const root=$('#modalRoot');root.innerHTML='';root.append(tpl); $$('[data-close-modal]',root).forEach(x=>x.onclick=closeModal); }
   function closeModal() { $('#modalRoot').innerHTML=''; }
   function openMoreMenu() {
-    openModal('Daha fazla','Hakuna Matata',`<div class="status-options"><button class="status-option" data-more-nav="questions"><div class="status-emoji">❓</div><div><strong>Sorular</strong><span>Çözdürülecek soru havuzu</span></div></button><button class="status-option" data-more-nav="books"><div class="status-emoji">📚</div><div><strong>Soru Kitaplığım</strong><span>Fotoğraflı sorular ve PDF kitapçık</span></div></button><button class="status-option" data-more-nav="analytics"><div class="status-emoji">📈</div><div><strong>Analiz</strong><span>Çalışma ve deneme gelişimi</span></div></button><button class="status-option" data-more-nav="settings"><div class="status-emoji">⚙️</div><div><strong>Ayarlar</strong><span>Hakuna Bridge ve yedek</span></div></button></div>`);
+    openModal('Daha fazla','GEES',`<div class="status-options"><button class="status-option" data-more-nav="questions"><div class="status-emoji">❓</div><div><strong>Sorular</strong><span>Çözdürülecek soru havuzu</span></div></button><button class="status-option" data-more-nav="books"><div class="status-emoji">📚</div><div><strong>Soru Kitaplığım</strong><span>Fotoğraflı sorular ve PDF kitapçık</span></div></button><button class="status-option" data-more-nav="analytics"><div class="status-emoji">📈</div><div><strong>Analiz</strong><span>Çalışma ve deneme gelişimi</span></div></button><button class="status-option" data-more-nav="settings"><div class="status-emoji">⚙️</div><div><strong>Ayarlar</strong><span>Yedek ve ayarlar</span></div></button></div>`);
     $$('[data-more-nav]').forEach(b=>b.onclick=()=>{currentPage=b.dataset.moreNav;closeModal();render();});
   }
 
