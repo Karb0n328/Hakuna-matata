@@ -12,7 +12,8 @@
       const hash = new URLSearchParams(location.hash.slice(1));
       const query = new URLSearchParams(location.search);
       const recovery = hash.get('type') === 'recovery'
-        || (query.get('type') === 'recovery' && (query.has('token_hash') || query.has('code')));
+        || (query.get('type') === 'recovery' && (query.has('token_hash') || query.has('code')))
+        || (hash.has('error_code') && hash.has('error_description'));
       if(!recovery)return;
       const target = new URL('./reset-password.html',location.href);
       target.hash = location.hash;
