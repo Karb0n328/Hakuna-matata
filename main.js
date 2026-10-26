@@ -79,3 +79,15 @@ afterFirstPaint(()=>{
   })();
 });
 
+
+/* Keep the legacy Mata extension for other accounts during Batu-only rollout. */
+const loadLegacyMata=async()=>{
+  try{
+    const session=JSON.parse(localStorage.getItem('sb-zyrbbkbwrijnnykbgjvc-auth-token')||'null');
+    if(session?.user?.id==='8f2cf782-f4f2-4c85-a9e9-a560c623e6d5')return;
+    await import('./mata-fallback.js');
+    await import('./mata-loader.js?v=11');
+  }catch(error){console.warn('Legacy Mata unavailable',error);}
+};
+if('requestIdleCallback' in window)requestIdleCallback(()=>void loadLegacyMata(),{timeout:700});
+else setTimeout(()=>void loadLegacyMata(),180);
