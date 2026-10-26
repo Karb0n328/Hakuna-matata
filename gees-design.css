@@ -1,0 +1,19 @@
+/* GEES design system — editorial monochrome, focus-first. */
+:root{--navy:#0b0c0e;--navy-2:#1d1f22;--ink:#17191c;--muted:#777b80;--line:#e5e6e8;--bg:#f7f7f6;--card:#fff;--blue:#17191c;--blue-soft:#f0f0ef;--cyan-soft:#f0f0ef;--green:#52635a;--green-soft:#edf1ee;--amber:#8d7959;--amber-soft:#f4f0e8;--purple:#69636e;--purple-soft:#f0eef1;--shadow:0 4px 22px rgba(0,0,0,.035);--radius:17px}
+html,body{font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;letter-spacing:-.012em}
+.sidebar{background:#0b0c0e;border-right:1px solid #282a2d}
+.brand-title{font-size:22px;letter-spacing:-.055em;font-weight:850}
+.brand-icon{border-radius:12px;box-shadow:none}
+.nav-button{border-radius:11px;transition:background .16s,color .16s}
+.nav-button.active{background:#f5f5f3;color:#0b0c0e;box-shadow:none}
+.nav-button:hover:not(.active){background:#242629}
+.card{box-shadow:var(--shadow);border-color:var(--line)}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid #777b80;outline-offset:3px}
+.primary-btn{background:#0b0c0e;color:#fafafa;border-color:#0b0c0e}
+.primary-btn:hover{background:#292b2e}
+.secondary-btn{border-color:#d9dadd}
+html[data-batu-theme="dark"]{--navy:#030405;--ink:#f5f5f3;--bg:#0b0c0e;--card:#151719;--line:#303235;--blue:#fafafa;--blue-soft:#232528;--shadow:none}
+html[data-batu-theme="dark"] .nav-button.active{background:#f5f5f3!important;color:#0b0c0e!important;box-shadow:none!important}
+html[data-batu-theme="dark"] .card{box-shadow:none}
+html[data-batu-theme="dark"] .primary-btn{background:#f5f5f3!important;color:#0b0c0e!important;border-color:#f5f5f3!important}
+@media(max-width:760px){:root{--radius:15px}.brand-title{font-size:20px}.card{box-shadow:none}}
