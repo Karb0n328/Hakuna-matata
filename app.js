@@ -22,8 +22,6 @@
   let db;
   let state;
   let currentPage = 'today';
-  const initialPage=decodeURIComponent(location.hash.slice(1));
-  if(['today','plan','tasks','exams','questions','books','analytics','suggestions','settings'].includes(initialPage))currentPage=initialPage;
   let taskTab = 'tasks';
   let questionFilter = 'Tümü';
   let questionListMode = 'open';
@@ -117,19 +115,19 @@
   }
 
   function renderNavigation() {
-    $('#sidebarNav').innerHTML=navButtons(isGeesPreviewUser()?NAV:NAV.filter(item=>item[0]!=='suggestions'));
-    $('#bottomNav').innerHTML=MOBILE_NAV.map(([id,icon,label]) => `<button class="${currentPage===id || (id==='more' && ['questions','books','analytics','suggestions','settings'].includes(currentPage))?'active':''}" data-nav="${id}"><span class="nav-icon">${icon}</span><span>${label}</span></button>`).join('');
+    $('#sidebarNav').innerHTML=navButtons(NAV);
+    $('#bottomNav').innerHTML=MOBILE_NAV.map(([id,icon,label]) => `<button class="${currentPage===id || (id==='more' && ['questions','books','analytics','settings'].includes(currentPage))?'active':''}" data-nav="${id}"><span class="nav-icon">${icon}</span><span>${label}</span></button>`).join('');
     $$('[data-nav]').forEach(b=>b.onclick=()=>{
       const id=b.dataset.nav;
       if (id==='more') return openMoreMenu();
-      currentPage=id; history.replaceState(null,'','#'+encodeURIComponent(id)); render();
+      currentPage=id; render();
     });
   }
 
   function pageMeta() {
     const map={
       today:['Günlük çalışma merkezi','Bugün'], plan:['Haftayı tek bakışta gör','Plan'], tasks:['Görev havuzu + haftalık borçlar','Görevler'],
-      exams:['Netlerini ve gelişimini kaydet','Denemeler'], questions:['Çözdürülecek soruları kaybetme','Sorular'], books:['Kişisel soru bankan ve PDF kitapçıkların','Soru Kitaplığım'], analytics:['Gerçek çalışma verin','Analiz'], suggestions:['GEES / geri bildirim','Öneriler'], settings:['Cihaz ve veri yedeği','Ayarlar']
+      exams:['Netlerini ve gelişimini kaydet','Denemeler'], questions:['Çözdürülecek soruları kaybetme','Sorular'], books:['Kişisel soru bankan ve PDF kitapçıkların','Soru Kitaplığım'], analytics:['Gerçek çalışma verin','Analiz'], suggestions:['Geri bildirim ve geliştirme fikirleri','Öneriler'], settings:['Cihaz ve veri yedeği','Ayarlar']
     };
     return map[currentPage]||map.today;
   }
@@ -147,46 +145,6 @@
     else if (currentPage==='analytics') renderAnalytics(view,actions);
     else if (currentPage==='suggestions') renderSuggestions(view,actions);
     else if (currentPage==='settings') renderSettings(view,actions);
-    if(isGeesPreviewUser()&&currentPage!=='today')decorateGeesPanel(view);
-  }
-
-  function decorateGeesPanel(view){
-    if(!view||view.querySelector('.nx-section-banner'))return;
-    const config={
-      plan:['Haftalık çalışma haritası','Haftanın tüm günlerini, bloklarını ve çalışma yoğunluğunu tek bakışta gör.','HAFTALIK PLAN'],
-      tasks:['Görev merkezi','Planlanmamış işler ve haftalık borçlar tek çalışma alanında.','GÖREV YÖNETİMİ'],
-      exams:['Deneme arşivi','TYT ve AYT performansını karşılaştır, ilerlemeni izle.','PERFORMANS'],
-      questions:['Soru merkezi','Çözülecek ve çözülen sorularını filtreleyerek yönet.','SORU TAKİBİ'],
-      books:['Soru kitaplığı','Kaynaklarını ve PDF soru kitapçıklarını bir arada yönet.','KÜTÜPHANE'],
-      analytics:['İlerleme analizi','Çalışma süreleri, denemeler ve hedeflerin tek yerde.','ANALİTİK'],
-      suggestions:['Fikirlerini paylaş','Önerilerini ve karşılaştığın sorunları doğrudan ilet.','GERİ BİLDİRİM'],
-      settings:['Tercihler ve veriler','Hesap, görünüm ve yedekleme işlemlerini yönet.','AYARLAR']
-    };
-    const info=config[currentPage];if(!info)return;
-    const banner=document.createElement('div');banner.className='nx-section-banner';
-    banner.innerHTML='<div><span class="nx-eyebrow">'+esc(info[2])+'</span><h2>'+esc(info[0])+'</h2><p>'+esc(info[1])+'</p></div><div class="nx-section-mark" aria-hidden="true">GEES<span> / 26</span></div>';
-    view.prepend(banner);
-    if(currentPage==='tasks'){
-      const bar=document.createElement('div');bar.className='nx-section-summary';
-      bar.innerHTML='<div><small>BEKLEYEN GÖREV</small><strong>'+activeTasks().length+'</strong></div><div><small>HAFTALIK BORÇ</small><strong>'+activeDebts().length+'</strong></div><div><small>PLANLANAN BLOK</small><strong>'+state.blocks.filter(b=>b.status==='pending').length+'</strong></div>';
-      banner.after(bar);
-    }else if(currentPage==='exams'){
-      const bar=document.createElement('div');bar.className='nx-section-summary';
-      const list=state.exams;const last=list.slice().sort((a,b)=>b.date.localeCompare(a.date))[0];
-      bar.innerHTML='<div><small>TOPLAM DENEME</small><strong>'+list.length+'</strong></div><div><small>SON NET</small><strong>'+(last?examTotal(last):'—')+'</strong></div><div><small>ORTALAMA NET</small><strong>'+(list.length?(list.reduce((s,e)=>s+examTotal(e),0)/list.length).toFixed(1):'—')+'</strong></div>';
-      banner.after(bar);
-    }else if(currentPage==='questions'){
-      const bar=document.createElement('div');bar.className='nx-section-summary';
-      const solved=state.questions.filter(isQuestionSolved).length;
-      bar.innerHTML='<div><small>BEKLEYEN SORU</small><strong>'+(state.questions.length-solved)+'</strong></div><div><small>ÇÖZÜLEN</small><strong>'+solved+'</strong></div><div><small>TOPLAM</small><strong>'+state.questions.length+'</strong></div>';
-      banner.after(bar);
-    }else if(currentPage==='plan'){
-      const week=startOfWeekISO(state.selectedDate),days=Array.from({length:7},(_,i)=>addDaysISO(week,i));
-      const bs=state.blocks.filter(b=>days.includes(b.date));const done=bs.filter(b=>b.status==='complete').length;
-      const bar=document.createElement('div');bar.className='nx-section-summary';
-      bar.innerHTML='<div><small>HAFTALIK BLOK</small><strong>'+bs.length+'</strong></div><div><small>TAMAMLANAN</small><strong>'+done+'</strong></div><div><small>İLERLEME</small><strong>%'+(bs.length?Math.round(done/bs.length*100):0)+'</strong></div>';
-      banner.after(bar);
-    }
   }
 
   function dateControlHTML() {
@@ -279,10 +237,7 @@
     });
   }
 
-  function isGeesPreviewUser(){
-    try{const s=JSON.parse(localStorage.getItem('sb-zyrbbkbwrijnnykbgjvc-auth-token')||'null');return s?.user?.id==='8f2cf782-f4f2-4c85-a9e9-a560c623e6d5'&&!!s.access_token;}catch{return false;}
-  }
-  function renderTodayLegacy(view,actions) {
+  function renderToday(view,actions) {
     actions.innerHTML=`${dateControlHTML()}<button class="primary-btn" data-add-block>＋ Çalışma bloğu</button>`;
     const date=state.selectedDate; const blocks=blocksFor(date); const debts=activeDebts(); const tasks=activeTasks();
     const complete=blocks.filter(b=>b.status==='complete').length; const pct=blocks.length?Math.round(complete/blocks.length*100):0;
@@ -305,59 +260,6 @@
     $('[data-add-block]')?.addEventListener('click',()=>openBlockForm({date}));
     $('[data-open-debts]')?.addEventListener('click',()=>{currentPage='tasks';taskTab='debts';render();});
     $('[data-open-tasks]')?.addEventListener('click',()=>{currentPage='tasks';taskTab='tasks';render();});
-  }
-
-  function renderToday(view,actions) {
-    if(!isGeesPreviewUser())return renderTodayLegacy(view,actions);
-    const date=state.selectedDate,blocks=blocksFor(date),tasks=activeTasks(),debts=activeDebts();
-    const completed=blocks.filter(b=>b.status==='complete'),pct=blocks.length?Math.round(completed.length/blocks.length*100):0;
-    const planned=blocks.reduce((s,b)=>s+durationMinutes(b.start,b.end),0);
-    const done=completed.reduce((s,b)=>s+durationMinutes(b.start,b.end),0);
-    const exams=state.exams.slice().sort((a,b)=>b.date.localeCompare(a.date));
-    const recent=exams.slice(0,5).reverse(),latest=exams[0],average=exams.length?(exams.reduce((s,e)=>s+examTotal(e),0)/exams.length).toFixed(1):'—';
-    const activeQuestions=state.questions.filter(q=>!isQuestionSolved(q)).length;
-    const name=(()=>{try{const p=JSON.parse(localStorage.getItem('hakuna.cloud.profile')||'{}');return p?.username?String(p.username).split(/[ _-]/)[0]:'Batu';}catch{return 'Batu';}})();
-    const hour=new Date().getHours(),greeting=hour<11?'Günaydın':hour<18?'İyi günler':'İyi akşamlar';
-    const current=date===todayISO()?new Date().getHours()*60+new Date().getMinutes():-1;
-    const ordered=[...blocks].sort((a,b)=>a.start.localeCompare(b.start));
-    const next=ordered.find(b=>b.status!=='complete'&&(current<0||minuteFromTime(b.end)>current));
-    const series=recent.map(e=>({label:formatDate(e.date,{day:'numeric',month:'short'}),value:examTotal(e)}));
-    const subjects=['Türkçe','Matematik','Fen','Sosyal'];
-    const counts=subjects.map(s=>({name:s,n:completed.filter(b=>s==='Fen'?['Fizik','Kimya','Biyoloji'].includes(b.subject):s==='Sosyal'?['Tarih','Coğrafya','Felsefe','Din'].includes(b.subject):b.subject===s).reduce((n,b)=>n+durationMinutes(b.start,b.end),0)}));
-    const totalSubject=counts.reduce((s,x)=>s+x.n,0)||1;
-    actions.innerHTML=`${dateControlHTML()}<button class="primary-btn" data-add-block>＋ Blok ekle</button>`;
-    view.innerHTML=`<div class="gees-nexus">
-      <div class="nx-greeting"><div><div class="nx-date">${esc(formatDate(date,{weekday:'long',day:'numeric',month:'long'}))}</div><h2>${greeting}, ${esc(name)}.</h2><p>Bugün disiplin, yarın özgürlük.</p></div><div class="nx-week-target"><span>HAFTALIK PLAN</span><strong>${Math.round(planned/60*10)/10} saat</strong><small>Bugün planlanan</small></div></div>
-      <div class="nx-stats">
-        <div class="nx-stat"><span class="nx-stat-icon">◷</span><div><small>Çalışma süresi</small><strong>${fmtDuration(done)}</strong><span>Plan ${fmtDuration(planned)}</span></div><div class="nx-ring" style="--percent:${planned?Math.round(done/planned*100):0}"></div></div>
-        <div class="nx-stat"><span class="nx-stat-icon">✓</span><div><small>Tamamlanan blok</small><strong>${completed.length} / ${blocks.length}</strong><div class="nx-meter"><i style="width:${pct}%"></i></div></div></div>
-        <div class="nx-stat"><span class="nx-stat-icon">▤</span><div><small>Bekleyen sorular</small><strong>${activeQuestions} soru</strong><span>Soru kitaplığında</span></div></div>
-        <div class="nx-stat"><span class="nx-stat-icon">▥</span><div><small>Deneme ortalaması</small><strong>${average}</strong><span>${exams.length} kayıt</span></div></div>
-      </div>
-      <div class="nx-main-grid">
-        <section class="nx-panel nx-agenda"><header class="nx-panel-head"><div><span class="nx-eyebrow">GÜNLÜK AKIŞ</span><h3>Bugünün planı</h3></div><div class="nx-panel-actions"><span class="nx-day-date">${esc(formatDate(date,{day:'numeric',month:'short'}))}</span><button class="nx-icon-btn" data-add-block title="Yeni blok">＋</button></div></header>
-          <div class="nx-schedule">${ordered.length?ordered.map(b=>`<button class="nx-schedule-row ${b.status==='complete'?'nx-done':''} ${next?.id===b.id?'nx-next':''}" data-nx-block="${esc(b.id)}"><time>${esc(b.start)}</time><span class="nx-schedule-content"><span class="nx-schedule-subject">${esc(b.subject)}</span><strong>${esc(b.title)}</strong><small>${esc(b.start)} – ${esc(b.end)}</small></span><span class="nx-status">${b.status==='complete'?'✓':b.status==='partial'?'◐':b.status==='incomplete'?'×':next?.id===b.id?'▶':'○'}</span></button>`).join(''):`<div class="nx-empty">Henüz plan yok. İlk çalışma bloğunu ekle.</div>`}</div>
-          <div class="nx-agenda-foot"><span>${blocks.length} blok · %${pct} tamamlandı</span><button data-nx-plan>Haftalık plana git ↗</button></div>
-        </section>
-        <div class="nx-right">
-          <section class="nx-panel"><header class="nx-panel-head"><h3>Görevler</h3><button data-nx-tasks>Tümü ↗</button></header><div class="nx-tab-strip"><span>Bugün <b>${tasks.length}</b></span><span>Borçlar <b>${debts.length}</b></span></div><div class="nx-compact-list">${[...tasks.slice(0,4).map(t=>({label:t.title,sub:t.subject,type:'task',id:t.id})),...debts.slice(0,3).map(d=>({label:d.title,sub:d.subject,type:'debt',id:d.id}))].slice(0,6).map(x=>`<div class="nx-compact-item"><span class="nx-compact-check">○</span><span><strong>${esc(x.label)}</strong><small>${esc(x.sub)}</small></span><button data-nx-tasks aria-label="Görevlere git">···</button></div>`).join('')||'<div class="nx-empty">Bekleyen görev bulunmuyor.</div>'}</div></section>
-          <section class="nx-panel"><header class="nx-panel-head"><h3>Deneme performansı</h3><button data-nx-exams>Tümünü gör ↗</button></header><div class="nx-performance"><div class="nx-chart">${series.length>1?lineChartSVG(series):'<div class="nx-empty">Grafik için iki deneme ekle.</div>'}</div><div class="nx-score"><small>Son deneme</small><strong>${latest?examTotal(latest):'—'}</strong><span>NET</span></div></div></section>
-        </div>
-      </div>
-      <div class="nx-bottom-grid">
-        <section class="nx-panel"><header class="nx-panel-head"><h3>Ders dağılımı</h3><span class="nx-muted">Bugün</span></header><div class="nx-subject-bars">${counts.map((x,i)=>`<div><span>${x.name}</span><div class="nx-meter"><i style="width:${Math.round(x.n/totalSubject*100)}%"></i></div><strong>%${Math.round(x.n/totalSubject*100)}</strong></div>`).join('')}</div></section>
-        <section class="nx-panel"><header class="nx-panel-head"><h3>Hedef takibi</h3><button data-nx-analytics>Analize git ↗</button></header><div class="nx-target-list"><div><span>Günlük plan</span><div class="nx-meter"><i style="width:${pct}%"></i></div><strong>%${pct}</strong></div><div><span>Çalışma</span><div class="nx-meter"><i style="width:${planned?Math.round(done/planned*100):0}%"></i></div><strong>${fmtDuration(done)}</strong></div></div></section>
-        <section class="nx-panel"><header class="nx-panel-head"><h3>Sıradaki çalışma</h3><button data-nx-plan>Planı aç ↗</button></header><div class="nx-next-card"><small>${next?esc(next.start+' – '+next.end):'PLAN HAZIR'}</small><strong>${next?esc(next.title):'Tüm bloklar tamamlandı'}</strong><span>${next?esc(next.subject):'Yeni bir blok ekleyebilirsin.'}</span></div></section>
-      </div>
-    </div>`;
-    bindDateControls();
-    $('[data-add-block]')?.addEventListener('click',()=>openBlockForm({date}));
-    view.querySelectorAll('[data-add-block]').forEach(el=>el.onclick=()=>openBlockForm({date}));
-    view.querySelectorAll('[data-nx-block]').forEach(el=>el.onclick=()=>openBlockDetail(el.dataset.nxBlock));
-    view.querySelectorAll('[data-nx-plan]').forEach(el=>el.onclick=()=>{currentPage='plan';render();});
-    view.querySelectorAll('[data-nx-tasks]').forEach(el=>el.onclick=()=>{currentPage='tasks';render();});
-    view.querySelectorAll('[data-nx-exams]').forEach(el=>el.onclick=()=>{currentPage='exams';render();});
-    view.querySelectorAll('[data-nx-analytics]').forEach(el=>el.onclick=()=>{currentPage='analytics';render();});
   }
 
   function emptyHTML(emoji,title,desc) { return `<div class="empty-state"><div class="empty-emoji">${emoji}</div><div class="empty-title">${esc(title)}</div><div>${esc(desc)}</div></div>`; }
@@ -909,7 +811,7 @@
 
   function renderSuggestions(view,actions){
     actions.innerHTML='';
-    const suggestionCard='<section class="card settings-section"><div class="card-title">✦ Öneriler</div><div class="card-subtitle" style="margin:8px 0 14px">GEES için fikrini veya karşılaştığın sorunu doğrudan geliştiriciye gönder.</div><form id="geesSuggestionForm"><label for="geesSuggestionCategory">Tür</label><select id="geesSuggestionCategory" style="width:100%;margin:8px 0 12px;padding:12px"><option value="suggestion">Öneri</option><option value="bug">Hata bildirimi</option><option value="other">Diğer</option></select><label for="geesSuggestionText">Mesajın</label><textarea id="geesSuggestionText" required minlength="5" maxlength="2000" rows="5" style="width:100%;margin:8px 0 12px;padding:12px" placeholder="Neyi geliştirmemizi istersin?"></textarea><button type="submit" class="primary-btn" id="geesSuggestionSend">Öneriyi gönder</button><div id="geesSuggestionStatus" role="status" style="margin-top:10px"></div></form></section>';
+    const suggestionCard='<section class="card settings-section"><div class="card-title">✦ Öneriler</div><div class="card-subtitle" style="margin:8px 0 14px">Hakuna Matata için fikrini veya karşılaştığın sorunu doğrudan geliştiriciye gönder.</div><form id="geesSuggestionForm"><label for="geesSuggestionCategory">Tür</label><select id="geesSuggestionCategory" style="width:100%;margin:8px 0 12px;padding:12px"><option value="suggestion">Öneri</option><option value="bug">Hata bildirimi</option><option value="other">Diğer</option></select><label for="geesSuggestionText">Mesajın</label><textarea id="geesSuggestionText" required minlength="5" maxlength="2000" rows="5" style="width:100%;margin:8px 0 12px;padding:12px" placeholder="Neyi geliştirmemizi istersin?"></textarea><button type="submit" class="primary-btn" id="geesSuggestionSend">Öneriyi gönder</button><div id="geesSuggestionStatus" role="status" style="margin-top:10px"></div></form></section>';
     view.innerHTML='<div class="gees-suggestions-page">'+suggestionCard+'</div>';
     document.getElementById('geesSuggestionForm').addEventListener('submit',async event=>{
       event.preventDefault();
@@ -930,17 +832,17 @@
   }
 
   function renderSettings(view,actions) {
-    view.innerHTML=`<div class="settings-grid"><section class="card settings-section"><div class="card-title">⚙️ Genel</div><div class="settings-row"><div><div class="settings-row-title">Ana ekrana ekle</div><div class="settings-row-desc">Safari → Paylaş → Ana Ekrana Ekle.</div></div><span>📲</span></div><div class="settings-row"><div><div class="settings-row-title">Veri yedeği</div><div class="settings-row-desc">Verilerini JSON olarak yedekleyebilirsin.</div></div><div style="display:flex;gap:6px"><button class="secondary-btn" data-backup>Yedekle</button><button class="secondary-btn" data-restore>Geri yükle</button><input id="restoreFile" type="file" accept="application/json" hidden></div></div><div class="settings-row"><div><div class="settings-row-title">Tüm veriyi sıfırla</div><div class="settings-row-desc">Bu cihazdaki GEES kayıtlarını temizler.</div></div><button class="danger-btn" data-reset>Sil</button></div></section></div>`;
+    view.innerHTML=`<div class="settings-grid"><section class="card settings-section"><div class="card-title">⚙️ Genel</div><div class="settings-row"><div><div class="settings-row-title">Ana ekrana ekle</div><div class="settings-row-desc">Safari → Paylaş → Ana Ekrana Ekle.</div></div><span>📲</span></div><div class="settings-row"><div><div class="settings-row-title">Veri yedeği</div><div class="settings-row-desc">Verilerini JSON olarak yedekleyebilirsin.</div></div><div style="display:flex;gap:6px"><button class="secondary-btn" data-backup>Yedekle</button><button class="secondary-btn" data-restore>Geri yükle</button><input id="restoreFile" type="file" accept="application/json" hidden></div></div><div class="settings-row"><div><div class="settings-row-title">Tüm veriyi sıfırla</div><div class="settings-row-desc">Bu cihazdaki Hakuna Matata kayıtlarını temizler.</div></div><button class="danger-btn" data-reset>Sil</button></div></section></div>`;
     $('[data-backup]').onclick=backupData;
     $('[data-restore]').onclick=()=>$('#restoreFile').click();
     $('#restoreFile').onchange=restoreData;
-    $('[data-reset]').onclick=async()=>{if(confirm('GEES içindeki tüm yerel veriler silinsin mi?')){state=defaultState();await save();render();toast('Veriler sıfırlandı.');}};
+    $('[data-reset]').onclick=async()=>{if(confirm('Hakuna Matata içindeki tüm yerel veriler silinsin mi?')){state=defaultState();await save();render();toast('Veriler sıfırlandı.');}};
   }
 
   function bridgeGuideText() {
     return `HAKUNA MATATA — CHATGPT KÖPRÜ TALİMATI (v1)
 
-Ben GEES adlı kişisel ders planlama uygulamasını kullanıyorum. Uygulamaya doğrudan erişimin yok. Uygulamayla yalnızca kopyala-yapıştır JSON köprüsü üzerinden çalışacaksın.
+Ben Hakuna Matata adlı kişisel ders planlama uygulamasını kullanıyorum. Uygulamaya doğrudan erişimin yok. Uygulamayla yalnızca kopyala-yapıştır JSON köprüsü üzerinden çalışacaksın.
 
 NASIL ÇALIŞIR
 1. Ben uygulamadan sana "schema": "hakuna.context.v1" olan bir JSON göndereceğim. Bu, seçtiğim günün mevcut programını, aktif borçlarımı ve görev havuzumu içerir.
@@ -1053,8 +955,8 @@ YANIT KURALI
 
   async function backupData() {
     const payload=JSON.stringify({schema:'hakuna.backup.v1',exported_at:new Date().toISOString(),state},null,2);
-    const file=new File([payload],`GEES-Yedek-${todayISO()}.json`,{type:'application/json'});
-    try { if(navigator.canShare?.({files:[file]})) return await navigator.share({files:[file],title:'GEES yedeği'}); } catch {}
+    const file=new File([payload],`Hakuna-Matata-Yedek-${todayISO()}.json`,{type:'application/json'});
+    try { if(navigator.canShare?.({files:[file]})) return await navigator.share({files:[file],title:'Hakuna Matata yedeği'}); } catch {}
     const url=URL.createObjectURL(file); const a=document.createElement('a');a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000); toast('Yedek indirildi.');
   }
   async function restoreData(e) {
@@ -1067,7 +969,7 @@ YANIT KURALI
     const tpl=$('#modalTemplate').content.cloneNode(true); $('.modal-title',tpl).textContent=title; $('.modal-eyebrow',tpl).textContent=eyebrow; $('.modal-body',tpl).innerHTML=html; const root=$('#modalRoot');root.innerHTML='';root.append(tpl); $$('[data-close-modal]',root).forEach(x=>x.onclick=closeModal); }
   function closeModal() { $('#modalRoot').innerHTML=''; }
   function openMoreMenu() {
-    openModal('Daha fazla','GEES',`<div class="status-options"><button class="status-option" data-more-nav="questions"><div class="status-emoji">❓</div><div><strong>Sorular</strong><span>Çözdürülecek soru havuzu</span></div></button><button class="status-option" data-more-nav="books"><div class="status-emoji">📚</div><div><strong>Soru Kitaplığım</strong><span>Fotoğraflı sorular ve PDF kitapçık</span></div></button><button class="status-option" data-more-nav="analytics"><div class="status-emoji">📈</div><div><strong>Analiz</strong><span>Çalışma ve deneme gelişimi</span></div></button><button class="status-option" data-more-nav="settings"><div class="status-emoji">⚙️</div><div><strong>Ayarlar</strong><span>Yedek ve ayarlar</span></div></button></div>`);
+    openModal('Daha fazla','Hakuna Matata',`<div class="status-options"><button class="status-option" data-more-nav="questions"><div class="status-emoji">❓</div><div><strong>Sorular</strong><span>Çözdürülecek soru havuzu</span></div></button><button class="status-option" data-more-nav="books"><div class="status-emoji">📚</div><div><strong>Soru Kitaplığım</strong><span>Fotoğraflı sorular ve PDF kitapçık</span></div></button><button class="status-option" data-more-nav="analytics"><div class="status-emoji">📈</div><div><strong>Analiz</strong><span>Çalışma ve deneme gelişimi</span></div></button><button class="status-option" data-more-nav="settings"><div class="status-emoji">⚙️</div><div><strong>Ayarlar</strong><span>Hakuna Bridge ve yedek</span></div></button></div>`);
     $$('[data-more-nav]').forEach(b=>b.onclick=()=>{currentPage=b.dataset.moreNav;closeModal();render();});
   }
 
