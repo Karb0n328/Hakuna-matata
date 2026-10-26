@@ -236,7 +236,36 @@
     });
   }
 
+  function isGeesPreviewUser(){
+    try{const s=JSON.parse(localStorage.getItem('sb-zyrbbkbwrijnnykbgjvc-auth-token')||'null');return s?.user?.id==='8f2cf782-f4f2-4c85-a9e9-a560c623e6d5'&&!!s.access_token;}catch{return false;}
+  }
+  function renderTodayLegacy(view,actions) {
+    actions.innerHTML=`${dateControlHTML()}<button class="primary-btn" data-add-block>＋ Çalışma bloğu</button>`;
+    const date=state.selectedDate; const blocks=blocksFor(date); const debts=activeDebts(); const tasks=activeTasks();
+    const complete=blocks.filter(b=>b.status==='complete').length; const pct=blocks.length?Math.round(complete/blocks.length*100):0;
+    const planned=blocks.reduce((s,b)=>s+durationMinutes(b.start,b.end),0);
+    view.innerHTML=`<div class="dashboard-grid">
+      <section class="card timeline-wrap">
+        <div class="timeline-toolbar"><div><div class="card-title">${esc(formatDate(date))}</div><div class="card-subtitle">Boş bir saate dokunarak da blok ekleyebilirsin.</div></div><span class="subject-badge">${blocks.length} blok</span></div>
+        <div class="timeline-scroll">${timelineHTML(date)}</div>
+      </section>
+      <aside class="dashboard-side">
+        <section class="card"><div class="card-head"><div><div class="card-title">Bugünün özeti</div><div class="card-subtitle">Plan → gerçekleşme</div></div><span>☀️</span></div><div class="card-body">
+          <div class="summary-grid"><div class="summary-box"><div class="summary-value">${blocks.length}</div><div class="summary-label">Blok</div></div><div class="summary-box"><div class="summary-value">${complete}</div><div class="summary-label">Biten</div></div><div class="summary-box"><div class="summary-value">${planned?Math.round(planned/60*10)/10:0}</div><div class="summary-label">Planlanan saat</div></div></div>
+          <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div><div class="card-subtitle" style="margin-top:7px">%${pct} tamamlandı</div>
+        </div></section>
+        <section class="card"><div class="card-head"><div><div class="card-title">📥 Haftalık borçlar</div><div class="card-subtitle">Yarım veya yapılmayanlardan kalanlar</div></div><button class="pill-btn" data-open-debts>Tümü</button></div><div class="card-body">${debts.length?`<div class="list-stack">${debts.slice(0,4).map(debtItemHTML).join('')}</div>`:emptyHTML('✨','Borç yok','Şimdilik tertemiz.')}</div></section>
+        <section class="card"><div class="card-head"><div><div class="card-title">✓ Görev havuzu</div><div class="card-subtitle">Saate koymadığın işler</div></div><button class="pill-btn" data-open-tasks>Tümü</button></div><div class="card-body">${tasks.length?`<div class="list-stack">${tasks.slice(0,4).map(taskItemHTML).join('')}</div>`:emptyHTML('🗂️','Havuz boş','Görev ekleyip sonra programa yerleştirebilirsin.')}</div></section>
+      </aside>
+    </div>`;
+    bindDateControls(); bindTimeline(view); bindCommonListActions(view);
+    $('[data-add-block]')?.addEventListener('click',()=>openBlockForm({date}));
+    $('[data-open-debts]')?.addEventListener('click',()=>{currentPage='tasks';taskTab='debts';render();});
+    $('[data-open-tasks]')?.addEventListener('click',()=>{currentPage='tasks';taskTab='tasks';render();});
+  }
+
   function renderToday(view,actions) {
+    if(!isGeesPreviewUser())return renderTodayLegacy(view,actions);
     actions.innerHTML=`${dateControlHTML()}<button class="primary-btn" data-add-block>＋ Yeni blok</button>`;
     const date=state.selectedDate,blocks=blocksFor(date),debts=activeDebts(),tasks=activeTasks();
     const complete=blocks.filter(b=>b.status==='complete').length;
