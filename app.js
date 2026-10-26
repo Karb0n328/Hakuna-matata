@@ -9,7 +9,7 @@
   const UNITS = ['dakika','test','soru','sayfa','bölüm'];
   const NAV = [
     ['today','🏠','Bugün'], ['plan','📅','Plan'], ['tasks','✓','Görevler'], ['exams','📊','Denemeler'],
-    ['questions','❓','Sorular'], ['books','📚','Soru Kitaplığım'], ['analytics','📈','Analiz'], ['suggestions','✦','Öneriler'], ['settings','⚙️','Ayarlar']
+    ['questions','❓','Sorular'], ['books','📚','Soru Kitaplığım'], ['analytics','📈','Analiz'], ['guidance','🎓','Rehberlik'], ['suggestions','✦','Öneriler'], ['settings','⚙️','Ayarlar']
   ];
   const MOBILE_NAV = [['today','🏠','Bugün'],['plan','📅','Plan'],['tasks','✓','Görevler'],['exams','📊','Deneme'],['more','•••','Daha']];
   const DB_NAME = 'hakuna-matata-db';
@@ -115,8 +115,11 @@
   }
 
   function renderNavigation() {
-    $('#sidebarNav').innerHTML=navButtons(NAV);
-    $('#bottomNav').innerHTML=MOBILE_NAV.map(([id,icon,label]) => `<button class="${currentPage===id || (id==='more' && ['questions','books','analytics','settings'].includes(currentPage))?'active':''}" data-nav="${id}"><span class="nav-icon">${icon}</span><span>${label}</span></button>`).join('');
+    const guidanceRole=window.HakunaGuidance?.role();
+    const allowed=guidanceRole==='student'?NAV.filter(x=>['today','plan','tasks','settings'].includes(x[0])):NAV.filter(x=>x[0]!=='guidance'||guidanceRole==='mentor');
+    $('#sidebarNav').innerHTML=navButtons(allowed);
+    const mobile=guidanceRole==='student'?[['today','🏠','Bugün'],['plan','📅','Plan'],['tasks','✓','Görevler'],['settings','⚙️','Ayarlar']]:guidanceRole==='mentor'?[...MOBILE_NAV.slice(0,4),['more','•••','Daha']]:MOBILE_NAV;
+    $('#bottomNav').innerHTML=mobile.map(([id,icon,label]) => `<button class="${currentPage===id || (id==='more' && ['questions','books','analytics','guidance','settings'].includes(currentPage))?'active':''}" data-nav="${id}"><span class="nav-icon">${icon}</span><span>${label}</span></button>`).join('');
     $$('[data-nav]').forEach(b=>b.onclick=()=>{
       const id=b.dataset.nav;
       if (id==='more') return openMoreMenu();
@@ -127,7 +130,7 @@
   function pageMeta() {
     const map={
       today:['Günlük çalışma merkezi','Bugün'], plan:['Haftayı tek bakışta gör','Plan'], tasks:['Görev havuzu + haftalık borçlar','Görevler'],
-      exams:['Netlerini ve gelişimini kaydet','Denemeler'], questions:['Çözdürülecek soruları kaybetme','Sorular'], books:['Kişisel soru bankan ve PDF kitapçıkların','Soru Kitaplığım'], analytics:['Gerçek çalışma verin','Analiz'], suggestions:['Geri bildirim ve geliştirme fikirleri','Öneriler'], settings:['Cihaz ve veri yedeği','Ayarlar']
+      exams:['Netlerini ve gelişimini kaydet','Denemeler'], questions:['Çözdürülecek soruları kaybetme','Sorular'], books:['Kişisel soru bankan ve PDF kitapçıkların','Soru Kitaplığım'], analytics:['Gerçek çalışma verin','Analiz'], suggestions:['Geri bildirim ve geliştirme fikirleri','Öneriler'], guidance:['Ayzos’un ödevlerini yönet','Rehberlik'], settings:['Cihaz ve veri yedeği','Ayarlar']
     };
     return map[currentPage]||map.today;
   }
@@ -136,6 +139,11 @@
     renderNavigation();
     const [eye,title]=pageMeta(); $('#pageEyebrow').textContent=eye; $('#pageTitle').textContent=title;
     const view=$('#view'); const actions=$('#topbarActions'); actions.innerHTML='';
+    const guidanceRole=window.HakunaGuidance?.role();
+    if(guidanceRole==='student'&&!['today','plan','tasks','settings'].includes(currentPage))currentPage='today';
+    if(currentPage==='guidance'&&guidanceRole!=='mentor')currentPage='today';
+    if(guidanceRole==='student'&&['today','plan','tasks'].includes(currentPage)){window.HakunaGuidance.render(view,currentPage);return;}
+    if(currentPage==='guidance'&&guidanceRole==='mentor'){window.HakunaGuidance.render(view,'guidance');return;}
     if (currentPage==='today') renderToday(view,actions);
     else if (currentPage==='plan') renderPlan(view,actions);
     else if (currentPage==='tasks') renderTasks(view,actions);
