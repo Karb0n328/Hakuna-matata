@@ -4,6 +4,22 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0f1b33" />
+  <script>
+    // Some Supabase projects redirect email links to Site URL (home) instead
+    // of the requested nested redirect URL. Forward recovery credentials
+    // immediately, before the normal application's auth code initializes.
+    (() => {
+      const hash = new URLSearchParams(location.hash.slice(1));
+      const query = new URLSearchParams(location.search);
+      const recovery = hash.get('type') === 'recovery'
+        || (query.get('type') === 'recovery' && (query.has('token_hash') || query.has('code')));
+      if(!recovery)return;
+      const target = new URL('./reset-password.html',location.href);
+      target.hash = location.hash;
+      target.search = location.search;
+      location.replace(target.href);
+    })();
+  </script>
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Hakuna Matata" />
@@ -82,7 +98,7 @@
     </div>
   </template>
 
-  <script type="module" src="./main.js?v=question-answers-v1"></script>
+  <script type="module" src="./main.js?v=password-recovery-v1"></script>
   <script src="./last-seen-v2.js?v=1" defer></script>
   <script src="./admin-panel-v2.js?v=1" defer></script>
   <script src="./batu-dark-mode-v2.js?v=public-1" defer></script>
