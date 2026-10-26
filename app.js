@@ -127,7 +127,7 @@
   function pageMeta() {
     const map={
       today:['Günlük çalışma merkezi','Bugün'], plan:['Haftayı tek bakışta gör','Plan'], tasks:['Görev havuzu + haftalık borçlar','Görevler'],
-      exams:['Netlerini ve gelişimini kaydet','Denemeler'], questions:['Çözdürülecek soruları kaybetme','Sorular'], books:['Kişisel soru bankan ve PDF kitapçıkların','Soru Kitaplığım'], analytics:['Gerçek çalışma verin','Analiz'], settings:['Cihaz, yedek ve ChatGPT köprüsü','Ayarlar']
+      exams:['Netlerini ve gelişimini kaydet','Denemeler'], questions:['Çözdürülecek soruları kaybetme','Sorular'], books:['Kişisel soru bankan ve PDF kitapçıkların','Soru Kitaplığım'], analytics:['Gerçek çalışma verin','Analiz'], settings:['Cihaz ve veri yedeği','Ayarlar']
     };
     return map[currentPage]||map.today;
   }
@@ -809,28 +809,17 @@
   }
 
   function renderSettings(view,actions) {
-    const ctx=makeBridgeContext(state.selectedDate);
-    const guide=bridgeGuideText();
-    view.innerHTML=`<div class="settings-grid"><section class="card settings-section"><div class="card-title">⚙️ Genel</div><div class="settings-row"><div><div class="settings-row-title">Ana ekrana ekle</div><div class="settings-row-desc">Safari → Paylaş → Ana Ekrana Ekle. Sonra tam ekran uygulama gibi açılır.</div></div><span>📲</span></div><div class="settings-row"><div><div class="settings-row-title">Yerel veri</div><div class="settings-row-desc">Program, denemeler ve sorular bu cihazın tarayıcı depolamasında tutulur.</div></div><span>🔒</span></div><div class="settings-row"><div><div class="settings-row-title">Veri yedeği</div><div class="settings-row-desc">Bulut yok; bu yüzden ara sıra JSON yedeği almak iyi fikir.</div></div><div style="display:flex;gap:6px"><button class="secondary-btn" data-backup>Yedekle</button><button class="secondary-btn" data-restore>Geri yükle</button><input id="restoreFile" type="file" accept="application/json" hidden></div></div><div class="settings-row"><div><div class="settings-row-title">Tüm veriyi sıfırla</div><div class="settings-row-desc">Cihazdaki Hakuna Matata kayıtlarını temizler.</div></div><button class="danger-btn" data-reset>Sil</button></div></section>
-      <div class="bridge-stack">
-        <section class="terminal terminal-guide"><div class="terminal-title">🤖 YENİ CHATGPT’YE HAKUNA’YI ÖĞRET</div><div class="terminal-help">Başka bir ChatGPT’ye geçtiğinde bu metni bir kez gönder. Hakuna Bridge’in nasıl çalıştığını, hangi JSON’u okuyacağını ve sana hangi komutu geri vermesi gerektiğini anlatır.</div><textarea id="bridgeGuide" readonly></textarea><div class="terminal-actions"><button class="secondary-btn" data-copy-guide>📋 Tanıtım metnini kopyala</button><button class="secondary-btn" data-copy-guide-context>📦 Tanıtım + bugünkü kod</button></div></section>
-        <section class="terminal"><div class="terminal-title">🧩 HAKUNA BRIDGE / ChatGPT Köprüsü</div><div class="terminal-help">Mevcut gününü kopyala → ChatGPT’ye gönder → gelen <code>hakuna.command.v1</code> JSON’unu aşağıya yapıştır.</div><div class="terminal-actions"><button class="secondary-btn" data-copy-context>📋 Günün kodunu kopyala</button><button class="secondary-btn" data-share-context>↗︎ Paylaş</button></div><div style="height:10px"></div><textarea id="bridgeInput" placeholder='ChatGPT’den gelen { "schema": "hakuna.command.v1", ... } kodunu buraya yapıştır'></textarea><div class="terminal-actions"><button class="secondary-btn" data-paste-bridge>Panodan yapıştır</button><button class="primary-btn" data-preview-bridge>Önizle</button></div></section>
-      </div></div>`;
-    $('#bridgeGuide').value=guide;
-    $('[data-copy-guide]').onclick=()=>copyText(guide,'Hakuna tanıtım metni kopyalandı.');
-    $('[data-copy-guide-context]').onclick=()=>copyText(`${guide}\n\n--- HAKUNA MATATA GÜNCEL GÜN KODU ---\n${JSON.stringify(ctx,null,2)}`,'Tanıtım + günün kodu kopyalandı.');
-    $('[data-copy-context]').onclick=()=>copyText(JSON.stringify(ctx,null,2),'Günün kodu kopyalandı.');
-    $('[data-share-context]').onclick=()=>shareText('Hakuna Matata — Günlük bağlam',JSON.stringify(ctx,null,2));
-    $('[data-paste-bridge]').onclick=async()=>{try{$('#bridgeInput').value=await navigator.clipboard.readText();}catch{toast('Panoya erişemedim; uzun basıp Yapıştır kullan.');}};
-    $('[data-preview-bridge]').onclick=()=>previewBridge($('#bridgeInput').value);
-    $('[data-backup]').onclick=backupData; $('[data-restore]').onclick=()=>$('#restoreFile').click(); $('#restoreFile').onchange=restoreData;
-    $('[data-reset]').onclick=async()=>{if(confirm('Hakuna Matata içindeki tüm yerel veriler silinsin mi?')){state=defaultState();await save();render();toast('Veriler sıfırlandı.');}};
+    view.innerHTML=`<div class="settings-grid"><section class="card settings-section"><div class="card-title">⚙️ Genel</div><div class="settings-row"><div><div class="settings-row-title">Ana ekrana ekle</div><div class="settings-row-desc">Safari → Paylaş → Ana Ekrana Ekle.</div></div><span>📲</span></div><div class="settings-row"><div><div class="settings-row-title">Veri yedeği</div><div class="settings-row-desc">Verilerini JSON olarak yedekleyebilirsin.</div></div><div style="display:flex;gap:6px"><button class="secondary-btn" data-backup>Yedekle</button><button class="secondary-btn" data-restore>Geri yükle</button><input id="restoreFile" type="file" accept="application/json" hidden></div></div><div class="settings-row"><div><div class="settings-row-title">Tüm veriyi sıfırla</div><div class="settings-row-desc">Bu cihazdaki GEES kayıtlarını temizler.</div></div><button class="danger-btn" data-reset>Sil</button></div></section></div>`;
+    $('[data-backup]').onclick=backupData;
+    $('[data-restore]').onclick=()=>$('#restoreFile').click();
+    $('#restoreFile').onchange=restoreData;
+    $('[data-reset]').onclick=async()=>{if(confirm('GEES içindeki tüm yerel veriler silinsin mi?')){state=defaultState();await save();render();toast('Veriler sıfırlandı.');}};
   }
 
   function bridgeGuideText() {
     return `HAKUNA MATATA — CHATGPT KÖPRÜ TALİMATI (v1)
 
-Ben Hakuna Matata adlı kişisel ders planlama uygulamasını kullanıyorum. Uygulamaya doğrudan erişimin yok. Uygulamayla yalnızca kopyala-yapıştır JSON köprüsü üzerinden çalışacaksın.
+Ben GEES adlı kişisel ders planlama uygulamasını kullanıyorum. Uygulamaya doğrudan erişimin yok. Uygulamayla yalnızca kopyala-yapıştır JSON köprüsü üzerinden çalışacaksın.
 
 NASIL ÇALIŞIR
 1. Ben uygulamadan sana "schema": "hakuna.context.v1" olan bir JSON göndereceğim. Bu, seçtiğim günün mevcut programını, aktif borçlarımı ve görev havuzumu içerir.
@@ -943,8 +932,8 @@ YANIT KURALI
 
   async function backupData() {
     const payload=JSON.stringify({schema:'hakuna.backup.v1',exported_at:new Date().toISOString(),state},null,2);
-    const file=new File([payload],`Hakuna-Matata-Yedek-${todayISO()}.json`,{type:'application/json'});
-    try { if(navigator.canShare?.({files:[file]})) return await navigator.share({files:[file],title:'Hakuna Matata yedeği'}); } catch {}
+    const file=new File([payload],`GEES-Yedek-${todayISO()}.json`,{type:'application/json'});
+    try { if(navigator.canShare?.({files:[file]})) return await navigator.share({files:[file],title:'GEES yedeği'}); } catch {}
     const url=URL.createObjectURL(file); const a=document.createElement('a');a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000); toast('Yedek indirildi.');
   }
   async function restoreData(e) {
@@ -957,7 +946,7 @@ YANIT KURALI
     const tpl=$('#modalTemplate').content.cloneNode(true); $('.modal-title',tpl).textContent=title; $('.modal-eyebrow',tpl).textContent=eyebrow; $('.modal-body',tpl).innerHTML=html; const root=$('#modalRoot');root.innerHTML='';root.append(tpl); $$('[data-close-modal]',root).forEach(x=>x.onclick=closeModal); }
   function closeModal() { $('#modalRoot').innerHTML=''; }
   function openMoreMenu() {
-    openModal('Daha fazla','Hakuna Matata',`<div class="status-options"><button class="status-option" data-more-nav="questions"><div class="status-emoji">❓</div><div><strong>Sorular</strong><span>Çözdürülecek soru havuzu</span></div></button><button class="status-option" data-more-nav="books"><div class="status-emoji">📚</div><div><strong>Soru Kitaplığım</strong><span>Fotoğraflı sorular ve PDF kitapçık</span></div></button><button class="status-option" data-more-nav="analytics"><div class="status-emoji">📈</div><div><strong>Analiz</strong><span>Çalışma ve deneme gelişimi</span></div></button><button class="status-option" data-more-nav="settings"><div class="status-emoji">⚙️</div><div><strong>Ayarlar</strong><span>Hakuna Bridge ve yedek</span></div></button></div>`);
+    openModal('Daha fazla','GEES',`<div class="status-options"><button class="status-option" data-more-nav="questions"><div class="status-emoji">❓</div><div><strong>Sorular</strong><span>Çözdürülecek soru havuzu</span></div></button><button class="status-option" data-more-nav="books"><div class="status-emoji">📚</div><div><strong>Soru Kitaplığım</strong><span>Fotoğraflı sorular ve PDF kitapçık</span></div></button><button class="status-option" data-more-nav="analytics"><div class="status-emoji">📈</div><div><strong>Analiz</strong><span>Çalışma ve deneme gelişimi</span></div></button><button class="status-option" data-more-nav="settings"><div class="status-emoji">⚙️</div><div><strong>Ayarlar</strong><span>Yedek ve ayarlar</span></div></button></div>`);
     $$('[data-more-nav]').forEach(b=>b.onclick=()=>{currentPage=b.dataset.moreNav;closeModal();render();});
   }
 
