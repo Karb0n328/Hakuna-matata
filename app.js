@@ -117,7 +117,7 @@
   }
 
   function renderNavigation() {
-    $('#sidebarNav').innerHTML=navButtons(NAV);
+    $('#sidebarNav').innerHTML=navButtons(isGeesPreviewUser()?NAV:NAV.filter(item=>item[0]!=='suggestions'));
     $('#bottomNav').innerHTML=MOBILE_NAV.map(([id,icon,label]) => `<button class="${currentPage===id || (id==='more' && ['questions','books','analytics','suggestions','settings'].includes(currentPage))?'active':''}" data-nav="${id}"><span class="nav-icon">${icon}</span><span>${label}</span></button>`).join('');
     $$('[data-nav]').forEach(b=>b.onclick=()=>{
       const id=b.dataset.nav;
