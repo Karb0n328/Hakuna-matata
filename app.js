@@ -809,7 +809,25 @@
   }
 
   function renderSettings(view,actions) {
+    const suggestionCard='<section class="card settings-section"><div class="card-title">✦ Öneriler</div><div class="card-subtitle" style="margin:8px 0 14px">GEES için fikrini veya karşılaştığın sorunu doğrudan geliştiriciye gönder.</div><form id="geesSuggestionForm"><label for="geesSuggestionCategory">Tür</label><select id="geesSuggestionCategory" style="width:100%;margin:8px 0 12px;padding:12px"><option value="suggestion">Öneri</option><option value="bug">Hata bildirimi</option><option value="other">Diğer</option></select><label for="geesSuggestionText">Mesajın</label><textarea id="geesSuggestionText" required minlength="5" maxlength="2000" rows="5" style="width:100%;margin:8px 0 12px;padding:12px" placeholder="Neyi geliştirmemizi istersin?"></textarea><button type="submit" class="primary-btn" id="geesSuggestionSend">Öneriyi gönder</button><div id="geesSuggestionStatus" role="status" style="margin-top:10px"></div></form></section>';
     view.innerHTML=`<div class="settings-grid"><section class="card settings-section"><div class="card-title">⚙️ Genel</div><div class="settings-row"><div><div class="settings-row-title">Ana ekrana ekle</div><div class="settings-row-desc">Safari → Paylaş → Ana Ekrana Ekle.</div></div><span>📲</span></div><div class="settings-row"><div><div class="settings-row-title">Veri yedeği</div><div class="settings-row-desc">Verilerini JSON olarak yedekleyebilirsin.</div></div><div style="display:flex;gap:6px"><button class="secondary-btn" data-backup>Yedekle</button><button class="secondary-btn" data-restore>Geri yükle</button><input id="restoreFile" type="file" accept="application/json" hidden></div></div><div class="settings-row"><div><div class="settings-row-title">Tüm veriyi sıfırla</div><div class="settings-row-desc">Bu cihazdaki GEES kayıtlarını temizler.</div></div><button class="danger-btn" data-reset>Sil</button></div></section></div>`;
+    view.querySelector('.settings-grid').insertAdjacentHTML('beforeend',suggestionCard);
+    document.getElementById('geesSuggestionForm').addEventListener('submit',async event=>{
+      event.preventDefault();
+      const button=document.getElementById('geesSuggestionSend'),status=document.getElementById('geesSuggestionStatus');
+      button.disabled=true;status.textContent='Gönderiliyor…';
+      try{
+        const keys=Object.keys(localStorage).filter(k=>k.startsWith('sb-')&&k.endsWith('-auth-token'));
+        const session=keys.map(k=>{try{return JSON.parse(localStorage.getItem(k))}catch{return null}}).find(x=>x?.access_token&&x?.user?.id);
+        if(!session)throw new Error('Öneri göndermek için hesabına giriş yap.');
+        const res=await fetch('https://zyrbbkbwrijnnykbgjvc.supabase.co/rest/v1/gees_suggestions',{
+          method:'POST',headers:{'Content-Type':'application/json',apikey:'sb_publishable_OW-03s1ExuA2GwmmL7HtRQ_IHOPxyGL',Authorization:'Bearer '+session.access_token,Prefer:'return=minimal'},
+          body:JSON.stringify({user_id:session.user.id,category:document.getElementById('geesSuggestionCategory').value,message:document.getElementById('geesSuggestionText').value.trim()})
+        });
+        if(!res.ok)throw new Error('Gönderilemedi. Oturumunu yenileyip tekrar dene.');
+        status.textContent='Önerin admin paneline iletildi. Teşekkürler!';document.getElementById('geesSuggestionText').value='';
+      }catch(err){status.textContent=err.message;}finally{button.disabled=false;}
+    });
     $('[data-backup]').onclick=backupData;
     $('[data-restore]').onclick=()=>$('#restoreFile').click();
     $('#restoreFile').onchange=restoreData;
