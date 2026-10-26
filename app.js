@@ -9,7 +9,7 @@
   const UNITS = ['dakika','test','soru','sayfa','bölüm'];
   const NAV = [
     ['today','🏠','Bugün'], ['plan','📅','Plan'], ['tasks','✓','Görevler'], ['exams','📊','Denemeler'],
-    ['questions','❓','Sorular'], ['books','📚','Soru Kitaplığım'], ['analytics','📈','Analiz'], ['settings','⚙️','Ayarlar']
+    ['questions','❓','Sorular'], ['books','📚','Soru Kitaplığım'], ['analytics','📈','Analiz'], ['suggestions','✦','Öneriler'], ['settings','⚙️','Ayarlar']
   ];
   const MOBILE_NAV = [['today','🏠','Bugün'],['plan','📅','Plan'],['tasks','✓','Görevler'],['exams','📊','Deneme'],['more','•••','Daha']];
   const DB_NAME = 'hakuna-matata-db';
@@ -22,6 +22,8 @@
   let db;
   let state;
   let currentPage = 'today';
+  const initialPage=decodeURIComponent(location.hash.slice(1));
+  if(['today','plan','tasks','exams','questions','books','analytics','suggestions','settings'].includes(initialPage))currentPage=initialPage;
   let taskTab = 'tasks';
   let questionFilter = 'Tümü';
   let questionListMode = 'open';
@@ -116,18 +118,18 @@
 
   function renderNavigation() {
     $('#sidebarNav').innerHTML=navButtons(NAV);
-    $('#bottomNav').innerHTML=MOBILE_NAV.map(([id,icon,label]) => `<button class="${currentPage===id || (id==='more' && ['questions','books','analytics','settings'].includes(currentPage))?'active':''}" data-nav="${id}"><span class="nav-icon">${icon}</span><span>${label}</span></button>`).join('');
+    $('#bottomNav').innerHTML=MOBILE_NAV.map(([id,icon,label]) => `<button class="${currentPage===id || (id==='more' && ['questions','books','analytics','suggestions','settings'].includes(currentPage))?'active':''}" data-nav="${id}"><span class="nav-icon">${icon}</span><span>${label}</span></button>`).join('');
     $$('[data-nav]').forEach(b=>b.onclick=()=>{
       const id=b.dataset.nav;
       if (id==='more') return openMoreMenu();
-      currentPage=id; render();
+      currentPage=id; history.replaceState(null,'','#'+encodeURIComponent(id)); render();
     });
   }
 
   function pageMeta() {
     const map={
       today:['Günlük çalışma merkezi','Bugün'], plan:['Haftayı tek bakışta gör','Plan'], tasks:['Görev havuzu + haftalık borçlar','Görevler'],
-      exams:['Netlerini ve gelişimini kaydet','Denemeler'], questions:['Çözdürülecek soruları kaybetme','Sorular'], books:['Kişisel soru bankan ve PDF kitapçıkların','Soru Kitaplığım'], analytics:['Gerçek çalışma verin','Analiz'], settings:['Cihaz ve veri yedeği','Ayarlar']
+      exams:['Netlerini ve gelişimini kaydet','Denemeler'], questions:['Çözdürülecek soruları kaybetme','Sorular'], books:['Kişisel soru bankan ve PDF kitapçıkların','Soru Kitaplığım'], analytics:['Gerçek çalışma verin','Analiz'], suggestions:['GEES / geri bildirim','Öneriler'], settings:['Cihaz ve veri yedeği','Ayarlar']
     };
     return map[currentPage]||map.today;
   }
@@ -143,6 +145,7 @@
     else if (currentPage==='questions') renderQuestions(view,actions);
     else if (currentPage==='books') { if(window.HakunaQuestionBooks) window.HakunaQuestionBooks.render(view,actions,state); else view.innerHTML='<div class="card"><div class="card-body">Soru kitaplığı yükleniyor…</div></div>'; }
     else if (currentPage==='analytics') renderAnalytics(view,actions);
+    else if (currentPage==='suggestions') renderSuggestions(view,actions);
     else if (currentPage==='settings') renderSettings(view,actions);
   }
 
@@ -853,10 +856,10 @@
     const w=800,h=240,p=34;const max=Math.max(...data.map(x=>x.value),1);const bw=(w-2*p)/data.length*.56;return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${[0,.25,.5,.75,1].map(t=>`<line x1="${p}" x2="${w-p}" y1="${p+t*(h-2*p)}" y2="${p+t*(h-2*p)}" stroke="#e4e9f0"/>`).join('')}${data.map((x,i)=>{const cx=p+(w-2*p)*(i+.5)/data.length;const bh=x.value/max*(h-2*p);return `<rect x="${cx-bw/2}" y="${h-p-bh}" width="${bw}" height="${bh}" rx="8" fill="#6da6e8"/><text x="${cx}" y="${h-8}" text-anchor="middle" font-size="10" fill="#778397">${esc(x.label)}</text><text x="${cx}" y="${Math.max(15,h-p-bh-7)}" text-anchor="middle" font-size="10" fill="#4d6581">${x.value}</text>`}).join('')}</svg>`;
   }
 
-  function renderSettings(view,actions) {
+  function renderSuggestions(view,actions){
+    actions.innerHTML='';
     const suggestionCard='<section class="card settings-section"><div class="card-title">✦ Öneriler</div><div class="card-subtitle" style="margin:8px 0 14px">GEES için fikrini veya karşılaştığın sorunu doğrudan geliştiriciye gönder.</div><form id="geesSuggestionForm"><label for="geesSuggestionCategory">Tür</label><select id="geesSuggestionCategory" style="width:100%;margin:8px 0 12px;padding:12px"><option value="suggestion">Öneri</option><option value="bug">Hata bildirimi</option><option value="other">Diğer</option></select><label for="geesSuggestionText">Mesajın</label><textarea id="geesSuggestionText" required minlength="5" maxlength="2000" rows="5" style="width:100%;margin:8px 0 12px;padding:12px" placeholder="Neyi geliştirmemizi istersin?"></textarea><button type="submit" class="primary-btn" id="geesSuggestionSend">Öneriyi gönder</button><div id="geesSuggestionStatus" role="status" style="margin-top:10px"></div></form></section>';
-    view.innerHTML=`<div class="settings-grid"><section class="card settings-section"><div class="card-title">⚙️ Genel</div><div class="settings-row"><div><div class="settings-row-title">Ana ekrana ekle</div><div class="settings-row-desc">Safari → Paylaş → Ana Ekrana Ekle.</div></div><span>📲</span></div><div class="settings-row"><div><div class="settings-row-title">Veri yedeği</div><div class="settings-row-desc">Verilerini JSON olarak yedekleyebilirsin.</div></div><div style="display:flex;gap:6px"><button class="secondary-btn" data-backup>Yedekle</button><button class="secondary-btn" data-restore>Geri yükle</button><input id="restoreFile" type="file" accept="application/json" hidden></div></div><div class="settings-row"><div><div class="settings-row-title">Tüm veriyi sıfırla</div><div class="settings-row-desc">Bu cihazdaki GEES kayıtlarını temizler.</div></div><button class="danger-btn" data-reset>Sil</button></div></section></div>`;
-    view.querySelector('.settings-grid').insertAdjacentHTML('beforeend',suggestionCard);
+    view.innerHTML='<div class="gees-suggestions-page">'+suggestionCard+'</div>';
     document.getElementById('geesSuggestionForm').addEventListener('submit',async event=>{
       event.preventDefault();
       const button=document.getElementById('geesSuggestionSend'),status=document.getElementById('geesSuggestionStatus');
@@ -873,6 +876,10 @@
         status.textContent='Önerin admin paneline iletildi. Teşekkürler!';document.getElementById('geesSuggestionText').value='';
       }catch(err){status.textContent=err.message;}finally{button.disabled=false;}
     });
+  }
+
+  function renderSettings(view,actions) {
+    view.innerHTML=`<div class="settings-grid"><section class="card settings-section"><div class="card-title">⚙️ Genel</div><div class="settings-row"><div><div class="settings-row-title">Ana ekrana ekle</div><div class="settings-row-desc">Safari → Paylaş → Ana Ekrana Ekle.</div></div><span>📲</span></div><div class="settings-row"><div><div class="settings-row-title">Veri yedeği</div><div class="settings-row-desc">Verilerini JSON olarak yedekleyebilirsin.</div></div><div style="display:flex;gap:6px"><button class="secondary-btn" data-backup>Yedekle</button><button class="secondary-btn" data-restore>Geri yükle</button><input id="restoreFile" type="file" accept="application/json" hidden></div></div><div class="settings-row"><div><div class="settings-row-title">Tüm veriyi sıfırla</div><div class="settings-row-desc">Bu cihazdaki GEES kayıtlarını temizler.</div></div><button class="danger-btn" data-reset>Sil</button></div></section></div>`;
     $('[data-backup]').onclick=backupData;
     $('[data-restore]').onclick=()=>$('#restoreFile').click();
     $('#restoreFile').onchange=restoreData;
