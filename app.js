@@ -9,7 +9,7 @@
   const UNITS = ['dakika','test','soru','sayfa','bölüm'];
   const NAV = [
     ['today','🏠','Bugün'], ['plan','📅','Plan'], ['tasks','✓','Görevler'], ['exams','📊','Denemeler'],
-    ['questions','❓','Sorular'], ['books','📚','Soru Kitaplığım'], ['analytics','📈','Analiz'], ['suggestions','✦','Öneriler'], ['settings','⚙️','Ayarlar']
+    ['questions','❓','Sorular'], ['books','📚','Soru Kitaplığım'], ['analytics','📈','Analiz'], ['guidance','🎓','Rehberlik'], ['suggestions','✦','Öneriler'], ['settings','⚙️','Ayarlar']
   ];
   const MOBILE_NAV = [['today','🏠','Bugün'],['plan','📅','Plan'],['tasks','✓','Görevler'],['exams','📊','Deneme'],['more','•••','Daha']];
   const DB_NAME = 'hakuna-matata-db';
@@ -115,8 +115,11 @@
   }
 
   function renderNavigation() {
-    $('#sidebarNav').innerHTML=navButtons(NAV);
-    $('#bottomNav').innerHTML=MOBILE_NAV.map(([id,icon,label]) => `<button class="${currentPage===id || (id==='more' && ['questions','books','analytics','settings'].includes(currentPage))?'active':''}" data-nav="${id}"><span class="nav-icon">${icon}</span><span>${label}</span></button>`).join('');
+    const guidanceRole=window.HakunaGuidance?.role();
+    const allowed=guidanceRole==='student'?NAV.filter(x=>['today','plan','tasks','settings'].includes(x[0])):NAV.filter(x=>x[0]!=='guidance'||guidanceRole==='mentor');
+    $('#sidebarNav').innerHTML=navButtons(allowed);
+    const mobile=guidanceRole==='student'?[['today','🏠','Bugün'],['plan','📅','Plan'],['tasks','✓','Görevler'],['settings','⚙️','Ayarlar']]:guidanceRole==='mentor'?[...MOBILE_NAV.slice(0,4),['more','•••','Daha']]:MOBILE_NAV;
+    $('#bottomNav').innerHTML=mobile.map(([id,icon,label]) => `<button class="${currentPage===id || (id==='more' && ['questions','books','analytics','guidance','settings'].includes(currentPage))?'active':''}" data-nav="${id}"><span class="nav-icon">${icon}</span><span>${label}</span></button>`).join('');
     $$('[data-nav]').forEach(b=>b.onclick=()=>{
       const id=b.dataset.nav;
       if (id==='more') return openMoreMenu();
@@ -127,15 +130,23 @@
   function pageMeta() {
     const map={
       today:['Günlük çalışma merkezi','Bugün'], plan:['Haftayı tek bakışta gör','Plan'], tasks:['Görev havuzu + haftalık borçlar','Görevler'],
-      exams:['Netlerini ve gelişimini kaydet','Denemeler'], questions:['Çözdürülecek soruları kaybetme','Sorular'], books:['Kişisel soru bankan ve PDF kitapçıkların','Soru Kitaplığım'], analytics:['Gerçek çalışma verin','Analiz'], suggestions:['Geri bildirim ve geliştirme fikirleri','Öneriler'], settings:['Cihaz ve veri yedeği','Ayarlar']
+      exams:['Netlerini ve gelişimini kaydet','Denemeler'], questions:['Çözdürülecek soruları kaybetme','Sorular'], books:['Kişisel soru bankan ve PDF kitapçıkların','Soru Kitaplığım'], analytics:['Gerçek çalışma verin','Analiz'], suggestions:['Geri bildirim ve geliştirme fikirleri','Öneriler'], guidance:['Ayzos’un ödevlerini yönet','Rehberlik'], settings:['Cihaz ve veri yedeği','Ayarlar']
     };
     return map[currentPage]||map.today;
   }
 
   function render() {
+    const activeRole=window.HakunaGuidance?.role();
+    if(activeRole==='student'&&!['today','plan','tasks','settings'].includes(currentPage))currentPage='today';
+    if(currentPage==='guidance'&&activeRole!=='mentor')currentPage='today';
     renderNavigation();
     const [eye,title]=pageMeta(); $('#pageEyebrow').textContent=eye; $('#pageTitle').textContent=title;
     const view=$('#view'); const actions=$('#topbarActions'); actions.innerHTML='';
+    const guidanceRole=window.HakunaGuidance?.role();
+    if(guidanceRole==='student'&&!['today','plan','tasks','settings'].includes(currentPage))currentPage='today';
+    if(currentPage==='guidance'&&guidanceRole!=='mentor')currentPage='today';
+    if(guidanceRole==='student'&&['today','plan','tasks'].includes(currentPage)){window.HakunaGuidance.render(view,currentPage);return;}
+    if(currentPage==='guidance'&&guidanceRole==='mentor'){window.HakunaGuidance.render(view,'guidance');return;}
     if (currentPage==='today') renderToday(view,actions);
     else if (currentPage==='plan') renderPlan(view,actions);
     else if (currentPage==='tasks') renderTasks(view,actions);
@@ -969,8 +980,9 @@ YANIT KURALI
     const tpl=$('#modalTemplate').content.cloneNode(true); $('.modal-title',tpl).textContent=title; $('.modal-eyebrow',tpl).textContent=eyebrow; $('.modal-body',tpl).innerHTML=html; const root=$('#modalRoot');root.innerHTML='';root.append(tpl); $$('[data-close-modal]',root).forEach(x=>x.onclick=closeModal); }
   function closeModal() { $('#modalRoot').innerHTML=''; }
   function openMoreMenu() {
-    openModal('Daha fazla','Hakuna Matata',`<div class="status-options"><button class="status-option" data-more-nav="questions"><div class="status-emoji">❓</div><div><strong>Sorular</strong><span>Çözdürülecek soru havuzu</span></div></button><button class="status-option" data-more-nav="books"><div class="status-emoji">📚</div><div><strong>Soru Kitaplığım</strong><span>Fotoğraflı sorular ve PDF kitapçık</span></div></button><button class="status-option" data-more-nav="analytics"><div class="status-emoji">📈</div><div><strong>Analiz</strong><span>Çalışma ve deneme gelişimi</span></div></button><button class="status-option" data-more-nav="settings"><div class="status-emoji">⚙️</div><div><strong>Ayarlar</strong><span>Hakuna Bridge ve yedek</span></div></button></div>`);
-    $$('[data-more-nav]').forEach(b=>b.onclick=()=>{currentPage=b.dataset.moreNav;closeModal();render();});
+    openModal('Daha fazla','Hakuna Matata',`<div class="status-options"><button class="status-option" data-more-nav="questions"><div class="status-emoji">❓</div><div><strong>Sorular</strong><span>Çözdürülecek soru havuzu</span></div></button><button class="status-option" data-more-nav="books"><div class="status-emoji">📚</div><div><strong>Soru Kitaplığım</strong><span>Fotoğraflı sorular ve PDF kitapçık</span></div></button><button class="status-option" data-more-nav="analytics"><div class="status-emoji">📈</div><div><strong>Analiz</strong><span>Çalışma ve deneme gelişimi</span></div></button><button class="status-option" data-more-nav="guidance" id="guidanceMoreButton" style="display:none"><div class="status-emoji">🎓</div><div><strong>Rehberlik</strong><span>Ayzos ödev takibi</span></div></button><button class="status-option" data-more-nav="settings"><div class="status-emoji">⚙️</div><div><strong>Ayarlar</strong><span>Hakuna Bridge ve yedek</span></div></button></div>`);
+    const mentorButton=$('#guidanceMoreButton');if(mentorButton&&window.HakunaGuidance?.role()==='mentor')mentorButton.style.display='';
+    $('[data-more-nav]').forEach(b=>b.onclick=()=>{currentPage=b.dataset.moreNav;closeModal();render();});
   }
 
   function injectExtraStyles() {
@@ -985,6 +997,8 @@ YANIT KURALI
     catch { state=defaultState(); toast('Yerel veritabanı açılamadı; bu oturum geçici olabilir.'); }
     state.selectedDate=todayISO();
     render();
+    let lastGuidanceRole=window.HakunaGuidance?.role();
+    setInterval(()=>{const nextRole=window.HakunaGuidance?.role();if(nextRole!==lastGuidanceRole){lastGuidanceRole=nextRole;render();}},1200);
     if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
     setTimeout(()=>{
       if(state.settings?.firstRun){ state.settings.firstRun=false; save(); toast('Hazır ✓ Boş bir saate dokunup ilk bloğunu ekleyebilirsin.'); }
