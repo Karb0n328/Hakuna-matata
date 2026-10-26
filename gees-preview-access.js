@@ -18,5 +18,5 @@
       const logo=document.querySelector('.brand-icon');if(logo?.dataset.legacySrc){logo.src=logo.dataset.legacySrc;delete logo.dataset.legacySrc;}
     }
   }
-  update();window.addEventListener('storage',update);window.addEventListener('focus',update);setInterval(update,2500);
+  update();window.addEventListener('storage',update);window.addEventListener('focus',update);window.addEventListener('hakuna:account-changed',update);setInterval(update,2500);
 })();
