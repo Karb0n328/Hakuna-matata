@@ -12,8 +12,10 @@
       applied=true;
       const link=document.createElement('link');link.rel='stylesheet';link.href='./gees-design.css?v=2';link.id='gees-private-styles';document.head.append(link);
       document.documentElement.dataset.geesPreview='true';
+      const logo=document.querySelector('.brand-icon');if(logo){logo.dataset.legacySrc=logo.getAttribute('src')||'';logo.src='./assets/gees-mark.svg?v=2';}
     }else if(!yes&&applied){
       applied=false;document.getElementById('gees-private-styles')?.remove();delete document.documentElement.dataset.geesPreview;
+      const logo=document.querySelector('.brand-icon');if(logo?.dataset.legacySrc){logo.src=logo.dataset.legacySrc;delete logo.dataset.legacySrc;}
     }
   }
   update();window.addEventListener('storage',update);window.addEventListener('focus',update);setInterval(update,2500);
