@@ -29,11 +29,7 @@ async function render(view,page,adHoc,mentor){
  view.innerHTML='<div class="gd-loading">Haftalık program yükleniyor…</div>';
  try{
  const week=mentor?selectedWeek:monday(),end=shift(week,6);
- const [plan,completions]=await Promise.all([
- request('guidance_weekly_plan?select=*&week_start=eq.'+week+'&order=weekday.asc,sort_order.asc,created_at.asc'),
- request('guidance_weekly_done?select=plan_id&plan_id=in.('+awaitPlanIdsPlaceholder()+')').catch(()=>[])
- ]);
- function awaitPlanIdsPlaceholder(){return '00000000-0000-0000-0000-000000000000'}
+ const plan=await request('guidance_weekly_plan?select=*&week_start=eq.'+week+'&order=weekday.asc,sort_order.asc,created_at.asc');
  // Fetch only the current week's completion records, scoped by the plan ids.
  const doneRows=plan.length?await request('guidance_weekly_done?select=plan_id&plan_id=in.('+plan.map(p=>p.id).join(',')+')'):[];
  const done=new Set(doneRows.map(x=>x.plan_id));
