@@ -79,12 +79,3 @@ afterFirstPaint(()=>{
   })();
 });
 
-const loadMata=()=>void (async()=>{
-  try{
-    await import('./mata-fallback.js');
-    await import('./mata-loader.js?v=11');
-  }catch(err){console.warn('Mata load',err);}
-})();
-
-if('requestIdleCallback' in window)requestIdleCallback(loadMata,{timeout:700});
-else setTimeout(loadMata,180);
