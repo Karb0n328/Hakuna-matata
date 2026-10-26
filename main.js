@@ -43,7 +43,7 @@ async function importAccountSyncOptimized(){
     return nativeSetInterval.call(window,fn,next,...args);
   };
   try{
-    await import('./account-sync-v2.js?v=question-books-1');
+    await import('./account-sync-v2.js?v=password-recovery-v1');
   }finally{
     window.setInterval=nativeSetInterval;
   }
