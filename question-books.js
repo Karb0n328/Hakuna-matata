@@ -115,7 +115,7 @@
         ey=Math.round(canvas.height*(1-Number(options.bottom||0)/100));
     if(ex-sx<40||ey-sy<40)throw new Error('Kırpma alanı çok küçük.');
 
-    if(options.trim){
+    if(options.trim && !['left','right','top','bottom'].some(side=>Number(options[side]||0)>0)){
       // Trim only almost-white outer paper margins; never regenerate a question.
       const data=ctx.getImageData(sx,sy,ex-sx,ey-sy);
       const {width:w,height:h}=data,px=data.data;
@@ -169,7 +169,7 @@
         <img class="book-image-preview" alt="Yüklenecek soru fotoğrafı önizlemesi">
         <div class="book-image-actions">
           <button type="button" data-book-rotate>↻ 90° çevir</button>
-          <label><input type="checkbox" data-book-trim checked> Beyaz kenarları kırp</label>
+          <label><input type="checkbox" data-book-trim> Beyaz kenarları kırp (isteğe bağlı)</label>
           <label><input type="checkbox" data-book-gray> Siyah-beyaz netleştir</label>
         </div>
         <details><summary>Kırpmayı elle ayarla</summary>
@@ -246,6 +246,7 @@
     const remove=!!editor.querySelector('[data-book-remove]')?.checked;
     if(file){
       const blob=await processPhoto(file,editor.getImageOptions());
+      await store(id+'.original',file).catch(e=>console.warn('Orijinal fotoğraf yedeklenemedi',e));
       await store(id,blob);
       const uid=accountId();
       if(uid)localStorage.removeItem(uploadedKey(uid,id));
@@ -255,6 +256,7 @@
     }
     if(remove){
       await erase(id);
+      await erase(id+'.original').catch(()=>{});
       void account()?.photoDelete?.(id).catch(e=>console.warn('Photo cleanup',e));
       form.dispatchEvent(new Event('book-cleanup'));
       return false;
@@ -264,7 +266,7 @@
   }
 
   async function forgetPhoto(id){
-    try{await erase(id);}catch{}
+    try{await erase(id);await erase(id+'.original');}catch{}
     try{await account()?.photoDelete?.(id);}catch{}
   }
 
