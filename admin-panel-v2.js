@@ -229,6 +229,26 @@
     if(root?.querySelector('[data-hakuna-admin-modal]'))root.innerHTML='';
   }
 
+  async function refreshSuggestions(){
+    const root=document.querySelector('[data-gees-suggestions]');if(!root)return;
+    const session=readSession();if(!session?.access_token||!isAdmin())return;
+    try{
+      const headers={apikey:SUPABASE_KEY,Authorization:'Bearer '+session.access_token};
+      const res=await fetch(SUPABASE_URL+'/rest/v1/gees_suggestions?select=id,category,message,status,created_at&order=created_at.desc&limit=100',{headers});
+      if(!res.ok)throw Error('Öneriler alınamadı');const items=await res.json();
+      root.replaceChildren();
+      if(!items.length){root.textContent='Henüz öneri gelmedi.';return;}
+      for(const item of items){
+        const row=document.createElement('div');row.style.cssText='padding:12px 0;border-bottom:1px solid #ddd';
+        const title=document.createElement('div');title.style.fontWeight='700';title.textContent=(item.category==='bug'?'Hata':item.category==='other'?'Diğer':'Öneri')+' · '+new Date(item.created_at).toLocaleString('tr-TR');
+        const message=document.createElement('p');message.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere';message.textContent=item.message;
+        const select=document.createElement('select');for(const [v,label] of [['new','Yeni'],['reviewing','İnceleniyor'],['planned','Planlandı'],['completed','Tamamlandı']]){const opt=document.createElement('option');opt.value=v;opt.textContent=label;select.append(opt);}select.value=item.status;
+        select.addEventListener('change',async()=>{select.disabled=true;try{const r=await fetch(SUPABASE_URL+'/rest/v1/gees_suggestions?id=eq.'+encodeURIComponent(item.id),{method:'PATCH',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({status:select.value})});if(!r.ok)throw Error('Durum güncellenemedi');}catch(e){alert(e.message);select.value=item.status;}finally{select.disabled=false;}});
+        row.append(title,message,select);root.append(row);
+      }
+    }catch(e){root.textContent=e.message;}
+  }
+
   function openPanel(){
     if(!isAdmin())return;
     injectStyles();
@@ -246,6 +266,7 @@
             <div><strong><span data-hakuna-admin-count>—</span> kayıtlı kullanıcı</strong><div class="hakuna-admin-live waiting" data-hakuna-admin-live><span data-hakuna-admin-updated>Canlı bağlantı kuruluyor…</span></div></div>
             <button class="secondary-btn" type="button" data-hakuna-admin-refresh>Yenile</button>
           </div>
+          <section style="border-top:1px solid #ddd;margin:18px 0;padding-top:18px"><h3>GEES · Öneri kutusu</h3><div data-gees-suggestions>Öneriler yükleniyor…</div></section>
           <div class="hakuna-admin-list" data-hakuna-admin-users><div class="hakuna-admin-empty">Kullanıcılar yükleniyor…</div></div>
         </div>
       </section>
@@ -254,6 +275,7 @@
     root.querySelector('.modal-backdrop')?.addEventListener('click',e=>{if(e.target===e.currentTarget)closePanel();});
     root.querySelectorAll('[data-hakuna-admin-close]').forEach(btn=>btn.addEventListener('click',closePanel));
     root.querySelector('[data-hakuna-admin-refresh]')?.addEventListener('click',()=>void refreshPanel());
+    void refreshSuggestions();
     void refreshPanel();
     void startRealtime();
     clearInterval(fallbackTimer);
