@@ -115,7 +115,7 @@
         ey=Math.round(canvas.height*(1-Number(options.bottom||0)/100));
     if(ex-sx<40||ey-sy<40)throw new Error('Kırpma alanı çok küçük.');
 
-    if(options.trim){
+    if(options.trim && !['left','right','top','bottom'].some(side=>Number(options[side]||0)>0)){
       // Trim only almost-white outer paper margins; never regenerate a question.
       const data=ctx.getImageData(sx,sy,ex-sx,ey-sy);
       const {width:w,height:h}=data,px=data.data;
@@ -169,7 +169,7 @@
         <img class="book-image-preview" alt="Yüklenecek soru fotoğrafı önizlemesi">
         <div class="book-image-actions">
           <button type="button" data-book-rotate>↻ 90° çevir</button>
-          <label><input type="checkbox" data-book-trim checked> Beyaz kenarları kırp</label>
+          <label><input type="checkbox" data-book-trim> Beyaz kenarları kırp (isteğe bağlı)</label>
           <label><input type="checkbox" data-book-gray> Siyah-beyaz netleştir</label>
         </div>
         <details><summary>Kırpmayı elle ayarla</summary>
