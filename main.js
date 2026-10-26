@@ -12,7 +12,7 @@ function showBootError(error){
 // cloud sync and enhancements are maintenance work and must never keep the PWA
 // on a blank screen during startup.
 try{
-  await import('./app.js?v=hakuna-restored-v1');
+  await import('./app.js?v=guidance-v1');
 }catch(error){
   showBootError(error);
 }
