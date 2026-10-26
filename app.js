@@ -237,25 +237,41 @@
   }
 
   function renderToday(view,actions) {
-    actions.innerHTML=`${dateControlHTML()}<button class="primary-btn" data-add-block>＋ Çalışma bloğu</button>`;
-    const date=state.selectedDate; const blocks=blocksFor(date); const debts=activeDebts(); const tasks=activeTasks();
-    const complete=blocks.filter(b=>b.status==='complete').length; const pct=blocks.length?Math.round(complete/blocks.length*100):0;
-    const planned=blocks.reduce((s,b)=>s+durationMinutes(b.start,b.end),0);
-    view.innerHTML=`<div class="dashboard-grid">
-      <section class="card timeline-wrap">
-        <div class="timeline-toolbar"><div><div class="card-title">${esc(formatDate(date))}</div><div class="card-subtitle">Boş bir saate dokunarak da blok ekleyebilirsin.</div></div><span class="subject-badge">${blocks.length} blok</span></div>
-        <div class="timeline-scroll">${timelineHTML(date)}</div>
+    actions.innerHTML=`${dateControlHTML()}<button class="primary-btn" data-add-block>＋ Yeni blok</button>`;
+    const date=state.selectedDate,blocks=blocksFor(date),debts=activeDebts(),tasks=activeTasks();
+    const complete=blocks.filter(b=>b.status==='complete').length;
+    const pct=blocks.length?Math.round(complete/blocks.length*100):0;
+    const planned=blocks.reduce((sum,b)=>sum+durationMinutes(b.start,b.end),0);
+    const now=new Date(),today=todayISO(),clock=now.getHours()*60+now.getMinutes();
+    const sorted=[...blocks].sort((a,b)=>a.start.localeCompare(b.start));
+    const ongoing=date===today?sorted.find(b=>minuteFromTime(b.start)<=clock&&minuteFromTime(b.end)>clock&&b.status!=='complete'):null;
+    const upcoming=sorted.find(b=>b.status!=='complete'&&(date!==today||minuteFromTime(b.end)>clock));
+    const focus=ongoing||upcoming;
+    const focusLabel=ongoing?'ŞU ANDA':'SIRADAKİ ÇALIŞMA';
+    view.innerHTML=`<div class="gees-home">
+      <section class="gees-hero">
+        <div class="gees-hero-head"><div><span class="gees-overline">GEES / DAILY WORKSPACE</span><h2>Bugünün odağı<span class="gees-period">.</span></h2><p>${esc(formatDate(date))} · Bir sonraki işe odaklan, gerisini sistem takip etsin.</p></div><span class="gees-hero-index">${String(blocks.length).padStart(2,'0')} / PLAN</span></div>
+        <div class="gees-focus-panel">
+          <div class="gees-focus-copy"><span class="gees-focus-label"><span class="gees-live-dot"></span>${focus?focusLabel:'GÜNÜN PLANI'}</span>
+            <h3>${focus?esc(focus.title):'Yeni bir çalışma bloğu oluştur.'}</h3>
+            <p>${focus?esc(focus.subject)+' · '+esc(focus.start)+' — '+esc(focus.end):'Planını oluşturmak için ilk bloğunu ekle.'}</p>
+          </div>
+          <button class="gees-focus-action" ${focus?'data-gees-open-focus="'+esc(focus.id)+'"':'data-add-block'}>${focus?'Bloğu aç ↗':'Blok ekle ＋'}</button>
+        </div>
+        <div class="gees-metrics"><div><span>İLERLEME</span><strong>%${pct}</strong></div><div><span>TAMAMLANAN</span><strong>${complete}<small> / ${blocks.length}</small></strong></div><div><span>PLANLANAN</span><strong>${planned?Math.round(planned/60*10)/10:0}<small> saat</small></strong></div></div>
+        <div class="gees-progress"><div style="width:${pct}%"></div></div>
       </section>
-      <aside class="dashboard-side">
-        <section class="card"><div class="card-head"><div><div class="card-title">Bugünün özeti</div><div class="card-subtitle">Plan → gerçekleşme</div></div><span>☀️</span></div><div class="card-body">
-          <div class="summary-grid"><div class="summary-box"><div class="summary-value">${blocks.length}</div><div class="summary-label">Blok</div></div><div class="summary-box"><div class="summary-value">${complete}</div><div class="summary-label">Biten</div></div><div class="summary-box"><div class="summary-value">${planned?Math.round(planned/60*10)/10:0}</div><div class="summary-label">Planlanan saat</div></div></div>
-          <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div><div class="card-subtitle" style="margin-top:7px">%${pct} tamamlandı</div>
-        </div></section>
-        <section class="card"><div class="card-head"><div><div class="card-title">📥 Haftalık borçlar</div><div class="card-subtitle">Yarım veya yapılmayanlardan kalanlar</div></div><button class="pill-btn" data-open-debts>Tümü</button></div><div class="card-body">${debts.length?`<div class="list-stack">${debts.slice(0,4).map(debtItemHTML).join('')}</div>`:emptyHTML('✨','Borç yok','Şimdilik tertemiz.')}</div></section>
-        <section class="card"><div class="card-head"><div><div class="card-title">✓ Görev havuzu</div><div class="card-subtitle">Saate koymadığın işler</div></div><button class="pill-btn" data-open-tasks>Tümü</button></div><div class="card-body">${tasks.length?`<div class="list-stack">${tasks.slice(0,4).map(taskItemHTML).join('')}</div>`:emptyHTML('🗂️','Havuz boş','Görev ekleyip sonra programa yerleştirebilirsin.')}</div></section>
-      </aside>
+      <div class="gees-workspace">
+        <section class="card timeline-wrap gees-agenda"><div class="timeline-toolbar"><div><span class="gees-section-kicker">01 / PROGRAM</span><div class="card-title">Günlük akış</div><div class="card-subtitle">Saatlere dokunarak blok ekleyebilir veya düzenleyebilirsin.</div></div><span class="gees-count">${blocks.length} BLOK</span></div><div class="timeline-scroll">${timelineHTML(date)}</div></section>
+        <aside class="gees-rail">
+          <section class="card gees-rail-card"><div class="card-head"><div><span class="gees-section-kicker">02 / TAKİP</span><div class="card-title">Haftalık borçlar</div></div><button class="pill-btn" data-open-debts>Tümü ↗</button></div><div class="card-body">${debts.length?'<div class="list-stack">'+debts.slice(0,4).map(debtItemHTML).join('')+'</div>':emptyHTML('✓','Borç yok','Şu an bekleyen borcun bulunmuyor.')}</div></section>
+          <section class="card gees-rail-card"><div class="card-head"><div><span class="gees-section-kicker">03 / HAVUZ</span><div class="card-title">Bekleyen görevler</div></div><button class="pill-btn" data-open-tasks>Tümü ↗</button></div><div class="card-body">${tasks.length?'<div class="list-stack">'+tasks.slice(0,4).map(taskItemHTML).join('')+'</div>':emptyHTML('＋','Havuz boş','Yeni görevler burada görünür.')}</div></section>
+        </aside>
+      </div>
     </div>`;
-    bindDateControls(); bindTimeline(view); bindCommonListActions(view);
+    bindDateControls();bindTimeline(view);bindCommonListActions(view);
+    view.querySelector('[data-gees-open-focus]')?.addEventListener('click',()=>openBlockDetail(focus.id));
+    view.querySelectorAll('[data-add-block]').forEach(el=>el.addEventListener('click',()=>openBlockForm({date})));
     $('[data-add-block]')?.addEventListener('click',()=>openBlockForm({date}));
     $('[data-open-debts]')?.addEventListener('click',()=>{currentPage='tasks';taskTab='debts';render();});
     $('[data-open-tasks]')?.addEventListener('click',()=>{currentPage='tasks';taskTab='tasks';render();});
