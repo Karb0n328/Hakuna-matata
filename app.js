@@ -147,6 +147,46 @@
     else if (currentPage==='analytics') renderAnalytics(view,actions);
     else if (currentPage==='suggestions') renderSuggestions(view,actions);
     else if (currentPage==='settings') renderSettings(view,actions);
+    if(isGeesPreviewUser()&&currentPage!=='today')decorateGeesPanel(view);
+  }
+
+  function decorateGeesPanel(view){
+    if(!view||view.querySelector('.nx-section-banner'))return;
+    const config={
+      plan:['Haftalık çalışma haritası','Haftanın tüm günlerini, bloklarını ve çalışma yoğunluğunu tek bakışta gör.','HAFTALIK PLAN'],
+      tasks:['Görev merkezi','Planlanmamış işler ve haftalık borçlar tek çalışma alanında.','GÖREV YÖNETİMİ'],
+      exams:['Deneme arşivi','TYT ve AYT performansını karşılaştır, ilerlemeni izle.','PERFORMANS'],
+      questions:['Soru merkezi','Çözülecek ve çözülen sorularını filtreleyerek yönet.','SORU TAKİBİ'],
+      books:['Soru kitaplığı','Kaynaklarını ve PDF soru kitapçıklarını bir arada yönet.','KÜTÜPHANE'],
+      analytics:['İlerleme analizi','Çalışma süreleri, denemeler ve hedeflerin tek yerde.','ANALİTİK'],
+      suggestions:['Fikirlerini paylaş','Önerilerini ve karşılaştığın sorunları doğrudan ilet.','GERİ BİLDİRİM'],
+      settings:['Tercihler ve veriler','Hesap, görünüm ve yedekleme işlemlerini yönet.','AYARLAR']
+    };
+    const info=config[currentPage];if(!info)return;
+    const banner=document.createElement('div');banner.className='nx-section-banner';
+    banner.innerHTML='<div><span class="nx-eyebrow">'+esc(info[2])+'</span><h2>'+esc(info[0])+'</h2><p>'+esc(info[1])+'</p></div><div class="nx-section-mark" aria-hidden="true">GEES<span> / 26</span></div>';
+    view.prepend(banner);
+    if(currentPage==='tasks'){
+      const bar=document.createElement('div');bar.className='nx-section-summary';
+      bar.innerHTML='<div><small>BEKLEYEN GÖREV</small><strong>'+activeTasks().length+'</strong></div><div><small>HAFTALIK BORÇ</small><strong>'+activeDebts().length+'</strong></div><div><small>PLANLANAN BLOK</small><strong>'+state.blocks.filter(b=>b.status==='pending').length+'</strong></div>';
+      banner.after(bar);
+    }else if(currentPage==='exams'){
+      const bar=document.createElement('div');bar.className='nx-section-summary';
+      const list=state.exams;const last=list.slice().sort((a,b)=>b.date.localeCompare(a.date))[0];
+      bar.innerHTML='<div><small>TOPLAM DENEME</small><strong>'+list.length+'</strong></div><div><small>SON NET</small><strong>'+(last?examTotal(last):'—')+'</strong></div><div><small>ORTALAMA NET</small><strong>'+(list.length?(list.reduce((s,e)=>s+examTotal(e),0)/list.length).toFixed(1):'—')+'</strong></div>';
+      banner.after(bar);
+    }else if(currentPage==='questions'){
+      const bar=document.createElement('div');bar.className='nx-section-summary';
+      const solved=state.questions.filter(isQuestionSolved).length;
+      bar.innerHTML='<div><small>BEKLEYEN SORU</small><strong>'+(state.questions.length-solved)+'</strong></div><div><small>ÇÖZÜLEN</small><strong>'+solved+'</strong></div><div><small>TOPLAM</small><strong>'+state.questions.length+'</strong></div>';
+      banner.after(bar);
+    }else if(currentPage==='plan'){
+      const week=startOfWeekISO(state.selectedDate),days=Array.from({length:7},(_,i)=>addDaysISO(week,i));
+      const bs=state.blocks.filter(b=>days.includes(b.date));const done=bs.filter(b=>b.status==='complete').length;
+      const bar=document.createElement('div');bar.className='nx-section-summary';
+      bar.innerHTML='<div><small>HAFTALIK BLOK</small><strong>'+bs.length+'</strong></div><div><small>TAMAMLANAN</small><strong>'+done+'</strong></div><div><small>İLERLEME</small><strong>%'+(bs.length?Math.round(done/bs.length*100):0)+'</strong></div>';
+      banner.after(bar);
+    }
   }
 
   function dateControlHTML() {
