@@ -1,12 +1,12 @@
 {
-  "name": "GEES",
-  "short_name": "GEES",
+  "name": "Hakuna Matata",
+  "short_name": "Hakuna",
   "description": "Ders planlama, görev, borç, deneme ve soru takip uygulaması.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#0b0c0e",
-  "theme_color": "#0b0c0e",
+  "background_color": "#0f1b33",
+  "theme_color": "#0f1b33",
   "orientation": "any",
   "icons": [
     {
