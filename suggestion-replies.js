@@ -35,7 +35,7 @@ async function refresh(force=false){
  if(checking||(!force&&Date.now()-lastCheck<30000))return;
  checking=true;lastCheck=Date.now();
  try{
-  const res=await fetch(URL+'gees_suggestions?select=id,message,admin_reply,replied_at,reply_dismissed_at&admin_reply=not.is.null&order=replied_at.desc&limit=30',{headers:headers(s)});
+  const res=await fetch(URL+'gees_suggestions?select=id,message,admin_reply,replied_at,reply_dismissed_at&user_id=eq.'+encodeURIComponent(s.user.id)+'&admin_reply=not.is.null&order=replied_at.desc&limit=30',{headers:headers(s)});
   if(!res.ok)throw Error('Cevaplar alınamadı');
   const data=await res.json();if(session()?.user?.id!==user)return;items=data;paint();
  }catch(e){console.warn('Öneri cevapları',e)}finally{checking=false}
