@@ -244,7 +244,40 @@
         const message=document.createElement('p');message.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere';message.textContent=item.message;
         const select=document.createElement('select');for(const [v,label] of [['new','Yeni'],['reviewing','İnceleniyor'],['planned','Planlandı'],['completed','Tamamlandı']]){const opt=document.createElement('option');opt.value=v;opt.textContent=label;select.append(opt);}select.value=item.status;
         select.addEventListener('change',async()=>{select.disabled=true;try{const r=await fetch(SUPABASE_URL+'/rest/v1/gees_suggestions?id=eq.'+encodeURIComponent(item.id),{method:'PATCH',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({status:select.value})});if(!r.ok)throw Error('Durum güncellenemedi');}catch(e){alert(e.message);select.value=item.status;}finally{select.disabled=false;}});
-        row.append(title,message,select);root.append(row);
+        const replyLabel=document.createElement('label');
+        replyLabel.style.cssText='display:block;margin-top:12px;font-size:12px;font-weight:750';
+        replyLabel.textContent='Öneriye cevap yaz';
+        const reply=document.createElement('textarea');
+        reply.rows=3;reply.maxLength=2000;reply.value=item.admin_reply||'';
+        reply.placeholder='Bu cevap öneriyi gönderen kişinin ana ekranında görünecek…';
+        reply.style.cssText='display:block;width:100%;box-sizing:border-box;min-height:72px;margin-top:6px;padding:10px;border:1px solid #cfd7e4;border-radius:10px;font:inherit;font-size:13px;resize:vertical';
+        const send=document.createElement('button');
+        send.type='button';send.className='primary-btn';send.style.marginTop='8px';
+        send.textContent=item.admin_reply?'Cevabı güncelle':'Cevap gönder';
+        const feedback=document.createElement('span');
+        feedback.setAttribute('role','status');
+        feedback.style.cssText='display:inline-block;margin-left:10px;font-size:12px;color:#567';
+        send.addEventListener('click',async()=>{
+          const answer=reply.value.trim();
+          if(!answer){feedback.textContent='Önce cevap yaz.';return;}
+          send.disabled=true;feedback.textContent='Gönderiliyor…';
+          try{
+            const r=await fetch(SUPABASE_URL+'/rest/v1/gees_suggestions?id=eq.'+encodeURIComponent(item.id),{
+              method:'PATCH',
+              headers:{...headers,'Content-Type':'application/json','Prefer':'return=representation'},
+              body:JSON.stringify({admin_reply:answer,replied_at:new Date().toISOString(),reply_dismissed_at:null})
+            });
+            if(!r.ok){const detail=await r.json().catch(()=>({}));throw Error(detail.message||'Cevap gönderilemedi ('+r.status+')');}
+            const saved=await r.json();
+            if(!saved.length)throw Error('Cevap kaydedilmedi. Admin oturumunu kontrol et.');
+            item.admin_reply=answer;
+            send.textContent='Cevabı güncelle';
+            feedback.textContent='✓ Cevap gönderildi.';
+          }catch(e){feedback.textContent=e.message;}
+          finally{send.disabled=false;}
+        });
+        replyLabel.append(reply);
+        row.append(title,message,select,replyLabel,send,feedback);root.append(row);
       }
     }catch(e){root.textContent=e.message;}
   }
