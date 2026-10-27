@@ -234,7 +234,7 @@
     const session=readSession();if(!session?.access_token||!isAdmin())return;
     try{
       const headers={apikey:SUPABASE_KEY,Authorization:'Bearer '+session.access_token};
-      const res=await fetch(SUPABASE_URL+'/rest/v1/gees_suggestions?select=id,category,message,status,created_at&order=created_at.desc&limit=100',{headers});
+      const res=await fetch(SUPABASE_URL+'/rest/v1/gees_suggestions?select=id,user_id,category,message,status,created_at,admin_reply,replied_at,reply_dismissed_at&order=created_at.desc&limit=100',{headers});
       if(!res.ok)throw Error('Öneriler alınamadı');const items=await res.json();
       root.replaceChildren();
       if(!items.length){root.textContent='Henüz öneri gelmedi.';return;}
