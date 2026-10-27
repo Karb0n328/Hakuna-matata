@@ -236,11 +236,16 @@
       const headers={apikey:SUPABASE_KEY,Authorization:'Bearer '+session.access_token};
       const res=await fetch(SUPABASE_URL+'/rest/v1/gees_suggestions?select=id,user_id,category,message,status,created_at,admin_reply,replied_at,reply_dismissed_at&order=created_at.desc&limit=100',{headers});
       if(!res.ok)throw Error('Öneriler alınamadı');const items=await res.json();
+      let authors=new Map();
+      try{
+        const people=await fetch(SUPABASE_URL+'/rest/v1/rpc/admin_suggestion_authors',{method:'POST',headers:{...headers,'Content-Type':'application/json'},body:'{}'});
+        if(people.ok){authors=new Map((await people.json()).map(p=>[p.user_id,p.username]));}
+      }catch(e){console.warn('Öneri gönderen adları yüklenemedi',e)}
       root.replaceChildren();
       if(!items.length){root.textContent='Henüz öneri gelmedi.';return;}
       for(const item of items){
         const row=document.createElement('div');row.style.cssText='padding:12px 0;border-bottom:1px solid #ddd';
-        const title=document.createElement('div');title.style.fontWeight='700';title.textContent=(item.category==='bug'?'Hata':item.category==='other'?'Diğer':'Öneri')+' · '+new Date(item.created_at).toLocaleString('tr-TR');
+        const title=document.createElement('div');title.style.fontWeight='700';title.textContent=(item.category==='bug'?'Hata':item.category==='other'?'Diğer':'Öneri')+' · Gönderen: '+(authors.get(item.user_id)||'Bilinmeyen kullanıcı')+' · '+new Date(item.created_at).toLocaleString('tr-TR');
         const message=document.createElement('p');message.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere';message.textContent=item.message;
         const select=document.createElement('select');for(const [v,label] of [['new','Yeni'],['reviewing','İnceleniyor'],['planned','Planlandı'],['completed','Tamamlandı']]){const opt=document.createElement('option');opt.value=v;opt.textContent=label;select.append(opt);}select.value=item.status;
         select.addEventListener('change',async()=>{select.disabled=true;try{const r=await fetch(SUPABASE_URL+'/rest/v1/gees_suggestions?id=eq.'+encodeURIComponent(item.id),{method:'PATCH',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({status:select.value})});if(!r.ok)throw Error('Durum güncellenemedi');}catch(e){alert(e.message);select.value=item.status;}finally{select.disabled=false;}});
