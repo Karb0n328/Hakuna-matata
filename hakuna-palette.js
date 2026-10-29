@@ -1,7 +1,7 @@
 /* User-selectable palette: blue, dark, Republic red/white. */
 (()=>{'use strict';
 const KEY='hakuna.theme.palette.v1';
-const options=[['blue','Mavi','Klasik Hakuna tasarımı'],['dark','Dark','Koyu arayüz'],['republic','Cumhuriyet','29 Ekim kırmızı-beyaz tasarımı']];
+const options=[['blue','Mavi','Klasik Hakuna tasarımı'],['dark','Dark','Koyu arayüz'],['republic','Al Bayrak','Kırmızı-beyaz tasarım']];
 let queued=false;
 function choice(){return localStorage.getItem(KEY)||'auto'}
 function apply(){
