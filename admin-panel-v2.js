@@ -323,7 +323,7 @@
             <div><strong><span data-hakuna-admin-count>—</span> kayıtlı kullanıcı</strong><div class="hakuna-admin-live waiting" data-hakuna-admin-live><span data-hakuna-admin-updated>Canlı bağlantı kuruluyor…</span></div></div>
             <button class="secondary-btn" type="button" data-hakuna-admin-refresh>Yenile</button>
           </div>
-          <section style="border-top:1px solid #ddd;margin:18px 0;padding-top:18px"><h3>GEES · Öneri kutusu <span class="hakuna-admin-badge" data-gees-pending-count>—</span></h3><div data-gees-suggestions>Öneriler yükleniyor…</div></section><section style="border-top:1px solid #ddd;margin:18px 0;padding-top:18px"><h3>📥 Gelen kutusu <span class="hakuna-admin-badge" data-gees-inbox-count>—</span></h3><p class="card-subtitle">Cevaplanan öneriler ve gönderdiğin yanıtların geçmişi.</p><div data-gees-inbox>Mesajlar yükleniyor…</div></section>
+          <section style="border-top:1px solid #ddd;margin:18px 0;padding-top:18px"><div style="display:flex;gap:10px;flex-wrap:wrap"><button type="button" class="secondary-btn" data-gees-tab="suggestions" aria-expanded="false">📨 Öneri Kutusu <span class="hakuna-admin-badge" data-gees-pending-count>—</span></button><button type="button" class="secondary-btn" data-gees-tab="inbox" aria-expanded="false">📥 Gelen Kutusu <span class="hakuna-admin-badge" data-gees-inbox-count>—</span></button></div><div data-gees-panel="suggestions" hidden style="margin-top:14px"><h3>Yanıt bekleyen öneriler</h3><div data-gees-suggestions>Öneriler yükleniyor…</div></div><div data-gees-panel="inbox" hidden style="margin-top:14px"><h3>Gelen Kutusu</h3><p class="card-subtitle">Cevaplanan öneriler ve yanıt geçmişi.</p><div data-gees-inbox>Mesajlar yükleniyor…</div></div></section>
           <div class="hakuna-admin-list" data-hakuna-admin-users><div class="hakuna-admin-empty">Kullanıcılar yükleniyor…</div></div>
         </div>
       </section>
@@ -332,6 +332,14 @@
     root.querySelector('.modal-backdrop')?.addEventListener('click',e=>{if(e.target===e.currentTarget)closePanel();});
     root.querySelectorAll('[data-hakuna-admin-close]').forEach(btn=>btn.addEventListener('click',closePanel));
     root.querySelector('[data-hakuna-admin-refresh]')?.addEventListener('click',()=>{void refreshPanel();void refreshSuggestions();});
+    root.querySelectorAll('[data-gees-tab]').forEach(button=>button.addEventListener('click',()=>{
+      const tab=button.dataset.geesTab;
+      const target=root.querySelector('[data-gees-panel="'+tab+'"]');
+      const willOpen=Boolean(target?.hidden);
+      root.querySelectorAll('[data-gees-panel]').forEach(panel=>{panel.hidden=true;});
+      root.querySelectorAll('[data-gees-tab]').forEach(tabButton=>tabButton.setAttribute('aria-expanded','false'));
+      if(target&&willOpen){target.hidden=false;button.setAttribute('aria-expanded','true');void refreshSuggestions();}
+    }));
     void refreshSuggestions();
     void refreshPanel();
     void startRealtime();
