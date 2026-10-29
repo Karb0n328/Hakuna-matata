@@ -25,7 +25,7 @@ const dayNumber=()=>{const d=new Date();return Math.floor(Date.UTC(d.getFullYear
 const images=new Map();
 function preload(index){const file=entries[index][0];if(images.has(file))return images.get(file);const im=new Image();im.decoding='async';im.src=photoUrl(file);images.set(file,im);return im}
 let corner=null,previous='',version=0;
-let collapsed=false;try{collapsed=localStorage.getItem('hakuna-ataturk-corner-collapsed')==='1'}catch(_){}
+
 function currentPage(){const title=document.getElementById('pageTitle')?.textContent?.trim();return Object.prototype.hasOwnProperty.call(pages,title)?pages[title]:0}
 function render(){
  const view=document.getElementById('view');if(!view)return;
@@ -37,10 +37,9 @@ function render(){
   corner=document.createElement('section');corner.className='ataturk-corner';corner.setAttribute('aria-label','Atatürk Köşesi');view.before(corner);
  }
  const index=(dayNumber()+page)%entries.length;
- const quoteIndex=(Math.floor(dayNumber()/10)+dayNumber()+page*3)%entries.length;
+ const quoteIndex=(Math.floor(dayNumber()/10)+dayNumber()+page)%entries.length;
  const [file]=entries[index],quote=entries[quoteIndex][1],current=++version;
  corner.classList.toggle('ataturk-corner-home',page===0);
- corner.classList.toggle('is-collapsed',collapsed);
  corner.replaceChildren();
  const art=document.createElement('div');art.className='ataturk-corner-art';
  const photo=document.createElement('img');photo.alt='Mustafa Kemal Atatürk';photo.decoding='async';photo.loading='eager';art.append(photo);
@@ -49,18 +48,7 @@ function render(){
  const block=document.createElement('blockquote');block.textContent='“'+quote+'”';
  const signature=document.createElement('div');signature.className='ataturk-corner-signature';signature.textContent='— Mustafa Kemal Atatürk';
  copy.append(label,block,signature);
- const toggle=document.createElement('button');toggle.type='button';toggle.className='ataturk-corner-toggle';
- toggle.setAttribute('aria-label',collapsed?'Atatürk köşesini genişlet':'Atatürk köşesini daralt');
- toggle.setAttribute('aria-expanded',String(!collapsed));
- toggle.textContent=collapsed?'Genişlet ▾':'Daralt ▴';
- toggle.addEventListener('click',()=>{
-  collapsed=!collapsed;corner.classList.toggle('is-collapsed',collapsed);
-  toggle.textContent=collapsed?'Genişlet ▾':'Daralt ▴';
-  toggle.setAttribute('aria-label',collapsed?'Atatürk köşesini genişlet':'Atatürk köşesini daralt');
-  toggle.setAttribute('aria-expanded',String(!collapsed));
-  try{localStorage.setItem('hakuna-ataturk-corner-collapsed',collapsed?'1':'0')}catch(_){}
- });
- corner.append(art,copy,toggle);
+ corner.append(art,copy);
  const cached=preload(index);
  photo.onload=()=>{if(current===version)corner.classList.add('photo-ready')};
  photo.onerror=()=>{if(current!==version)return;photo.style.display='none';corner.classList.add('photo-ready')};
