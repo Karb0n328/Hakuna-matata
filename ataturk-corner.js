@@ -1,11 +1,8 @@
 /* Persistent Atatürk corner: begins 30 October 2026; 29 October celebration remains untouched. */
 (()=>{'use strict';
 const startDate=new Date(2026,9,30);
-const BATU='8f2cf782-f4f2-4c85-a9e9-a560c623e6d5';
-const STORAGE='sb-zyrbbkbwrijnnykbgjvc-auth-token';
-function batuPreview(){try{const session=JSON.parse(localStorage.getItem(STORAGE)||'null');return session?.user?.id===BATU&&!!session?.access_token}catch{return false}}
-function enabled(){return new Date()>=startDate||batuPreview()}
-if(!enabled())return;
+function enabled(){return new Date()>=startDate;}
+// Keep the scheduler active before midnight so the corner appears without a reload.
 const entries=[
 ['Ataturk1930s.jpg','Ey yükselen yeni nesil! İstikbal sizsiniz. Cumhuriyeti biz kurduk, onu yükseltecek ve yaşatacak sizsiniz.'],
 ['Atatürk.jpg','Hayatta en hakiki mürşit ilimdir.'],
