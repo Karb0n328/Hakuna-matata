@@ -1,7 +1,11 @@
 /* Persistent Atatürk corner: begins 30 October 2026; 29 October celebration remains untouched. */
 (()=>{'use strict';
 const startDate=new Date(2026,9,30);
-if(new Date()<startDate)return;
+const BATU='8f2cf782-f4f2-4c85-a9e9-a560c623e6d5';
+const STORAGE='sb-zyrbbkbwrijnnykbgjvc-auth-token';
+function batuPreview(){try{const session=JSON.parse(localStorage.getItem(STORAGE)||'null');return session?.user?.id===BATU&&!!session?.access_token}catch{return false}}
+function enabled(){return new Date()>=startDate||batuPreview()}
+if(!enabled())return;
 const entries=[
 ['Ataturk1930s.jpg','Ey yükselen yeni nesil! İstikbal sizsiniz. Cumhuriyeti biz kurduk, onu yükseltecek ve yaşatacak sizsiniz.'],
 ['Atatürk.jpg','Hayatta en hakiki mürşit ilimdir.'],
@@ -25,6 +29,7 @@ let collapsed=false;try{collapsed=localStorage.getItem('hakuna-ataturk-corner-co
 function currentPage(){const title=document.getElementById('pageTitle')?.textContent?.trim();return Object.prototype.hasOwnProperty.call(pages,title)?pages[title]:0}
 function render(){
  const view=document.getElementById('view');if(!view)return;
+ if(!enabled()){corner?.remove();corner=null;previous='';return;}
  const page=currentPage(),today=dayKey(),identity=page+':'+today;
  if(identity===previous)return;
  previous=identity;
@@ -32,7 +37,8 @@ function render(){
   corner=document.createElement('section');corner.className='ataturk-corner';corner.setAttribute('aria-label','Atatürk Köşesi');view.before(corner);
  }
  const index=(dayNumber()+page)%entries.length;
- const [file,quote]=entries[index],current=++version;
+ const quoteIndex=(Math.floor(dayNumber()/10)+dayNumber()+page*3)%entries.length;
+ const [file]=entries[index],quote=entries[quoteIndex][1],current=++version;
  corner.classList.toggle('ataturk-corner-home',page===0);
  corner.classList.toggle('is-collapsed',collapsed);
  corner.replaceChildren();
@@ -69,6 +75,8 @@ function boot(){
  const title=document.getElementById('pageTitle');
  if(title)new MutationObserver(render).observe(title,{childList:true,characterData:true,subtree:true});
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)render()});
+ window.addEventListener('hakuna:account-changed',render);
+ window.addEventListener('storage',render);
  setInterval(render,60000);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
