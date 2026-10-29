@@ -3,10 +3,11 @@
 const KEY='hakuna.theme.palette.v1';
 const options=[['blue','Mavi','Klasik Hakuna tasarımı'],['dark','Dark','Koyu arayüz'],['republic','Al Bayrak','Kırmızı-beyaz tasarım']];
 let queued=false;
+function isHoliday(){const d=new Date();return d.getFullYear()===2026&&d.getMonth()===9&&d.getDate()===29}
 function choice(){return localStorage.getItem(KEY)||'auto'}
 function apply(){
- const c=choice(),holiday=new Date().getMonth()===9&&new Date().getDate()===29&&new Date().getFullYear()===2026;
- const palette=c==='auto'?(localStorage.getItem('hakuna.theme.darkMode.v1')==='1'?'dark':holiday?'republic':'blue'):c;
+ const c=choice(),holiday=isHoliday();
+ const palette=holiday?'republic':c==='auto'?(localStorage.getItem('hakuna.theme.darkMode.v1')==='1'?'dark':'blue'):c;
  const root=document.documentElement;
  root.dataset.hakunaPalette=palette;
  root.classList.toggle('republic-day-2026',palette==='republic');
@@ -17,7 +18,7 @@ function apply(){
 function settings(){
  const title=document.getElementById('pageTitle')?.textContent?.trim(),view=document.getElementById('view');
  let row=document.querySelector('[data-hakuna-palette-row]');
- if(title!=='Ayarlar'||!view){row?.remove();return}
+ if(title!=='Ayarlar'||!view||isHoliday()){row?.remove();return}
  const section=view.querySelector('.settings-section');if(!section)return;
  if(!row){
   row=document.createElement('div');row.className='settings-row hakuna-palette-row';row.dataset.hakunaPaletteRow='1';
@@ -28,7 +29,7 @@ function settings(){
   const group=document.createElement('div');group.className='hakuna-palette-options';group.setAttribute('role','group');group.setAttribute('aria-label','Görünüm teması');
   for(const [value,name,description] of options){
    const button=document.createElement('button');button.type='button';button.dataset.paletteChoice=value;button.title=description;button.textContent=name;
-   button.addEventListener('click',()=>{localStorage.setItem(KEY,value);apply();settings()});group.append(button);
+   button.addEventListener('click',()=>{if(isHoliday())return;localStorage.setItem(KEY,value);apply();settings()});group.append(button);
   }
   row.append(copy,group);section.prepend(row);
  }
