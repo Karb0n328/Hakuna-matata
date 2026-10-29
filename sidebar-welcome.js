@@ -38,7 +38,7 @@
 
   function greeting(){
     const h=new Date().getHours();
-    return h>=5&&h<12?'Günaydın':h>=12&&h<17?'Tünaydın':h>=17&&h<22?'İyi akşamlar':'İyi geceler';
+    return h>=5&&h<12?'Günaydın':h>=12&&h<17?'Tünaydın':h>=17&&h<20?'İyi akşamlar':'İyi geceler';
   }
 
   function render(){
