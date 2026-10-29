@@ -32,6 +32,7 @@
   }
 
   function darkEnabled(){
+    const now=new Date();if(now.getFullYear()===2026&&now.getMonth()===9&&now.getDate()===29)return false;
     const choice=localStorage.getItem('hakuna.theme.palette.v1');
     return choice?choice==='dark':localStorage.getItem(THEME_KEY)==='1';
   }
@@ -88,7 +89,7 @@
     const title=document.getElementById('pageTitle');
     const existing=document.querySelector('[data-batu-theme-row]');
 
-    if(localStorage.getItem('hakuna.theme.palette.v1')){existing?.remove();return;}
+    if(localStorage.getItem('hakuna.theme.palette.v1')||(()=>{const d=new Date();return d.getFullYear()===2026&&d.getMonth()===9&&d.getDate()===29})()){existing?.remove();return;}
     if(title?.textContent?.trim()!=='Ayarlar'||!view){
       existing?.remove();
       return;
