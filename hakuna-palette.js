@@ -4,10 +4,10 @@ const KEY='hakuna.theme.palette.v1';
 const options=[['blue','Mavi','Klasik Hakuna tasarımı'],['dark','Dark','Koyu arayüz'],['republic','Kırmızı','Kırmızı-beyaz tasarım']];
 let queued=false;
 function isHoliday(){const d=new Date();return d.getFullYear()===2026&&d.getMonth()===9&&d.getDate()===29}
-function choice(){return localStorage.getItem(KEY)||'auto'}
+function choice(){return localStorage.getItem(KEY)||'blue'}
 function apply(){
  const c=choice(),holiday=isHoliday();
- const palette=holiday?'republic':c==='auto'?(localStorage.getItem('hakuna.theme.darkMode.v1')==='1'?'dark':'blue'):c;
+ const palette=holiday?'republic':c;
  const root=document.documentElement;
  root.dataset.hakunaPalette=palette;
  root.classList.toggle('republic-day-2026',palette==='republic');
