@@ -1,0 +1,16 @@
+/* Permanent, unobtrusive Atatürk corner; independent of 29 October theme. */
+.ataturk-corner{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:center;min-height:148px;margin:12px 24px 4px;border-radius:18px;background:linear-gradient(110deg,#15243d,#263b57);color:#fff;box-shadow:0 8px 22px rgba(15,27,51,.13)}
+.ataturk-corner-home{min-height:185px}
+.ataturk-corner-art{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.ataturk-corner-art img{position:absolute;right:0;bottom:-20%;height:140%;max-width:42%;object-fit:contain;object-position:right bottom;filter:grayscale(1) contrast(1.12);opacity:0;mix-blend-mode:screen;mask-image:linear-gradient(90deg,transparent,#000 35%);transition:opacity .2s ease}
+.ataturk-corner.photo-ready .ataturk-corner-art img{opacity:.55}
+.ataturk-corner-copy{position:relative;z-index:1;width:78%;padding:21px 60px 22px 25px}
+.ataturk-corner-label{font-size:10px;font-weight:850;letter-spacing:.18em;color:#d7e5f8}
+.ataturk-corner blockquote{margin:13px 0 8px;font-size:clamp(14px,1.65vw,19px);font-weight:620;line-height:1.5}
+.ataturk-corner-signature{font-size:11px;color:#d5deeb}
+.ataturk-corner-toggle{position:absolute;right:12px;top:12px;z-index:2;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.22);border-radius:9px;padding:6px 9px;font-size:11px}
+.ataturk-corner.is-collapsed{min-height:46px;height:46px}
+.ataturk-corner.is-collapsed .ataturk-corner-art,.ataturk-corner.is-collapsed blockquote,.ataturk-corner.is-collapsed .ataturk-corner-signature{display:none}
+.ataturk-corner.is-collapsed .ataturk-corner-copy{padding:14px 20px}
+@media(max-width:700px){.ataturk-corner{margin:10px 12px 2px;min-height:135px;border-radius:15px}.ataturk-corner-home{min-height:160px}.ataturk-corner-copy{width:100%;padding:18px 78px 19px 17px}.ataturk-corner blockquote{font-size:14px}.ataturk-corner-art img{max-width:57%;height:120%;bottom:-10%}.ataturk-corner.photo-ready .ataturk-corner-art img{opacity:.27}.ataturk-corner-toggle{right:8px;top:8px;font-size:10px}}
+@media(prefers-reduced-motion:reduce){.ataturk-corner-art img{transition:none}}
