@@ -36,11 +36,16 @@
       .map(part=>part.charAt(0).toLocaleUpperCase('tr-TR')+part.slice(1)).join(' ');
   }
 
+  function greeting(){
+    const h=new Date().getHours();
+    return h>=5&&h<12?'Günaydın':h>=12&&h<17?'Tünaydın':h>=17&&h<22?'İyi akşamlar':'İyi geceler';
+  }
+
   function render(){
     const el=document.querySelector('.brand-subtitle');if(!el)return;
     const profile=getProfile();
     const name=profile?prettyUsername(profile.username):'';
-    const text=name?`Hoş geldin, ${name} 👋`:FALLBACK;
+    const text=name?`${greeting()}, ${name} 👋`:greeting();
     if(text===lastText&&el.textContent===text)return;
     lastText=text;
     el.textContent=text;
@@ -65,6 +70,7 @@
     injectStyle();
     render();
     window.addEventListener('storage',render);
+    setInterval(render,60000);
     window.addEventListener('focus',render);
     document.addEventListener('visibilitychange',()=>{if(!document.hidden)render();});
     document.addEventListener('submit',e=>{
