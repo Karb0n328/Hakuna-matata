@@ -16,9 +16,10 @@ const entries=[
 ['Ataturk in 1923.jpg','Zafer, zafer benimdir diyebilenindir.'],
 ['Mustafa Kemal Atatürk (1928).jpg','Öğretmenler! Yeni nesil, sizin eseriniz olacaktır.'],
 ['Mustafa Kemal Atatürk (1936).jpg','Millete efendilik yoktur, hizmet vardır.'],
-['Kemal Atatürk portrait.jpg','Ne mutlu Türküm diyene!']
+['Kemal Atatürk portrait.jpg','Ne mutlu Türküm diyene!'],
+['Mustafa Kemal Atatürk.jpg','Yurtta sulh, cihanda sulh.']
 ];
-const pages={'Bugün':0,'Plan':1,'Görevler':2,'Denemeler':3,'Sorular':4,'Soru Kitaplığım':5,'Analiz':6,'Rehberlik':7,'Öneriler':8,'Ayarlar':9};
+const pages={'Bugün':0,'Plan':1,'Görevler':2,'Denemeler':3,'Sorular':4,'Soru Kitaplığım':5,'Analiz':6,'Rehberlik':7,'Öneriler':8,'Ayarlar':9,'YKS Sıralama Hesaplayıcı':10};
 const photoUrl=name=>'https://commons.wikimedia.org/wiki/Special:FilePath/'+encodeURIComponent(name)+'?width=760';
 const dayKey=()=>{const d=new Date();return [d.getFullYear(),d.getMonth()+1,d.getDate()].join('-')};
 const dayNumber=()=>{const d=new Date();return Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/86400000)};
@@ -37,7 +38,7 @@ function render(){
   corner=document.createElement('section');corner.className='ataturk-corner';corner.setAttribute('aria-label','Atatürk Köşesi');view.before(corner);
  }
  const index=(dayNumber()+page)%entries.length;
- const quoteIndex=(Math.floor(dayNumber()/10)+dayNumber()+page)%entries.length;
+ const quoteIndex=(Math.floor(dayNumber()/entries.length)+dayNumber()+page)%entries.length;
  const [file]=entries[index],quote=entries[quoteIndex][1],current=++version;
  corner.classList.toggle('ataturk-corner-home',page===0);
  corner.replaceChildren();
