@@ -39,3 +39,10 @@ html.republic-day-2026 body.ayzos-kid-mode .gd-student .gd-actions button{backgr
 @media(max-width:950px){.republic-hero{margin:12px 15px 2px}.republic-hero-copy{width:79%;padding:25px 24px}.republic-photo-primary{opacity:.6}}
 @media(max-width:600px){.republic-hero{margin:12px 12px 0;min-height:320px;border-radius:17px}.republic-hero-copy{width:100%;padding:20px 19px;background:linear-gradient(90deg,rgba(137,5,25,.36),transparent)}.republic-photo-primary{max-width:60%;height:100%;bottom:-10%;opacity:.35}.republic-photo-secondary{display:none}.republic-eyebrow{font-size:8px;gap:7px}.republic-hero-title{font-size:34px;margin:25px 0 14px}.republic-hero blockquote{font-size:13px;max-width:95%}.republic-footer{padding-top:17px;font-size:9px;gap:8px}.republic-footer strong{font-size:8px}}
 @media(prefers-reduced-motion:reduce){.republic-hero *{animation:none!important;transition:none!important}}
+
+/* Subpages: just Atatürk and a quotation, without the home-page 103rd anniversary heading. */
+.republic-hero.republic-hero-compact{min-height:205px}
+.republic-hero-compact .republic-hero-copy{justify-content:center;padding-top:25px;padding-bottom:25px}
+.republic-hero-compact blockquote{font-size:clamp(16px,1.9vw,23px);font-weight:650;line-height:1.45;margin-top:19px;max-width:620px}
+.republic-hero-compact .republic-photo-primary{height:128%;bottom:-20%;opacity:.88}
+@media(max-width:600px){.republic-hero.republic-hero-compact{min-height:205px}.republic-hero-compact .republic-hero-copy{padding:19px}.republic-hero-compact blockquote{font-size:15px;max-width:88%;margin-top:18px}.republic-hero-compact .republic-photo-primary{opacity:.34;max-width:60%}}
