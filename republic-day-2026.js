@@ -17,7 +17,16 @@ settings:['Kemal Atatürk portrait.jpg','Ne mutlu Türküm diyene!']
 };
 const url=file=>'https://commons.wikimedia.org/wiki/Special:FilePath/'+encodeURIComponent(file)+'?width=760';
 const fallback=url('Ataturk1930s.jpg');
-let hero,prev='';
+// Start fetching portraits immediately, before the user visits each page.
+const preloaded=new Map();
+for(const [filename] of Object.values(P)){
+ if(preloaded.has(filename))continue;
+ const picture=new Image();
+ picture.decoding='async';
+ picture.src=url(filename);
+ preloaded.set(filename,picture);
+}
+let hero,prev='',renderVersion=0;
 function page(){
  const t=document.getElementById('pageTitle')?.textContent?.trim()||'';
  const titles={'Bugün':'today','Plan':'plan','Görevler':'tasks','Denemeler':'exams','Sorular':'questions','Soru Kitaplığım':'books','Analiz':'analytics','Rehberlik':'guidance','Öneriler':'suggestions','Ayarlar':'settings'};
@@ -27,10 +36,20 @@ function update(){
  const view=document.getElementById('view');if(!view)return;
  if(!hero){hero=document.createElement('section');hero.id='republic-day-banner';hero.className='republic-hero';hero.setAttribute('aria-label','29 Ekim Cumhuriyet Bayramı');view.before(hero)}
  const key=page();if(prev===key)return;prev=key;
+ const version=++renderVersion;
+ hero.style.visibility='hidden';
  const [photo,quote]=P[key]||P.today,home=key==='today';
  hero.classList.toggle('republic-hero-compact',!home);
  hero.innerHTML='<div class="republic-hero-art" aria-hidden="true"><img class="republic-photo-primary" alt="" loading="eager" referrerpolicy="no-referrer"></div><div class="republic-hero-copy"><div class="republic-eyebrow"><span class="republic-flag" aria-hidden="true">☾ ★</span> 29 EKİM 2026 <span class="republic-line"></span> CUMHURİYET BAYRAMI</div>'+(home?'<div class="republic-hero-title">CUMHURİYET<span>103 YAŞINDA.</span></div>':'')+'<blockquote>“'+quote+'”</blockquote><div class="republic-signature">— Gazi Mustafa Kemal Atatürk</div>'+(home?'<div class="republic-footer"><span>1923 <i></i> 2026</span><strong>29 EKİM CUMHURİYET BAYRAMIMIZ KUTLU OLSUN</strong></div>':'')+'</div>';
- const img=hero.querySelector('.republic-photo-primary');img.onerror=()=>{if(img.src!==fallback)img.src=fallback;else img.style.display='none'};img.src=url(photo);
+ const img=hero.querySelector('.republic-photo-primary');
+ const reveal=()=>{if(version===renderVersion)hero.style.visibility='visible'};
+ const cached=preloaded.get(photo);
+ img.onload=reveal;
+ img.onerror=()=>{if(img.src!==fallback){img.src=fallback;}else{img.style.display='none';reveal();}};
+ img.src=cached?.src||url(photo);
+ if(img.complete){if(img.naturalWidth)reveal();else img.onerror();}
+ // Never leave the banner invisible if a remote image stalls.
+ setTimeout(reveal,2500);
 }
 function start(){
  update();
