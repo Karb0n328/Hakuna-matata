@@ -1,0 +1,19 @@
+/* The red palette borrows the original 29 October styling; these rules cover the permanent corner. */
+html[data-hakuna-palette="republic"] .ataturk-corner{background:linear-gradient(115deg,#b40e25,#9c0a1f 58%,#760819)!important;box-shadow:0 14px 30px rgba(112,9,29,.18)}
+html[data-hakuna-palette="republic"] .ataturk-corner-label{color:#ffe4e7}
+html[data-hakuna-palette="republic"] .ataturk-corner-signature{color:#ffd4da}
+html[data-hakuna-palette="republic"] .ataturk-corner.photo-ready .ataturk-corner-art img{opacity:.72}
+html[data-hakuna-palette="dark"] .ataturk-corner{background:linear-gradient(115deg,#15181d,#252a31)!important;border:1px solid #333941;box-shadow:none}
+html[data-hakuna-palette="dark"] .ataturk-corner-label{color:#c5cbd4}
+html[data-hakuna-palette="dark"] .ataturk-corner-signature{color:#aeb6c1}
+html[data-hakuna-palette="blue"] .ataturk-corner{background:linear-gradient(110deg,#15243d,#263b57)!important}
+html[data-hakuna-palette="blue"] .ataturk-corner-label{color:#d7e5f8}
+html[data-hakuna-palette="blue"] .ataturk-corner-signature{color:#d5deeb}
+#republic-day-banner[hidden]{display:none!important}
+.hakuna-palette-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.hakuna-palette-description{flex:1 1 180px}
+.hakuna-palette-options{display:flex;gap:7px;flex-wrap:wrap}
+.hakuna-palette-options button{border:1px solid var(--line,#dce3ec);border-radius:10px;padding:9px 13px;background:var(--card,#fff);color:var(--ink,#17233b);font-size:12px;font-weight:750;cursor:pointer}
+.hakuna-palette-options button[aria-pressed="true"]{background:var(--blue,#2f7ee6);border-color:var(--blue,#2f7ee6);color:#fff}
+html[data-hakuna-palette="dark"] .hakuna-palette-options button[aria-pressed="true"]{background:#f2f2f2;color:#111;border-color:#f2f2f2}
+html[data-hakuna-palette="republic"] .hakuna-palette-options button[aria-pressed="true"]{background:#bb172a;color:#fff;border-color:#bb172a}
