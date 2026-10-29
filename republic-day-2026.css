@@ -1,0 +1,41 @@
+/* 29 October 2026 only — red & white, no data changes */
+html.republic-day-2026{--navy:#a60f20;--navy-2:#c51d2d;--ink:#3e1920;--muted:#80646a;--line:#efd7da;--bg:#fff9f9;--card:#fff;--blue:#c61930;--blue-soft:#ffe8eb;--cyan-soft:#fff0f0;--green:#a52b3b;--green-soft:#ffebed;--purple:#b21b35;--purple-soft:#fff0f2;--red:#b5132a;--red-soft:#ffe6e9}
+html.republic-day-2026 body{background:#fff9f9!important;color:#3e1920}
+html.republic-day-2026 .sidebar{background:linear-gradient(160deg,#9b0b1c 0%,#c61b2e 52%,#820a1a 100%)!important}
+html.republic-day-2026 .brand-icon{display:none!important}
+html.republic-day-2026 .brand{padding-left:6px}
+html.republic-day-2026 .brand-title{color:#fff!important}
+html.republic-day-2026 .brand-subtitle{color:#ffe3e6!important}
+html.republic-day-2026 .main-area{background:#fffafa!important}
+html.republic-day-2026 .topbar{background:#fffafa!important;border-color:#f3d9dc!important}
+html.republic-day-2026 .card,html.republic-day-2026 .panel,html.republic-day-2026 .modal-card{border-color:#f0dce0}
+html.republic-day-2026 .primary-btn,html.republic-day-2026 button.primary,html.republic-day-2026 .btn-primary{background:#bb172a!important;color:white!important;border-color:#bb172a!important}
+html.republic-day-2026 .nav-item.active,html.republic-day-2026 .nav-button.active,html.republic-day-2026 .bottom-nav button.active{background:rgba(255,255,255,.2)!important;color:#fff!important}
+html.republic-day-2026 input:focus,html.republic-day-2026 textarea:focus,html.republic-day-2026 select:focus{border-color:#cf3042;outline-color:#cf3042}
+html.republic-day-2026 .date-chip.active,html.republic-day-2026 .chip.active{background:#ffe3e8!important;color:#9d1024!important;border-color:#f2a4b1!important}
+html.republic-day-2026 .progress-fill,html.republic-day-2026 .progress-bar-fill{background:#c21b31!important}
+html.republic-day-2026 body.ayzos-kid-mode #view{background:#fff8f8!important}
+html.republic-day-2026 body.ayzos-kid-mode .gw-kid-hero,html.republic-day-2026 body.ayzos-kid-mode .gd-kid-hero{background:linear-gradient(120deg,#ad0d24,#df3547)!important}
+html.republic-day-2026 body.ayzos-kid-mode .gw-check,html.republic-day-2026 body.ayzos-kid-mode .gw-self-add button{background:#b81a2e!important;color:#fff!important}
+html.republic-day-2026 body.ayzos-kid-mode .gd-summary>div:nth-child(n){background:#fff0f1!important}
+html.republic-day-2026 body.ayzos-kid-mode .gd-student .gd-actions button{background:#b81a2e!important}
+.republic-hero{position:relative;isolation:isolate;overflow:hidden;min-height:290px;margin:18px 24px 4px;border-radius:21px;background:linear-gradient(115deg,#b40e25 0%,#9c0a1f 58%,#760819 100%);box-shadow:0 18px 35px rgba(112,9,29,.18);color:#fff;display:flex;align-items:stretch}
+.republic-hero:before{content:"";position:absolute;z-index:0;inset:0;background:radial-gradient(circle at 75% 30%,rgba(255,255,255,.17),transparent 42%),linear-gradient(90deg,transparent,rgba(255,255,255,.035));pointer-events:none}
+.republic-hero-art{position:absolute;z-index:0;inset:0;overflow:hidden;pointer-events:none}
+.republic-photo-primary{position:absolute;right:0;bottom:-17%;height:128%;max-width:47%;object-fit:contain;object-position:right bottom;filter:grayscale(1) contrast(1.13);opacity:.82;mix-blend-mode:screen;mask-image:linear-gradient(90deg,transparent 0%,#000 32%)}
+.republic-photo-secondary{position:absolute;right:29%;bottom:-32%;height:105%;max-width:26%;object-fit:contain;filter:grayscale(1);opacity:.21;mix-blend-mode:screen;mask-image:linear-gradient(90deg,transparent,#000 35%,transparent 95%)}
+.republic-hero-copy{position:relative;z-index:1;width:min(72%,770px);padding:28px 32px 25px;display:flex;flex-direction:column;align-items:flex-start}
+.republic-eyebrow{font-size:10px;letter-spacing:.19em;font-weight:800;display:flex;align-items:center;gap:10px;color:#ffe4e7}
+.republic-flag{font-size:22px;letter-spacing:-.25em;padding-right:6px;color:white}
+.republic-line{display:inline-block;width:25px;height:1px;background:#ffc5ce;opacity:.7}
+.republic-hero-title{font-weight:950;font-size:clamp(30px,4.6vw,57px);letter-spacing:-.06em;line-height:.98;margin:23px 0 18px;text-wrap:balance}
+.republic-hero-title span{display:block;color:#ffd8dc}
+.republic-hero blockquote{margin:0;max-width:620px;font-size:clamp(13px,1.5vw,17px);line-height:1.55;font-weight:570;letter-spacing:-.01em;color:#fff}
+.republic-signature{font-size:11px;letter-spacing:.025em;margin-top:10px;color:#ffd4da}
+.republic-footer{margin-top:auto;padding-top:24px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:10px;letter-spacing:.06em}
+.republic-footer span{font-weight:850;letter-spacing:.16em;white-space:nowrap}
+.republic-footer i{display:inline-block;width:24px;height:1px;background:#fff;vertical-align:middle;margin:0 5px}
+.republic-footer strong{font-size:9px;color:#ffe0e4}
+@media(max-width:950px){.republic-hero{margin:12px 15px 2px}.republic-hero-copy{width:79%;padding:25px 24px}.republic-photo-primary{opacity:.6}}
+@media(max-width:600px){.republic-hero{margin:12px 12px 0;min-height:320px;border-radius:17px}.republic-hero-copy{width:100%;padding:20px 19px;background:linear-gradient(90deg,rgba(137,5,25,.36),transparent)}.republic-photo-primary{max-width:60%;height:100%;bottom:-10%;opacity:.35}.republic-photo-secondary{display:none}.republic-eyebrow{font-size:8px;gap:7px}.republic-hero-title{font-size:34px;margin:25px 0 14px}.republic-hero blockquote{font-size:13px;max-width:95%}.republic-footer{padding-top:17px;font-size:9px;gap:8px}.republic-footer strong{font-size:8px}}
+@media(prefers-reduced-motion:reduce){.republic-hero *{animation:none!important;transition:none!important}}
