@@ -230,7 +230,9 @@
   }
 
   async function refreshSuggestions(){
-    const root=document.querySelector('[data-gees-suggestions]');if(!root)return;
+    const root=document.querySelector('[data-gees-suggestions]');
+    const inbox=document.querySelector('[data-gees-inbox]');
+    if(!root||!inbox)return;
     const session=readSession();if(!session?.access_token||!isAdmin())return;
     try{
       const headers={apikey:SUPABASE_KEY,Authorization:'Bearer '+session.access_token};
@@ -241,12 +243,28 @@
         const people=await fetch(SUPABASE_URL+'/rest/v1/rpc/admin_suggestion_authors',{method:'POST',headers:{...headers,'Content-Type':'application/json'},body:'{}'});
         if(people.ok){authors=new Map((await people.json()).map(p=>[p.user_id,p.username]));}
       }catch(e){console.warn('Öneri gönderen adları yüklenemedi',e)}
-      root.replaceChildren();
-      if(!items.length){root.textContent='Henüz öneri gelmedi.';return;}
+      root.replaceChildren();inbox.replaceChildren();
+      if(!items.length){root.textContent='Henüz öneri gelmedi.';inbox.textContent='Henüz cevaplanmış mesaj yok.';return;}
+      const pending=items.filter(x=>!x.admin_reply?.trim());
+      const answered=items.filter(x=>x.admin_reply?.trim());
+      const pendingCount=document.querySelector('[data-gees-pending-count]');
+      const inboxCount=document.querySelector('[data-gees-inbox-count]');
+      if(pendingCount)pendingCount.textContent=String(pending.length);
+      if(inboxCount)inboxCount.textContent=String(answered.length);
+      if(!pending.length)root.textContent='Cevap bekleyen öneri yok.';
+      if(!answered.length)inbox.textContent='Henüz cevaplanmış mesaj yok.';
       for(const item of items){
+        const isAnswered=Boolean(item.admin_reply?.trim());
+        const destination=isAnswered?inbox:root;
         const row=document.createElement('div');row.style.cssText='padding:12px 0;border-bottom:1px solid #ddd';
         const title=document.createElement('div');title.style.fontWeight='700';title.textContent=(item.category==='bug'?'Hata':item.category==='other'?'Diğer':'Öneri')+' · Gönderen: '+(authors.get(item.user_id)||'Bilinmeyen kullanıcı')+' · '+new Date(item.created_at).toLocaleString('tr-TR');
         const message=document.createElement('p');message.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere';message.textContent=item.message;
+        if(isAnswered){
+          const sent=document.createElement('div');sent.style.cssText='margin-top:9px;padding:11px 13px;border-radius:10px;background:var(--blue-soft,#edf3ff);color:var(--ink,#21334b);white-space:pre-wrap;overflow-wrap:anywhere';
+          const stamp=document.createElement('small');stamp.style.cssText='display:block;margin-bottom:6px;opacity:.7';stamp.textContent='Yanıtın · '+dateText(item.replied_at);
+          const answer=document.createElement('div');answer.textContent=item.admin_reply;
+          sent.append(stamp,answer);row.append(title,message,sent);destination.append(row);continue;
+        }
         const select=document.createElement('select');for(const [v,label] of [['new','Yeni'],['reviewing','İnceleniyor'],['planned','Planlandı'],['completed','Tamamlandı']]){const opt=document.createElement('option');opt.value=v;opt.textContent=label;select.append(opt);}select.value=item.status;
         select.addEventListener('change',async()=>{select.disabled=true;try{const r=await fetch(SUPABASE_URL+'/rest/v1/gees_suggestions?id=eq.'+encodeURIComponent(item.id),{method:'PATCH',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify({status:select.value})});if(!r.ok)throw Error('Durum güncellenemedi');}catch(e){alert(e.message);select.value=item.status;}finally{select.disabled=false;}});
         const replyLabel=document.createElement('label');
@@ -278,13 +296,14 @@
             item.admin_reply=answer;
             send.textContent='Cevabı güncelle';
             feedback.textContent='✓ Cevap gönderildi.';
+            await refreshSuggestions();
           }catch(e){feedback.textContent=e.message;}
           finally{send.disabled=false;}
         });
         replyLabel.append(reply);
-        row.append(title,message,select,replyLabel,send,feedback);root.append(row);
+        row.append(title,message,select,replyLabel,send,feedback);destination.append(row);
       }
-    }catch(e){root.textContent=e.message;}
+    }catch(e){root.textContent=e.message;inbox.textContent='Gelen kutusu yüklenemedi: '+e.message;}
   }
 
   function openPanel(){
@@ -304,7 +323,7 @@
             <div><strong><span data-hakuna-admin-count>—</span> kayıtlı kullanıcı</strong><div class="hakuna-admin-live waiting" data-hakuna-admin-live><span data-hakuna-admin-updated>Canlı bağlantı kuruluyor…</span></div></div>
             <button class="secondary-btn" type="button" data-hakuna-admin-refresh>Yenile</button>
           </div>
-          <section style="border-top:1px solid #ddd;margin:18px 0;padding-top:18px"><h3>GEES · Öneri kutusu</h3><div data-gees-suggestions>Öneriler yükleniyor…</div></section>
+          <section style="border-top:1px solid #ddd;margin:18px 0;padding-top:18px"><h3>GEES · Öneri kutusu <span class="hakuna-admin-badge" data-gees-pending-count>—</span></h3><div data-gees-suggestions>Öneriler yükleniyor…</div></section><section style="border-top:1px solid #ddd;margin:18px 0;padding-top:18px"><h3>📥 Gelen kutusu <span class="hakuna-admin-badge" data-gees-inbox-count>—</span></h3><p class="card-subtitle">Cevaplanan öneriler ve gönderdiğin yanıtların geçmişi.</p><div data-gees-inbox>Mesajlar yükleniyor…</div></section>
           <div class="hakuna-admin-list" data-hakuna-admin-users><div class="hakuna-admin-empty">Kullanıcılar yükleniyor…</div></div>
         </div>
       </section>
@@ -312,7 +331,7 @@
     root.querySelector('[data-hakuna-admin-modal]')?.addEventListener('click',e=>e.stopPropagation());
     root.querySelector('.modal-backdrop')?.addEventListener('click',e=>{if(e.target===e.currentTarget)closePanel();});
     root.querySelectorAll('[data-hakuna-admin-close]').forEach(btn=>btn.addEventListener('click',closePanel));
-    root.querySelector('[data-hakuna-admin-refresh]')?.addEventListener('click',()=>void refreshPanel());
+    root.querySelector('[data-hakuna-admin-refresh]')?.addEventListener('click',()=>{void refreshPanel();void refreshSuggestions();});
     void refreshSuggestions();
     void refreshPanel();
     void startRealtime();
