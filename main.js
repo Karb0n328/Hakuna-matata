@@ -63,7 +63,7 @@ afterFirstPaint(()=>{
       import('./account-auth-hotfix.js?v=6'),
       import('./settings-copy-fix.js?v=1'),
       import('./debt-edit.js?v=2'),
-      import('./sidebar-welcome.js?v=2')
+      import('./sidebar-welcome.js?v=3')
     ]);
   })();
 
