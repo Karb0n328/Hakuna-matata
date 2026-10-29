@@ -1,7 +1,7 @@
 /* User-selectable palette: blue, dark, Republic red/white. */
 (()=>{'use strict';
 const KEY='hakuna.theme.palette.v1';
-const options=[['blue','Mavi','Klasik Hakuna tasarımı'],['dark','Dark','Koyu arayüz'],['republic','Al Bayrak','Kırmızı-beyaz tasarım']];
+const options=[['blue','Mavi','Klasik Hakuna tasarımı'],['dark','Dark','Koyu arayüz'],['republic','Kırmızı','Kırmızı-beyaz tasarım']];
 let queued=false;
 function isHoliday(){const d=new Date();return d.getFullYear()===2026&&d.getMonth()===9&&d.getDate()===29}
 function choice(){return localStorage.getItem(KEY)||'auto'}
