@@ -32,7 +32,8 @@
   }
 
   function darkEnabled(){
-    return localStorage.getItem(THEME_KEY)==='1';
+    const choice=localStorage.getItem('hakuna.theme.palette.v1');
+    return choice?choice==='dark':localStorage.getItem(THEME_KEY)==='1';
   }
 
   function syncToggle(){
@@ -87,6 +88,7 @@
     const title=document.getElementById('pageTitle');
     const existing=document.querySelector('[data-batu-theme-row]');
 
+    if(localStorage.getItem('hakuna.theme.palette.v1')){existing?.remove();return;}
     if(title?.textContent?.trim()!=='Ayarlar'||!view){
       existing?.remove();
       return;
