@@ -128,7 +128,7 @@ Deno.serve(async(req:Request)=>{
     a=await ai(parts,primaryModel);
   }catch(primaryError){
     const e=primaryError as {status?:number,name?:string};
-    if(e.status!==502&&e.status!==503)throw primaryError;
+    if(e.status!==502&&e.name!=="TimeoutError")throw primaryError;
     primaryModel="gemini-3.5-flash";
     a=await ai(parts,primaryModel);
   }
@@ -147,7 +147,7 @@ Deno.serve(async(req:Request)=>{
     status:direct.status,kind:direct.kind,message:direct.message
   };
   const official=findOfficialReferences(s.subject,s.topic,text,[]);
-  const evidence=await fetchOfficialEvidence(official,s.topic);
+  const evidence=(mode==="hint"||direct.status==="contradiction"||verified.hardMismatch)?[]:await fetchOfficialEvidence(official,s.topic);
   const program=findLegacyProgram(s.subject);
   s.curriculum=program?{
     title:program.subject+" — öğretim programı",
