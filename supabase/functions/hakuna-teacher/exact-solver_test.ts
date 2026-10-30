@@ -11,6 +11,7 @@ Deno.test("Exact solver correct on every original gold-answer case it supports",
   if(Number(solved.answer)!==Number(q.expected)){incorrect++;throw Error("Gold discrepancy on "+q.id+" from "+q.question+" expected "+q.expected+" got "+solved.answer);}
   assert(solved.review==="kesin_hesap","must label deterministic calculation");
  }
+ console.log("Exact solver synthetic gold test: "+supported+"/"+questions.length+" solved, "+incorrect+" wrong, "+unhandled+" refused");
  assert(incorrect===0,"incorrect numeric output");
  assert(supported>=75,"too few strictly supported original questions: "+supported);
  assert(unhandled>10,"must not falsely claim all question types are supported");
