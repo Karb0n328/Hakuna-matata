@@ -41,3 +41,17 @@ Edge Function, Supabase'in sunucuya otomatik verdiği `SUPABASE_DB_URL` üzerind
 Bu pilot yalnız Batu'ya açıktır. Yerel soru defteri cihazlar arasında senkronlanmaz ve kullanıcı tarayıcı verilerini silerse kaybolabilir. Fotoğraflar gönderim sırasında Gemini API'ye aktarılır; sunucu fotoğrafları saklamaz. Model anahtarı Supabase Vault içinde şifreli olarak tutulur; Edge Function onu sunucu tarafındaki DB bağlantısıyla okur.
 
 İlk sürüm `main` dalına PR #19 ile birleştirildi; devam eden güncellemeler de `main` dalındadır.
+
+
+## Bağımsız doğrulama — 30 Ekim 2026
+
+- `supabase/functions/hakuna-teacher/verification.ts`: Deno bağımsız aritmetik değerlendirme, kimyasal denklemde atom korunumu, fizikte/kimyada boyut kontrolü. Modelden `checks` alır, yalnızca desteklenen ifadeleri değerlendirir.
+- `supabase/functions/hakuna-teacher/sources.ts`: Kamuya açık MEB/OGM eski program materyallerinden elle kontrol edilmiş 9 kısa konu referansı. Biyoloji sindirim, kimya denge/organik, matematik integral, fizik kuvvet gibi *sınırlı* kapsam. İlgili kaynak varsa ikinci modele bağlam sağlar ve öğrenciye tıklanabilir bağlantı gösterir.
+- Model hesap kontrolü yanlışsa, ikinci model cevapla çelişirse, kaynak notuyla çelişki tespit edilirse ya da ikinci denetim tamamlanamazsa kesin şık gizlenir.
+- Sayısal denetim **yalnızca belirtilen aritmetik işlemi doğrular**, soru yorumunu, görsel okumayı veya MEB cevabını matematiksel ispat etmez.
+- Uygulama AI cevaplarının kontrol durumunu ve ilgili MEB/OGM kaynaklarını gösterir. Deftere yalnız tutarlı bulunan çözüm otomatik alınır.
+- Günlük **25 soru** kotası `hakuna_teacher_claim_quota` RPC ile eşzamanlı isteklerde atomik korunur. İlk model bir çağrı, ikinci model ayrı çağrı; ipucunda ikinci çağrı genellikle yapılmaz.
+- Sınırlardan biri Google'ın model bazlı RPM/TPM/RPD ücretsiz API kotasıdır ve projenin canlı AI Studio ekranından takip edilmelidir. Uygulama kotası bunu artırmaz.
+- `verification_test.ts` Deno testleri CI'ye bağlandı. Gerçek öğrenci oturumuyla canlı uçtan uca soru testi henüz doğrulanmadı.
+
+**Pilot kapsamı değişmedi:** Batu dışındaki hesaplar için API yetkisi yoktur.
