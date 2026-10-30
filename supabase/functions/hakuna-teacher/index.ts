@@ -1,5 +1,6 @@
 import {verifyChecks} from "./verification.ts";
-import {findOfficialReferences} from "./sources.ts";
+import {findOfficialReferences,OFFICIAL_REFERENCES} from "./sources.ts";
+import {findLegacyProgram,LEGACY_PROGRAM_CATALOG} from "./curriculum.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
 const URL=Deno.env.get("SUPABASE_URL")||"";
 const ANON=Deno.env.get("SUPABASE_ANON_KEY")||"";
@@ -87,7 +88,7 @@ Deno.serve(async(req:Request)=>{
      const result=await client.from("hakuna_teacher_usage").select("request_id",{count:"exact",head:true}).eq("user_id",user.id).eq("day",today);
      if(!result.error)used=result.count;
    }
-   return send({ready,dailyLimit:MAX_DAILY,remaining:used===null?null:Math.max(0,MAX_DAILY-used),provider:"Gemini 3.8 Flash",secondCheck:true,deterministicChecks:["arithmetic","chemical_balance","dimension"],officialSources:9});
+   return send({ready,dailyLimit:MAX_DAILY,remaining:used===null?null:Math.max(0,MAX_DAILY-used),provider:"Gemini 3.8 Flash",secondCheck:true,deterministicChecks:["arithmetic","chemical_balance","dimension"],officialSources:OFFICIAL_REFERENCES.length,programCatalog:LEGACY_PROGRAM_CATALOG.length,fullTextBooksIndexed:0});
   }
   if(body.consent!==true)return send({error:"Görselin AI sağlayıcısına gönderilmesi için izin vermelisin."},400);
   if(!(await geminiKey()))return send({error:"Öğretmen AI sağlayıcısına bağlanamadı."},503);
@@ -131,7 +132,20 @@ Deno.serve(async(req:Request)=>{
    review:"kontrol_gerekli",checkNote:""
   };
   const verified=verifyChecks(a.checks,s.subject);
-  const official=findOfficialReferences(s.subject,s.topic,text,s.steps);
+  const official=findOfficialReferences(s.subject,s.topic,text,[]);
+  const program=findLegacyProgram(s.subject);
+  s.curriculum=program?{
+    title:program.subject+" — öğretim programı",
+    url:program.programUrl,
+    status:program.programTrack,
+    bookCatalogUrl:program.bookCatalogUrl,
+    bookCatalogStatus:program.bookAvailability
+  }:null;
+  s.sourceCoverage={
+    officialTopicNotes:official.length,
+    fullTextBooksIndexed:0,
+    verifiedFullText:false
+  };
   s.verification={
     attempted:verified.attempted,
     passed:verified.passed,
@@ -160,12 +174,18 @@ Deno.serve(async(req:Request)=>{
   }
   try{
    const sourceContext=official.map(x=>({id:x.id,title:x.title,note:x.note}));
+   const curriculumContext=program?{
+     subject:program.subject,track:program.programTrack,
+     warning:"Bu bağlantılar yalnız katalog/kapsam içindir. Programın veya bütün kitabın metni modele aktarılmadı. Okumadığın sayfaya dayalı kesin kanıt iddia etme."
+   }:null;
    const p:any[]=[{text:"Sen ilk çözümü görmeyen bağımsız ikinci soru çözücüsün. "+
     "Görsel ve metni yeniden çöz. Eksikse readable=false yap. "+
     "Aşağıdaki MEB/OGM kaynak notları yalnızca ilgili konudaysa doğru muhakeme için kullanılır; ilgili değilse kullanma. "+
     "Kaynakla çözümün bariz çatışıyorsa source_conflict=true döndür. İlk modelin çözümünü görmüyorsun. "+
     "Yalnızca JSON: {\"readable\":boolean,\"answer\":string,\"uncertain\":boolean,\"source_conflict\":boolean,\"reason\":string}. "+
-    "2018 MEB/ÖSYM. Kaynaklar: "+JSON.stringify(sourceContext)+" Öğrenci metni: "+text}];
+    "2018 MEB/ÖSYM. Kaynaklar: "+JSON.stringify(sourceContext)+
+    " Müfredat izleme bilgisi: "+JSON.stringify(curriculumContext)+
+    " Öğrenci metni: "+text}];
    if(photo)p.push({inlineData:{mimeType:photo.mime,data:photo.data}});
    const b=await ai(p,"gemini-3.5-flash-lite",2600);
    if(b?.source_conflict===true){
