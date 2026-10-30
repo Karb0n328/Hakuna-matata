@@ -81,11 +81,16 @@ import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2
     const sub=el("p","hakuna-ai-meta",data.exam+" · "+data.difficulty);
     card.append(sub);
     const state=data.review;
-    const badge=el("div","hakuna-ai-review "+(state==="tutarli"?"is-consistent":state==="celiski"?"is-conflict":""),(
-      state==="tutarli"?"İki çözüm tutarlı (garanti değil)":
-      state==="celiski"?"Çözümler çelişti; sonuç gizlendi":
+    const acceptable=state==="tutarli"||state==="hesap_ve_model";
+    const conflict=["celiski","hesap_celiski","kaynak_celiski"].includes(state);
+    const badge=el("div","hakuna-ai-review "+(acceptable?"is-consistent":conflict?"is-conflict":""),(
+      state==="hesap_ve_model"?"Hesap + ikinci model tutarlı (garanti değil)":
+      state==="tutarli"?"İki model tutarlı (garanti değil)":
+      state==="hesap_celiski"?"Hesap/birim/atom denetimi başarısız; cevap gizlendi":
+      state==="kaynak_celiski"?"MEB kaynak notuyla olası çelişki; cevap gizlendi":
+      state==="celiski"?"Çözümler çelişti; cevap gizlendi":
       state==="okunamadi"?"Fotoğrafı yeniden yükle":
-      state==="ipucu"?"İpucu modu":"Kontrol gerekli"
+      state==="ipucu"?"İpucu modu":"Sonuç doğrulanamadı"
     ));
     card.append(badge);
     if(data.answer){
@@ -97,6 +102,24 @@ import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2
     if(data.examTip)card.append(el("p","hakuna-ai-tip","SFT SINAV TAKTİĞİ: "+data.examTip));
     if(data.caution)card.append(el("p","hakuna-ai-warning",data.caution));
     if(data.checkNote)card.append(el("p","hakuna-ai-muted",data.checkNote));
+    if(data.verification?.attempted){
+      const attempted=Number(data.verification.attempted)||0;
+      const passed=Number(data.verification.passed)||0;
+      const failed=Number(data.verification.failed)||0;
+      const skipped=Number(data.verification.skipped)||0;
+      card.append(el("p","hakuna-ai-muted","Otomatik işlem kontrolleri: "+passed+"/"+attempted+" geçti · "+failed+" tutarsız · "+skipped+" değerlendirilemedi."));
+    }
+    if(Array.isArray(data.sources)&&data.sources.length){
+      const refs=el("div","hakuna-ai-sources");
+      refs.append(el("strong","","İlgili MEB/OGM kaynakları (konu referansı): "));
+      data.sources.slice(0,3).forEach(src=>{
+        if(typeof src?.url!=="string"||!src.url.startsWith("https://ogmmateryal.eba.gov.tr/"))return;
+        const a=el("a","",src.title||"MEB/OGM");
+        a.href=src.url;a.target="_blank";a.rel="noopener noreferrer";
+        refs.append(a);
+      });
+      card.append(refs);
+    }
     list.append(card);list.scrollTop=list.scrollHeight;
   }
   async function fileToImage(file){
@@ -214,7 +237,8 @@ import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2
     statusBusy=true;
     try{
       const info=await invoke({status:true});
-      if(!info.ready)addBubble("error","AI çözüm servisi için ücretsiz sağlayıcı anahtarı henüz eklenmedi. Öğretmen arayüzü hazır, canlı çözüm şimdilik kapalı.");
+      if(!info.ready)addBubble("error","AI sağlayıcısına henüz ulaşılamadı. Öğretmen arayüzü açık ama canlı çözümler kapalı.");
+      if(Number.isFinite(info.remaining))$("[data-ai-remaining]").textContent="Bugün kalan: "+info.remaining+"/"+info.dailyLimit+" soru";
     }catch(err){addBubble("error",err.message||String(err));}
     finally{statusBusy=false;}
   }
@@ -236,7 +260,7 @@ import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2
       addSolution(answer.solution);
       if(Number.isFinite(answer.remaining))$("[data-ai-remaining]").textContent=answer.remaining+" günlük yeni soru hakkı";
       history.push({role:"user",text:prompt},{role:"assistant",text:(answer.solution.steps||[]).join(" ").slice(0,650)});
-      if(mode!=="hint"&&answer.solution?.readable)await saveQuestion(prompt,answer.solution,photo);
+      if(mode!=="hint"&&answer.solution?.readable&&["tutarli","hesap_ve_model"].includes(answer.solution.review))await saveQuestion(prompt,answer.solution,photo);
       $("[data-ai-text]").value="";
       $("[data-ai-photo]").value="";
       $("[data-ai-photoname]").textContent="Fotoğraf seçilmedi";
@@ -264,6 +288,14 @@ import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2
       const list=el("ol");for(const step of q.solution.steps||[])list.append(el("li","",step));article.append(list);
       if(q.solution.examTip)article.append(el("p","","SFT SINAV TAKTİĞİ: "+q.solution.examTip));
       if(q.solution.checkNote)article.append(el("p","",q.solution.checkNote));
+      if(Array.isArray(q.solution.sources)){
+        for(const ref of q.solution.sources.slice(0,3)){
+          if(typeof ref?.url!=="string"||!ref.url.startsWith("https://ogmmateryal.eba.gov.tr/"))continue;
+          const link=el("a","",ref.title||"MEB/OGM kaynağı");
+          link.href=ref.url;link.target="_blank";link.rel="noopener noreferrer";
+          article.append(link,el("p","",""));
+        }
+      }
       article.append(el("div","hakuna-ai-note","ÖĞRENCİ NOTUM:"));
       printRoot.append(article);
     });
