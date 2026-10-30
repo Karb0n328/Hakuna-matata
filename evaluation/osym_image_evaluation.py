@@ -44,8 +44,8 @@ def download_question_booklet() -> bytes:
                 "User-Agent": "Mozilla/5.0", "Accept": "application/pdf",
             })
             with urllib.request.urlopen(request, timeout=45) as res:
-                data = res.read(16000000)
-            if not data.startswith(b"%PDF-") or len(data) > 15500000:
+                data = res.read(80000001)
+            if not data.startswith(b"%PDF-") or len(data) > 80000000:
                 raise RuntimeError("Official source did not deliver a suitable PDF")
             return data
         except (TimeoutError, OSError, urllib.error.URLError):
