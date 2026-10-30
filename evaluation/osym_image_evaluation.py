@@ -6,7 +6,7 @@ send a crop containing a question (NOT the answer key) to the locked-down
 benchmark Edge Function, then grade against the official PDF's answer page.
 No copyrighted question content or page images are printed or committed.
 
-This is one confirmed 2024-TYT image example, not a full historical benchmark.
+This is a six-page 2024 TYT/AYT pilot, not a full historical benchmark.
 """
 from __future__ import annotations
 import base64
@@ -23,12 +23,27 @@ from pathlib import Path
 import fitz
 
 PROJECT = "zyrbbkbwrijnnykbgjvc"
-PDF_URL = "https://dokuman.osym.gov.tr/pdfdokuman/2024/YKS/TSK/yks_tyt_2024_kitapcik_T24kt.pdf"
+PDF_URLS = {
+    "TYT": "https://dokuman.osym.gov.tr/pdfdokuman/2024/YKS/TSK/yks_tyt_2024_kitapcik_T24kt.pdf",
+    "AYT": "https://dokuman.osym.gov.tr/pdfdokuman/2024/YKS/TSK/yks_ayt_2024_kitapcik_ts85k.pdf",
+}
 AUDIENCE = "hakuna-osym-private-eval"
 DEST = f"https://{PROJECT}.supabase.co/functions/v1/hakuna-teacher-benchmark"
 RUN_ID = os.environ.get("GITHUB_RUN_ID", "")
-CASE_ID = "2024-TYT-turkce-1"
-TASK = "TYT Türkçe"
+PAGE_CASES = [
+    # Each page's visible question range was independently checked in the official PDFs.
+    {"exam":"TYT","topic":"turkce","test":"TYT Türkçe","page":2,"last_question":4,"gold_prefix":"BAAD"},
+    {"exam":"TYT","topic":"matematik","test":"TYT Matematik","page":23,"last_question":3,"gold_prefix":"AEA"},
+    {"exam":"TYT","topic":"fen","test":"TYT Fen","page":36,"last_question":4,"gold_prefix":"EADB"},
+    {"exam":"AYT","topic":"edebiyat","test":"AYT Edebiyat","page":2,"last_question":3,"gold_prefix":"BEB"},
+    {"exam":"AYT","topic":"matematik","test":"AYT Matematik","page":25,"last_question":4,"gold_prefix":"DCED"},
+    {"exam":"AYT","topic":"fen","test":"AYT Fen","page":36,"last_question":3,"gold_prefix":"DEB"},
+]
+ANSWER_HEADINGS = {
+    "TYT": ["TÜRKÇE TESTİ","SOSYAL BİLİMLER TESTİ","TEMEL MATEMATİK TESTİ","FEN BİLİMLERİ TESTİ"],
+    "AYT": ["TÜRK DİLİ VE EDEBİYATI-SOSYAL BİLİMLER-1 TESTİ","SOSYAL BİLİMLER-2 TESTİ","MATEMATİK TESTİ","FEN BİLİMLERİ TESTİ"],
+}
+
 
 
 def json_fetch(url: str, headers: dict[str, str], data: bytes | None = None, timeout: int = 90) -> dict:
@@ -37,7 +52,7 @@ def json_fetch(url: str, headers: dict[str, str], data: bytes | None = None, tim
         return json.load(response)
 
 
-def download_question_booklet() -> bytes:
+def download_question_booklet(pdf_url: str) -> bytes:
     """Fetch the source in HTTP range chunks because ÖSYM blocks full-file GETs.
 
     Never use a cached third-party rehost. Content must come from the verified
@@ -47,7 +62,7 @@ def download_question_booklet() -> bytes:
         last_error: Exception | None = None
         for attempt in range(4):
             try:
-                req = urllib.request.Request(PDF_URL, headers={
+                req = urllib.request.Request(pdf_url, headers={
                     "User-Agent": "Mozilla/5.0 (compatible; Hakuna-Private-Syllabus-Audit/1.0)",
                     "Accept": "application/pdf",
                     "Range": f"bytes={start}-{end}",
@@ -89,38 +104,50 @@ def download_question_booklet() -> bytes:
         raise RuntimeError("Incomplete official PDF after range assembly")
     return combined
 
-def image_only_question_one(pdf: bytes) -> tuple[str, str]:
-    doc = fitz.open(stream=pdf, filetype="pdf")
-    if len(doc) < 40:
-        raise RuntimeError("Official booklet pages appear incomplete")
+def official_answers(doc: fitz.Document, case: dict) -> dict[str, str]:
+    """Grade only on the isolated final official answer-key page.
 
-    # 2024-TYT first page of Turkish questions = physical PDF page 3.
-    page = doc[2]
-    w, h = page.rect.width, page.rect.height
-    clip = fitz.Rect(w * 0.072, h * 0.16, w * 0.50, h * 0.495)
-    pix = page.get_pixmap(matrix=fitz.Matrix(2.1, 2.1), clip=clip, alpha=False)
-    jpeg = pix.tobytes("jpeg")
-    if len(jpeg) > 650000:
-        raise RuntimeError("Question crop too large")
+    The gold key is held exclusively inside the ephemeral grader process. No
+    key page pixels or extracted text are sent to the AI provider.
+    """
+    text = re.sub(r"\s+", " ", doc[-1].get_text("text", sort=False)).strip()
+    names = ANSWER_HEADINGS[case["exam"]]
+    key_index = {"turkce": 0,"edebiyat": 0,"matematik": 2 if case["exam"]=="TYT" else 2,"fen": 3}[case["topic"]]
+    title=names[key_index]
+    loc=text.find(title)
+    if loc<0:
+        raise RuntimeError("Official answer key heading not found for "+case["test"])
+    until=text.find(names[key_index+1],loc+len(title)) if key_index<len(names)-1 else len(text)
+    if until<0:raise RuntimeError("Following official answer key heading not found")
+    fragment=text[loc+len(title):until]
+    answers={int(n):a for n,a in re.findall(r"\b(\d{1,3})\.\s*([A-E])\b",fragment)}
+    n=case["last_question"]
+    if len(answers)<n:
+        raise RuntimeError("Official answer key has incomplete range")
+    gold={str(k):answers[k] for k in range(1,n+1)}
+    # The independent published key prefix catches a wrong page/section parse.
+    if "".join(gold[str(k)] for k in range(1,n+1))!=case["gold_prefix"]:
+        raise RuntimeError("Official PDF key disagrees with independently checked section prefix")
+    return gold
 
-    # Answer key on last PDF page. Derive from official page separately;
-    # never send its pixels/text to the model.
-    last = doc[-1]
-    page_text = last.get_text("dict")
-    first_col = []
-    for block in page_text.get("blocks", []):
-        if block.get("type") != 0:
-            continue
-        if block["bbox"][0] > last.rect.width * .25:
-            continue
-        for line in block.get("lines", []):
-            first_col.append("".join(span["text"] for span in line.get("spans", [])))
-    answer_section = "\n".join(first_col)
-    found = re.search(r"(?:^|\n)\s*1\.\s*([ABCDE])\b", answer_section, re.M)
-    if not found:
-        raise RuntimeError("Could not safely parse 2024 Turkish official answer key")
-    return base64.b64encode(jpeg).decode("ascii"), found.group(1)
 
+def question_page_image(doc: fitz.Document, case: dict) -> str:
+    """Render question page only; the last answer page is never passed here."""
+    pageno=case["page"]
+    if pageno>=len(doc)-2:
+        raise RuntimeError("Invalid question page/answer page separation")
+    page=doc[pageno]
+    w,h=page.rect.width,page.rect.height
+    # Include question numbers, both columns, full figures and every option.
+    clip=fitz.Rect(w*.067,h*.079,w*.948,h*.887)
+    pix=page.get_pixmap(matrix=fitz.Matrix(1.9,1.9),clip=clip,alpha=False)
+    jpeg=pix.tobytes("jpeg",jpg_quality=78)
+    if len(jpeg)>670000:
+        pix=page.get_pixmap(matrix=fitz.Matrix(1.62,1.62),clip=clip,alpha=False)
+        jpeg=pix.tobytes("jpeg",jpg_quality=66)
+    if len(jpeg)>670000:
+        raise RuntimeError("Rendered official question page exceeds safe upload budget")
+    return base64.b64encode(jpeg).decode("ascii")
 
 def github_oidc() -> str:
     url = os.environ.get("ACTIONS_ID_TOKEN_REQUEST_URL")
@@ -140,48 +167,72 @@ def github_oidc() -> str:
 def main() -> int:
     if not RUN_ID or not os.environ.get("GITHUB_SHA"):
         raise RuntimeError("Cannot evaluate outside authorized GitHub Actions")
-    pdf = download_question_booklet()
-    image, gold = image_only_question_one(pdf)
-    token = github_oidc()
-    body = json.dumps({"caseId": CASE_ID, "test": TASK, "image": image}).encode("utf-8")
-    try:
-        response = json_fetch(DEST, {
-            "Authorization": "Bearer " + token, "Content-Type": "application/json"
-        }, data=body, timeout=155)
-    except urllib.error.HTTPError as e:
-        # No token or question body in the response/log.
-        print(json.dumps({"status": "benchmark-endpoint-error", "http": e.code}))
-        return 1
+    token=github_oidc()
+    docs={}
+    for exam,url in PDF_URLS.items():
+        raw=download_question_booklet(url)
+        doc=fitz.open(stream=raw,filetype="pdf")
+        if len(doc)<40:raise RuntimeError("Official "+exam+" PDF has missing pages")
+        docs[exam]=doc
 
-    if response.get("caseId") != CASE_ID:
-        raise RuntimeError("Wrong benchmark result identity")
-    models = response.get("models", {})
-    consensus = response.get("consensus", {})
-    sample = {}
-    for name in ["gemini-3.6-flash", "gemini-3.5-flash-lite"]:
-        answer = (models.get(name) or {}).get("1")
-        sample[name] = {
-            "answered": bool(answer),
-            "correct": answer == gold,
-            "incorrect": bool(answer) and answer != gold,
-        }
-    released = consensus.get("1")
-    grade = {
-        "year": 2024, "exam": "TYT", "subject": "Turkce", "question_id": 1,
-        "source": "official-2024-TYT-PDF", "question_was_page_image": True,
-        "answer_key_separated_from_prompt": True,
-        "total_questions_scored": 1,
-        "consensus_answered": int(bool(released)),
-        "consensus_correct": int(released == gold),
-        "consensus_incorrect": int(bool(released) and released != gold),
-        "abstained": int(not bool(released)),
-        "model_breakdown": sample,
-        "complete_2018_2026_evaluation": False,
-    }
-    print(json.dumps(grade, ensure_ascii=False, sort_keys=True))
-    print("This one-question image evaluation cannot establish 99% YKS accuracy.")
+    overall={"scored":0,"consensus_correct":0,"consensus_incorrect":0,
+             "consensus_abstained":0,"model_breakdown":{},"page_count":0}
+    for case in PAGE_CASES:
+        gold=official_answers(docs[case["exam"]],case)
+        image=question_page_image(docs[case["exam"]],case)
+        case_id=f"2024-{case['exam']}-{case['topic']}-page1"
+        body=json.dumps({"caseId":case_id,"test":case["test"],"image":image}).encode("utf-8")
+        try:
+            response=json_fetch(DEST,{
+                "Authorization":"Bearer "+token,"Content-Type":"application/json"
+            },data=body,timeout=140)
+        except urllib.error.HTTPError as e:
+            # An HTTP error is a scored failure, never a skipped perfect result.
+            print(json.dumps({"case_id":case_id,"provider_error_code":e.code,"scored":len(gold),"abstained":len(gold)}))
+            overall["scored"]+=len(gold)
+            overall["consensus_abstained"]+=len(gold)
+            continue
+        if response.get("caseId")!=case_id:
+            raise RuntimeError("Benchmark response case ID mismatch")
+        answers=response.get("consensus") or {}
+        models=response.get("models") or {}
+        page_stat={"case_id":case_id,"scored":len(gold),"correct":0,"incorrect":0,"abstained":0,
+                   "model_counts":{}}
+        for model in ["gemini-3.6-flash","gemini-3.5-flash-lite"]:
+            guessed=models.get(model) or {}
+            stats={"correct":0,"incorrect":0,"abstained":0}
+            for n,expected in gold.items():
+                a=guessed.get(n)
+                stats["correct"]+=int(a==expected)
+                stats["incorrect"]+=int(bool(a) and a!=expected)
+                stats["abstained"]+=int(not bool(a))
+            page_stat["model_counts"][model]=stats
+            aggregated=overall["model_breakdown"].setdefault(model,{"correct":0,"incorrect":0,"abstained":0})
+            for k in ["correct","incorrect","abstained"]:aggregated[k]+=stats[k]
+        for n,expected in gold.items():
+            a=answers.get(n)
+            page_stat["correct"]+=int(a==expected)
+            page_stat["incorrect"]+=int(bool(a) and a!=expected)
+            page_stat["abstained"]+=int(not bool(a))
+        overall["scored"]+=len(gold)
+        overall["consensus_correct"]+=page_stat["correct"]
+        overall["consensus_incorrect"]+=page_stat["incorrect"]
+        overall["consensus_abstained"]+=page_stat["abstained"]
+        overall["page_count"]+=1
+        print(json.dumps(page_stat,ensure_ascii=False,sort_keys=True),flush=True)
+    if overall["scored"]!=sum(c["last_question"] for c in PAGE_CASES):
+        raise RuntimeError("Not all planned official questions were accounted for")
+    overall["year"]=2024
+    overall["types"]=["TYT","AYT"]
+    overall["official_answer_page_separate"]=True
+    overall["all_question_pages_rendered"]=True
+    overall["complete_2018_2026_evaluation"]=False
+    overall["certifies_99_percent"]=False
+    overall["accuracy_all_scored"]=overall["consensus_correct"]/overall["scored"]
+    overall["precision_answered"]=(overall["consensus_correct"]/(overall["consensus_correct"]+overall["consensus_incorrect"])
+       if overall["consensus_correct"]+overall["consensus_incorrect"] else None)
+    print("FINAL_OFFICIAL_IMAGE_EVALUATION "+json.dumps(overall,ensure_ascii=False,sort_keys=True),flush=True)
     return 0
-
 
 if __name__ == "__main__":
     sys.exit(main())
