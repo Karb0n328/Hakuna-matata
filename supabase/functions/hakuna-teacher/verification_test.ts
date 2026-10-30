@@ -54,7 +54,8 @@ Deno.test("Legacy 2018 curriculum registry covers all core YKS lesson families",
  const fields=["Matematik","Geometri","Fizik","Kimya","Biyoloji","Türkçe","Türk Dili ve Edebiyatı","Tarih","T.C. İnkılap Tarihi ve Atatürkçülük","Coğrafya","Felsefe","Din Kültürü ve Ahlak Bilgisi","İngilizce"];
  for(const field of fields){
    const p=findLegacyProgram(field);
-   assert(p!==null&&p.programTrack==="2018","missing 2018 syllabus: "+field);
+   if(!p)throw Error("missing curriculum record: "+field);
+   assert(p.programTrack==="2018","missing 2018 syllabus: "+field);
    assert(p.programUrl.startsWith("https://mufredat.meb.gov.tr/"),"non-official curriculum: "+field);
    assert(p.bookCatalogUrl.startsWith("https://ogmmateryal.eba.gov.tr/"),"non-OGM book portal: "+field);
    assert(p.bookAvailability==="catalog-only","book catalog falsely tagged full-text: "+field);
