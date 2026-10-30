@@ -2,14 +2,17 @@
 """HTTP metadata probe for official PDF accessibility; never print document contents."""
 import urllib.request, urllib.error, time, json, ssl
 URL="https://dokuman.osym.gov.tr/pdfdokuman/2024/YKS/TSK/yks_tyt_2024_kitapcik_T24kt.pdf"
+BASIC={"User-Agent":"Mozilla/5.0 (compatible; Hakuna-Private-Syllabus-Audit/1.0)","Accept":"application/pdf"}
 variants=[
- ("baseline-1K", {"User-Agent":"Mozilla/5.0 (compatible; Hakuna-Private-Syllabus-Audit/1.0)","Range":"bytes=0-1023","Accept":"application/pdf"}),
- ("browser-1K", {"User-Agent":"Mozilla/5.0","Accept":"application/pdf","Range":"bytes=0-1023","Referer":"https://www.osym.gov.tr/","Cache-Control":"no-cache"}),
- ("browser-4K", {"User-Agent":"Mozilla/5.0","Accept":"application/pdf","Range":"bytes=0-4095"}),
- ("browser-16K", {"User-Agent":"Mozilla/5.0","Accept":"application/pdf","Range":"bytes=0-16383"}),
- ("browser-64K", {"User-Agent":"Mozilla/5.0","Accept":"application/pdf","Range":"bytes=0-65535"}),
- ("browser-128K", {"User-Agent":"Mozilla/5.0","Accept":"application/pdf","Range":"bytes=0-131071"}),
- ("bare-get",{"User-Agent":"Mozilla/5.0","Accept":"application/pdf"})
+ ("baseline-1K", {**BASIC,"Range":"bytes=0-1023"}),
+ ("baseline-4K", {**BASIC,"Range":"bytes=0-4095"}),
+ ("baseline-16K", {**BASIC,"Range":"bytes=0-16383"}),
+ ("baseline-64K", {**BASIC,"Range":"bytes=0-65535"}),
+ ("baseline-128K", {**BASIC,"Range":"bytes=0-131071"}),
+ ("offset-1K", {**BASIC,"Range":"bytes=1024-2047"}),
+ ("offset-64K", {**BASIC,"Range":"bytes=65536-131071"}),
+ ("browser-1K",{"User-Agent":"Mozilla/5.0","Accept":"application/pdf","Range":"bytes=0-1023"}),
+ ("bare-get",BASIC),
 ]
 for name,headers in variants:
  try:
