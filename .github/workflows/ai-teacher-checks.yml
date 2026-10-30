@@ -48,5 +48,6 @@ jobs:
           deno test supabase/functions/hakuna-teacher/retrieval_test.ts
           deno test supabase/functions/hakuna-teacher/math-proof_test.ts
           deno test supabase/functions/hakuna-teacher/answers_test.ts
+          deno test supabase/functions/hakuna-teacher/safety_test.ts
           deno test supabase/functions/hakuna-teacher/benchmark_test.ts
           deno test supabase/functions/hakuna-teacher/original_benchmark_test.ts
