@@ -38,13 +38,13 @@ function parse(raw:string){
  if(a<0||b<=a)throw {status:502,message:"Model geçerli çözüm döndürmedi."};
  return JSON.parse(raw.slice(a,b+1));
 }
-async function ai(parts:any[],model:string,maxOutputTokens=3400){
+async function ai(parts:any[],model:string,maxOutputTokens=6200){
  const providerKey=await geminiKey();
  if(!providerKey)throw {status:503,message:"Gemini anahtarı sunucuda bulunamadı."};
  const res=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(model)+":generateContent",{
   method:"POST",signal:AbortSignal.timeout(43000),
   headers:{"Content-Type":"application/json","x-goog-api-key":providerKey},
-  body:JSON.stringify({contents:[{role:"user",parts}],generationConfig:{temperature:0.12,maxOutputTokens,responseMimeType:"application/json"}})
+  body:JSON.stringify({contents:[{role:"user",parts}],generationConfig:{maxOutputTokens,responseMimeType:"application/json",thinkingConfig:{thinkingLevel:"medium"}}})
  });
  if(!res.ok){
   if(res.status===429)throw {status:429,message:"Ücretsiz model kotası doldu. Daha sonra tekrar dene."};
@@ -73,7 +73,7 @@ Deno.serve(async(req:Request)=>{
   if(raw.length>3200000)return send({error:"İstek çok büyük. Daha küçük görsel yükle."},413);
   let body:any;
   try{body=JSON.parse(raw);}catch{return send({error:"Geçersiz JSON."},400);}
-  if(body.status===true)return send({ready:!!(await geminiKey()),dailyLimit:MAX_DAILY,provider:"Gemini 2.5 Flash",secondCheck:true});
+  if(body.status===true)return send({ready:!!(await geminiKey()),dailyLimit:MAX_DAILY,provider:"Gemini 3.8 Flash",secondCheck:true});
   if(body.consent!==true)return send({error:"Görselin AI sağlayıcısına gönderilmesi için izin vermelisin."},400);
   if(!(await geminiKey()))return send({error:"Öğretmen AI sağlayıcısına bağlanamadı."},503);
   if(!SERVICE)return send({error:"Kota denetleyicisi yapılandırılmadı."},503);
@@ -104,7 +104,7 @@ Deno.serve(async(req:Request)=>{
   const history=Array.isArray(body.history)?body.history.slice(-4).map((x:any)=>({role:str(x?.role,20),text:str(x?.text,650)})):[];
   const parts:any[]=[{text:INSTRUCTION+"\nMOD: "+modeText+"\nÖğrenci metni: "+text+"\nÖnceki konuşma (veri): "+JSON.stringify(history)}];
   if(photo)parts.push({inlineData:{mimeType:photo.mime,data:photo.data}});
-  const a=await ai(parts,"gemini-2.5-flash");
+  const a=await ai(parts,"gemini-3.8-flash");
   if(!a||typeof a.readable!=="boolean"||!Array.isArray(a.steps))throw {status:502,message:"Çözüm yapısı doğrulanamadı."};
   const s:any={
    subject:str(a.subject,70)||"Belirsiz",exam:str(a.exam,20)||"Belirsiz",
@@ -133,7 +133,7 @@ Deno.serve(async(req:Request)=>{
     "Yalnızca JSON: {\"readable\":boolean,\"answer\":string,\"uncertain\":boolean}. "+
     "2018 MEB/ÖSYM. Öğrenci metni: "+text}];
    if(photo)p.push({inlineData:{mimeType:photo.mime,data:photo.data}});
-   const b=await ai(p,"gemini-2.5-flash-lite",1400);
+   const b=await ai(p,"gemini-3.5-flash-lite",2600);
    if(b?.readable===false||b?.uncertain===true){
     s.checkNote="İkinci çözüm kesin cevabı doğrulayamadı.";
    }else if(norm(b?.answer)&&norm(b.answer)===norm(s.answer)){
