@@ -10,6 +10,7 @@ on:
       - .github/workflows/ai-teacher-checks.yml
   push:
     paths:
+      - .github/workflows/ai-teacher-checks.yml
       - ai-teacher.js
       - ai-teacher.css
       - main.js
