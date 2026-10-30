@@ -6,6 +6,7 @@ import {independentMathProof} from "./math-proof.ts";
 import {answersAgree} from "./answers.ts";
 import {sanitizeUnverifiedSolution,shouldHideUnverified} from "./safety.ts";
 import {exactTextSolution} from "./exact-solver.ts";
+import {PRIMARY_MODEL,PRIMARY_BACKUP,shouldTryBackup,secondModel} from "./model-fallback.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
 const URL=Deno.env.get("SUPABASE_URL")||"";
 const ANON=Deno.env.get("SUPABASE_ANON_KEY")||"";
@@ -92,7 +93,7 @@ Deno.serve(async(req:Request)=>{
      const result=await client.from("hakuna_teacher_usage").select("request_id",{count:"exact",head:true}).eq("user_id",user.id).eq("day",today);
      if(!result.error)used=result.count;
    }
-   return send({ready,dailyLimit:MAX_DAILY,remaining:used===null?null:Math.max(0,MAX_DAILY-used),provider:"Gemini 3.6 Flash (3.5 Flash yedek)",secondCheck:true,deterministicChecks:["arithmetic","chemical_balance","dimension"],officialSources:OFFICIAL_REFERENCES.length,programCatalog:LEGACY_PROGRAM_CATALOG.length,fullTextBooksIndexed:0});
+   return send({ready,dailyLimit:MAX_DAILY,remaining:used===null?null:Math.max(0,MAX_DAILY-used),provider:"Gemini 3.6 Flash (3.5 Flash-Lite yedek)",secondCheck:true,quotaFallback:true,secondCheck:true,deterministicChecks:["arithmetic","chemical_balance","dimension"],officialSources:OFFICIAL_REFERENCES.length,programCatalog:LEGACY_PROGRAM_CATALOG.length,fullTextBooksIndexed:0});
   }
   if(body.consent!==true)return send({error:"Görselin AI sağlayıcısına gönderilmesi için izin vermelisin."},400);
   if(!(await geminiKey()))return send({error:"Öğretmen AI sağlayıcısına bağlanamadı."},503);
@@ -130,14 +131,13 @@ Deno.serve(async(req:Request)=>{
   const history=Array.isArray(body.history)?body.history.slice(-4).map((x:any)=>({role:str(x?.role,20),text:str(x?.text,650)})):[];
   const parts:any[]=[{text:INSTRUCTION+"\nMOD: "+modeText+"\nÖğrenci metni: "+text+"\nÖnceki konuşma (veri): "+JSON.stringify(history)}];
   if(photo)parts.push({inlineData:{mimeType:photo.mime,data:photo.data}});
-  let a:any,primaryModel="gemini-3.6-flash";
+  let a:any,primaryModel:string=PRIMARY_MODEL;
   try{
-    a=await ai(parts,primaryModel);
+    a=await ai(parts,primaryModel,4600);
   }catch(primaryError){
-    const e=primaryError as {status?:number,name?:string};
-    if(e.status!==502&&e.name!=="TimeoutError")throw primaryError;
-    primaryModel="gemini-3.5-flash-lite";
-    a=await ai(parts,primaryModel);
+    if(!shouldTryBackup(primaryError))throw primaryError;
+    primaryModel=PRIMARY_BACKUP;
+    a=await ai(parts,primaryModel,4600);
   }
   if(!a||typeof a.readable!=="boolean"||!Array.isArray(a.steps))throw {status:502,message:"Çözüm yapısı doğrulanamadı."};
   const s:any={
@@ -216,7 +216,7 @@ Deno.serve(async(req:Request)=>{
     " Öğrenci metni: "+text}];
    if(photo)p.push({inlineData:{mimeType:photo.mime,data:photo.data}});
    // Independent model; if the backup itself was Lite, compare with 3.6, not against itself.
-   const secondaryModel=primaryModel==="gemini-3.5-flash-lite"?"gemini-3.6-flash":"gemini-3.5-flash-lite";
+   const secondaryModel=secondModel(primaryModel);
    const b=await ai(p,secondaryModel,4000);
    if(evidence.length>0&&b?.source_conflict===true){
     s.review="kaynak_celiski";s.answer="";
