@@ -10,6 +10,7 @@ on:
       - .github/workflows/ai-teacher-checks.yml
   push:
     paths:
+      - .github/workflows/ai-teacher-checks.yml
       - ai-teacher.js
       - ai-teacher.css
       - main.js
@@ -42,4 +43,10 @@ jobs:
       - name: Check function types
         run: deno check supabase/functions/hakuna-teacher/index.ts
       - name: Run deterministic verification tests
-        run: deno test supabase/functions/hakuna-teacher/verification_test.ts
+        run: |
+          deno test supabase/functions/hakuna-teacher/verification_test.ts
+          deno test supabase/functions/hakuna-teacher/retrieval_test.ts
+          deno test supabase/functions/hakuna-teacher/math-proof_test.ts
+          deno test supabase/functions/hakuna-teacher/answers_test.ts
+          deno test supabase/functions/hakuna-teacher/benchmark_test.ts
+          deno test supabase/functions/hakuna-teacher/original_benchmark_test.ts

@@ -1,6 +1,9 @@
 import {verifyChecks} from "./verification.ts";
 import {findOfficialReferences,OFFICIAL_REFERENCES} from "./sources.ts";
 import {findLegacyProgram,LEGACY_PROGRAM_CATALOG} from "./curriculum.ts";
+import {fetchOfficialEvidence} from "./retrieval.ts";
+import {independentMathProof} from "./math-proof.ts";
+import {answersAgree} from "./answers.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
 const URL=Deno.env.get("SUPABASE_URL")||"";
 const ANON=Deno.env.get("SUPABASE_ANON_KEY")||"";
@@ -25,7 +28,6 @@ const MAX_DAILY=25;
 const H={"Access-Control-Allow-Origin":ORIGIN,"Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","Vary":"Origin"};
 const send=(v:unknown,status=200)=>new Response(JSON.stringify(v),{status,headers:H});
 const str=(v:unknown,max=500)=>typeof v==="string"?v.trim().slice(0,max):"";
-const norm=(v:unknown)=>str(v,150).toLocaleUpperCase("tr-TR").replace(/^(CEVAP|DOĞRU CEVAP|ŞIK|SEÇENEK)\s*[:：-]?\s*/u,"").replace(/[().\s]/g,"").replace(/ŞIKKI$/u,"");
 const INSTRUCTION=[
  "Hakuna Matata YKS öğretmenisin. 2018 MEB öğretim programına ve ÖSYM TYT/AYT yaklaşımına sadık kal. Maarif Modeli kazanımlarını karıştırma.",
  "SFT dijital soru defteri ilkeleri: Fotoğraftaki soru kökünü, şıkları, grafikleri, şekilleri ve birimleri aynen oku. Okunamayan kritik değerleri ASLA tahmin etme.",
@@ -50,7 +52,7 @@ async function ai(parts:any[],model:string,maxOutputTokens=6200){
  const res=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(model)+":generateContent",{
   method:"POST",signal:AbortSignal.timeout(43000),
   headers:{"Content-Type":"application/json","x-goog-api-key":providerKey},
-  body:JSON.stringify({contents:[{role:"user",parts}],generationConfig:{maxOutputTokens,responseMimeType:"application/json",thinkingConfig:{thinkingLevel:"medium"}}})
+  body:JSON.stringify({contents:[{role:"user",parts}],generationConfig:{maxOutputTokens,responseMimeType:"application/json",...(model==="gemini-3.5-flash"?{thinkingConfig:{thinkingLevel:"medium"}}:{})}})
  });
  if(!res.ok){
   if(res.status===429)throw {status:429,message:"Ücretsiz model kotası doldu. Daha sonra tekrar dene."};
@@ -88,7 +90,7 @@ Deno.serve(async(req:Request)=>{
      const result=await client.from("hakuna_teacher_usage").select("request_id",{count:"exact",head:true}).eq("user_id",user.id).eq("day",today);
      if(!result.error)used=result.count;
    }
-   return send({ready,dailyLimit:MAX_DAILY,remaining:used===null?null:Math.max(0,MAX_DAILY-used),provider:"Gemini 3.8 Flash",secondCheck:true,deterministicChecks:["arithmetic","chemical_balance","dimension"],officialSources:OFFICIAL_REFERENCES.length,programCatalog:LEGACY_PROGRAM_CATALOG.length,fullTextBooksIndexed:0});
+   return send({ready,dailyLimit:MAX_DAILY,remaining:used===null?null:Math.max(0,MAX_DAILY-used),provider:"Gemini 3.6 Flash (3.5 Flash yedek)",secondCheck:true,deterministicChecks:["arithmetic","chemical_balance","dimension"],officialSources:OFFICIAL_REFERENCES.length,programCatalog:LEGACY_PROGRAM_CATALOG.length,fullTextBooksIndexed:0});
   }
   if(body.consent!==true)return send({error:"Görselin AI sağlayıcısına gönderilmesi için izin vermelisin."},400);
   if(!(await geminiKey()))return send({error:"Öğretmen AI sağlayıcısına bağlanamadı."},503);
@@ -121,7 +123,15 @@ Deno.serve(async(req:Request)=>{
   const history=Array.isArray(body.history)?body.history.slice(-4).map((x:any)=>({role:str(x?.role,20),text:str(x?.text,650)})):[];
   const parts:any[]=[{text:INSTRUCTION+"\nMOD: "+modeText+"\nÖğrenci metni: "+text+"\nÖnceki konuşma (veri): "+JSON.stringify(history)}];
   if(photo)parts.push({inlineData:{mimeType:photo.mime,data:photo.data}});
-  const a=await ai(parts,"gemini-3.8-flash");
+  let a:any,primaryModel="gemini-3.6-flash";
+  try{
+    a=await ai(parts,primaryModel);
+  }catch(primaryError){
+    const e=primaryError as {status?:number,name?:string};
+    if(e.status!==502&&e.name!=="TimeoutError")throw primaryError;
+    primaryModel="gemini-3.5-flash";
+    a=await ai(parts,primaryModel);
+  }
   if(!a||typeof a.readable!=="boolean"||!Array.isArray(a.steps))throw {status:502,message:"Çözüm yapısı doğrulanamadı."};
   const s:any={
    subject:str(a.subject,70)||"Belirsiz",exam:str(a.exam,20)||"Belirsiz",
@@ -129,10 +139,15 @@ Deno.serve(async(req:Request)=>{
    readable:a.readable,answer:str(a.answer,160),
    steps:a.steps.slice(0,8).map((x:unknown)=>str(x,800)).filter(Boolean),
    examTip:str(a.examTip,420),caution:str(a.caution,500),
-   review:"kontrol_gerekli",checkNote:""
+   review:"kontrol_gerekli",checkNote:"",primaryModel
   };
   const verified=verifyChecks(a.checks,s.subject);
+  const direct=independentMathProof(text,s.subject,s.answer);
+  s.directProof=direct.status==="unavailable"?{status:"unavailable"}:{
+    status:direct.status,kind:direct.kind,message:direct.message
+  };
   const official=findOfficialReferences(s.subject,s.topic,text,[]);
+  const evidence=(mode==="hint"||direct.status==="contradiction"||verified.hardMismatch)?[]:await fetchOfficialEvidence(official,s.topic);
   const program=findLegacyProgram(s.subject);
   s.curriculum=program?{
     title:program.subject+" — öğretim programı",
@@ -144,6 +159,7 @@ Deno.serve(async(req:Request)=>{
   s.sourceCoverage={
     officialTopicNotes:official.length,
     fullTextBooksIndexed:0,
+    excerptsRetrieved:evidence.length,
     verifiedFullText:false
   };
   s.verification={
@@ -153,7 +169,12 @@ Deno.serve(async(req:Request)=>{
     skipped:verified.skipped,
     labels:verified.labels
   };
-  s.sources=official.map(x=>({id:x.id,title:x.title,url:x.url}));
+  s.sources=evidence.map(x=>({id:x.id,title:x.title,url:x.url,hasPageExcerpt:true}));
+  if(direct.status==="contradiction"){
+    s.answer="";s.review="hesap_celiski";
+    s.checkNote="Bağımsız olarak soru metninden çözülen işlem modelin cevabıyla uyuşmadı; yanlış cevap gizlendi.";
+    return send({solution:s,remaining});
+  }
   if(verified.hardMismatch){
     s.answer="";
     s.review="hesap_celiski";
@@ -173,14 +194,14 @@ Deno.serve(async(req:Request)=>{
    return send({solution:s,remaining});
   }
   try{
-   const sourceContext=official.map(x=>({id:x.id,title:x.title,note:x.note}));
+   const sourceContext=evidence.map(x=>({id:x.id,title:x.title,url:x.url,excerpt:x.excerpt}));
    const curriculumContext=program?{
      subject:program.subject,track:program.programTrack,
      warning:"Bu bağlantılar yalnız katalog/kapsam içindir. Programın veya bütün kitabın metni modele aktarılmadı. Okumadığın sayfaya dayalı kesin kanıt iddia etme."
    }:null;
    const p:any[]=[{text:"Sen ilk çözümü görmeyen bağımsız ikinci soru çözücüsün. "+
     "Görsel ve metni yeniden çöz. Eksikse readable=false yap. "+
-    "Aşağıdaki MEB/OGM kaynak notları yalnızca ilgili konudaysa doğru muhakeme için kullanılır; ilgili değilse kullanma. "+
+    "Aşağıdaki gerçek MEB/OGM sayfa parçalarını yalnızca ilgili konudaysa kullan, görüntülemediğin kaynağa atıf yapma. Parça yoksa MEB tarafından doğrulandı iddiasında bulunma. "+
     "Kaynakla çözümün bariz çatışıyorsa source_conflict=true döndür. İlk modelin çözümünü görmüyorsun. "+
     "Yalnızca JSON: {\"readable\":boolean,\"answer\":string,\"uncertain\":boolean,\"source_conflict\":boolean,\"reason\":string}. "+
     "2018 MEB/ÖSYM. Kaynaklar: "+JSON.stringify(sourceContext)+
@@ -188,18 +209,20 @@ Deno.serve(async(req:Request)=>{
     " Öğrenci metni: "+text}];
    if(photo)p.push({inlineData:{mimeType:photo.mime,data:photo.data}});
    const b=await ai(p,"gemini-3.5-flash-lite",2600);
-   if(b?.source_conflict===true){
+   if(evidence.length>0&&b?.source_conflict===true){
     s.review="kaynak_celiski";s.answer="";
     s.checkNote="MEB kaynak notuyla çözüm arasında olası çelişki bulundu. Nihai cevap gizlendi.";
    }else if(b?.readable===false||b?.uncertain===true){
     s.review="kontrol_gerekli";s.answer="";
     s.checkNote="İkinci çözüm güvenle doğrulanamadı; kesin sonuç gösterilmiyor.";
-   }else if(norm(b?.answer)&&norm(b.answer)===norm(s.answer)){
-    s.review=verified.passed>0?"hesap_ve_model":"tutarli";
-    s.checkNote=verified.passed>0
-      ?verified.labels.join(", ")+ " ve ikinci model cevabı tutarlı; problem yorumunun kesin doğru olduğu anlamına gelmez."
-      :"İki model cevabı tutarlı buldu. Bu %100 doğruluk kanıtı değildir.";
-    if(official.length)s.checkNote+=" İlgili MEB/OGM kaynak notlarıyla karşılaştırma yapıldı; kaynaklar tek başına sorunun şıkkını kanıtlamaz.";
+   }else if(answersAgree(b?.answer,s.answer)){
+    s.review=(direct.status==="verified"||verified.passed>0)?"hesap_ve_model":"tutarli";
+    s.checkNote=direct.status==="verified"
+      ?"Soru metni üzerinden bağımsız hesap ve ikinci model cevabı eşleşti. Diğer soru türlerine genellenemez."
+      :verified.passed>0
+        ?verified.labels.join(", ")+" ve ikinci model cevabı tutarlı. Bu tüm çözümün kesin doğrulandığı anlamına gelmez."
+        :"İki model cevabı tutarlı buldu. Bu %100 doğruluk kanıtı değildir.";
+    if(evidence.length)s.checkNote+=" "+evidence.length+" resmî MEB/OGM sayfa parçası getirildi. Bu, şıkkın kesin kanıtı değildir.";
    }else{
     s.review="celiski";s.answer="";
     s.checkNote="İki çözüm farklı çıktı. Yanlış cevap verme riskine karşı şık gizlendi.";
