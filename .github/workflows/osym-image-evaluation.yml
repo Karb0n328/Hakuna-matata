@@ -7,14 +7,34 @@ on:
       - evaluation/osym_image_evaluation.py
       - supabase/functions/hakuna-teacher-benchmark/**
       - .github/workflows/osym-image-evaluation.yml
+  pull_request:
+    paths:
+      - evaluation/osym_image_evaluation.py
+      - supabase/functions/hakuna-teacher-benchmark/**
+      - .github/workflows/osym-image-evaluation.yml
   workflow_dispatch:
 permissions:
   contents: read
-  id-token: write
 jobs:
+  verifier-types:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Check benchmark endpoint types
+        run: deno check supabase/functions/hakuna-teacher-benchmark/index.ts
+      - name: Check Python script syntax
+        run: python -m py_compile evaluation/osym_image_evaluation.py
   official-multimodal-smoke:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
