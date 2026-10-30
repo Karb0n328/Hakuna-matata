@@ -19,7 +19,7 @@ import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2
   const $=(sel)=>root?.querySelector(sel);
   function loadCss(){
     if(document.querySelector("#hakunaTeacherCss"))return;
-    const link=el("link");link.id="hakunaTeacherCss";link.rel="stylesheet";link.href="./ai-teacher.css?v=batu1";document.head.append(link);
+    const link=el("link");link.id="hakunaTeacherCss";link.rel="stylesheet";link.href="./ai-teacher.css?v=batu2";document.head.append(link);
   }
   function connectDb(){
     return new Promise((resolve,reject)=>{
