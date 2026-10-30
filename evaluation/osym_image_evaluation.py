@@ -38,22 +38,58 @@ def json_fetch(url: str, headers: dict[str, str], data: bytes | None = None, tim
 
 
 def download_question_booklet() -> bytes:
-    for attempt in range(3):
-        try:
-            request = urllib.request.Request(PDF_URL, headers={
-                "User-Agent": "Mozilla/5.0", "Accept": "application/pdf",
-            })
-            with urllib.request.urlopen(request, timeout=45) as res:
-                data = res.read(80000001)
-            if not data.startswith(b"%PDF-") or len(data) > 80000000:
-                raise RuntimeError("Official source did not deliver a suitable PDF")
-            return data
-        except (TimeoutError, OSError, urllib.error.URLError):
-            if attempt == 2:
-                raise
-            time.sleep(2 + attempt * 3)
-    raise RuntimeError("Official PDF inaccessible")
+    """Fetch the source in HTTP range chunks because ÖSYM blocks full-file GETs.
 
+    Never use a cached third-party rehost. Content must come from the verified
+    dokuman.osym.gov.tr endpoint and every Content-Range must match exactly.
+    """
+    def get_range(start: int, end: int) -> tuple[int, bytes, int]:
+        last_error: Exception | None = None
+        for attempt in range(4):
+            try:
+                req = urllib.request.Request(PDF_URL, headers={
+                    "User-Agent": "Mozilla/5.0",
+                    "Accept": "application/pdf",
+                    "Range": f"bytes={start}-{end}",
+                    "Referer": "https://www.osym.gov.tr/",
+                    "Cache-Control": "no-cache",
+                })
+                with urllib.request.urlopen(req, timeout=40) as res:
+                    data = res.read(2097153)
+                    status = res.status
+                    range_header = res.headers.get("Content-Range", "")
+                    media_type = res.headers.get("Content-Type", "")
+                if status != 206:
+                    raise ValueError(f"HTTP range not honored: {status}, media={media_type}")
+                match = re.fullmatch(r"bytes (\d+)-(\d+)/(\d+)", range_header.strip())
+                if not match:
+                    raise ValueError("Missing/malformed Content-Range")
+                returned_start, returned_end, total = map(int, match.groups())
+                if returned_start != start or returned_end > end or len(data) != returned_end - start + 1:
+                    raise ValueError("Partial PDF chunk is incomplete or shifted")
+                return returned_end, data, total
+            except (TimeoutError, OSError, urllib.error.URLError, ValueError) as error:
+                last_error = error
+                if attempt < 3:
+                    time.sleep(1.5 * (attempt + 1))
+        raise RuntimeError("Official PDF range download failed: " + str(last_error))
+
+    first_end, first, total = get_range(0, 131071)
+    if not first.startswith(b"%PDF-") or total <= 10000 or total > 80000000:
+        raise RuntimeError("Official PDF signature/size not acceptable")
+    chunks = [first]
+    at = first_end + 1
+    while at < total:
+        stop = min(total - 1, at + 1048575)
+        returned_end, data, reported_total = get_range(at, stop)
+        if reported_total != total:
+            raise RuntimeError("Official PDF changed while downloading")
+        chunks.append(data)
+        at = returned_end + 1
+    combined = b"".join(chunks)
+    if len(combined) != total or not combined.startswith(b"%PDF-"):
+        raise RuntimeError("Incomplete official PDF after range assembly")
+    return combined
 
 def image_only_question_one(pdf: bytes) -> tuple[str, str]:
     doc = fitz.open(stream=pdf, filetype="pdf")
