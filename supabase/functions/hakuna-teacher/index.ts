@@ -54,7 +54,7 @@ async function ai(parts:any[],model:string,maxOutputTokens=6200){
  const res=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(model)+":generateContent",{
   method:"POST",signal:AbortSignal.timeout(43000),
   headers:{"Content-Type":"application/json","x-goog-api-key":providerKey},
-  body:JSON.stringify({contents:[{role:"user",parts}],generationConfig:{maxOutputTokens,responseMimeType:"application/json",...(model==="gemini-3.5-flash"?{thinkingConfig:{thinkingLevel:"medium"}}:{})}})
+  body:JSON.stringify({contents:[{role:"user",parts}],generationConfig:{maxOutputTokens,responseMimeType:"application/json",...(model==="gemini-3.5-flash-lite"?{thinkingConfig:{thinkingLevel:"high"}}:model==="gemini-3.6-flash"?{thinkingConfig:{thinkingLevel:"medium"}}:{})}})
  });
  if(!res.ok){
   if(res.status===429)throw {status:429,message:"Ücretsiz model kotası doldu. Daha sonra tekrar dene."};
@@ -217,7 +217,7 @@ Deno.serve(async(req:Request)=>{
    if(photo)p.push({inlineData:{mimeType:photo.mime,data:photo.data}});
    // Independent model; if the backup itself was Lite, compare with 3.6, not against itself.
    const secondaryModel=primaryModel==="gemini-3.5-flash-lite"?"gemini-3.6-flash":"gemini-3.5-flash-lite";
-   const b=await ai(p,secondaryModel,2600);
+   const b=await ai(p,secondaryModel,4000);
    if(evidence.length>0&&b?.source_conflict===true){
     s.review="kaynak_celiski";s.answer="";
     s.checkNote="MEB kaynak notuyla çözüm arasında olası çelişki bulundu. Nihai cevap gizlendi.";
