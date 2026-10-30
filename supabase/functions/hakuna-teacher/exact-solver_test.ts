@@ -27,5 +27,7 @@ Deno.test("Photos and ambiguous story questions must not trigger exact answers",
  assert(exactTextSolution("f(x)=4x³ - 1x² - 1x + 4 olduğuna göre f'(-2) kaçtır?",true)===null,"photo got unsupported text-only proof");
  assert(exactTextSolution("Bir çocuk 25 TL harcadı. Cevap kaçtır?")===null,"word problem was guessed");
  assert(exactTextSolution("Amilaz proteinleri parçalar mı?")===null,"biology guessed");
+ assert(exactTextSolution("Şekilde f(x)=4x³ - 1x² - 1x + 4 olduğuna göre f\u0027(-2) kaçtır?")===null,"figure-dependent question must refuse");
+ assert(exactTextSolution("f(x)=4x³ - 1x² - 1x + 4 olduğuna göre f\u0027(-2) kaçtır? Başka bir soru?")===null,"multiple questions must refuse");
  assert(exactTextSolution("f(x)=2x^99 olduğuna göre f'(1) kaçtır?")===null,"unsupported exponent guessed");
 });
