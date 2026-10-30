@@ -25,7 +25,7 @@ export function parseAnswer(raw:unknown):Parsed{
 }
 export function answersAgree(a:unknown,b:unknown):boolean{
  const x=parseAnswer(a),y=parseAnswer(b);
- if(x.kind!==y.kind||!x.value||!y.value)return false;
+ if(x.kind!==y.kind||x.value===""||y.value==="")return false;
  if(x.kind==="number"){
   if(x.unit&&y.unit&&x.unit!==y.unit)return false;
   const n=Number(x.value),m=Number(y.value);
