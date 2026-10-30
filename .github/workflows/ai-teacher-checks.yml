@@ -41,3 +41,5 @@ jobs:
           deno-version: v2.x
       - name: Check function types
         run: deno check supabase/functions/hakuna-teacher/index.ts
+      - name: Run deterministic verification tests
+        run: deno test supabase/functions/hakuna-teacher/verification_test.ts
