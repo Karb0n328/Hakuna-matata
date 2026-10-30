@@ -18,7 +18,8 @@ Deno.test("Exact solver correct on every original gold-answer case it supports",
 Deno.test("Observed wrong Gemini AYT derivative response gets exact 51",()=>{
  const input="f(x)=4x³ - 1x² - 1x + 4 olduğuna göre f'(-2) kaçtır?";
  const solved=exactTextSolution(input,false);
- assert(solved?.answer==="51","cannot independently verify observed error");
+ if(!solved)throw Error("Cannot independently verify derivative");
+ assert(solved.answer==="51","wrong AYT derivative");
  assert(solved.steps.length>0,"an explanation is required");
 });
 Deno.test("Photos and ambiguous story questions must not trigger exact answers",()=>{
