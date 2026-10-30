@@ -120,6 +120,23 @@ import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2
       });
       card.append(refs);
     }
+    if(data.curriculum){
+      const refs=el("div","hakuna-ai-sources");
+      const track=data.curriculum.status==="2018"?"2018 MEB öğretim programı":"Eski program (2018 doğrulaması gerekli)";
+      refs.append(el("strong","","Müfredat ve resmî kitap kataloğu: "));
+      const a=el("a","",track);
+      if(typeof data.curriculum.url==="string"&&data.curriculum.url.startsWith("https://mufredat.meb.gov.tr/")){
+        a.href=data.curriculum.url;a.target="_blank";a.rel="noopener noreferrer";
+        refs.append(a);
+      }
+      const b=el("a","","OGM kitapları");
+      if(typeof data.curriculum.bookCatalogUrl==="string"&&data.curriculum.bookCatalogUrl.startsWith("https://ogmmateryal.eba.gov.tr/")){
+        b.href=data.curriculum.bookCatalogUrl;b.target="_blank";b.rel="noopener noreferrer";
+        refs.append(b);
+      }
+      refs.append(el("span","hakuna-ai-muted","Katalog bağlantısı, kitabın tamamının AI tarafından okunduğu anlamına gelmez."));
+      card.append(refs);
+    }
     list.append(card);list.scrollTop=list.scrollHeight;
   }
   async function fileToImage(file){
