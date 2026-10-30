@@ -4,6 +4,7 @@ import {findLegacyProgram,LEGACY_PROGRAM_CATALOG} from "./curriculum.ts";
 import {fetchOfficialEvidence} from "./retrieval.ts";
 import {independentMathProof} from "./math-proof.ts";
 import {answersAgree} from "./answers.ts";
+import {sanitizeUnverifiedSolution,shouldHideUnverified} from "./safety.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
 const URL=Deno.env.get("SUPABASE_URL")||"";
 const ANON=Deno.env.get("SUPABASE_ANON_KEY")||"";
@@ -173,17 +174,17 @@ Deno.serve(async(req:Request)=>{
   if(direct.status==="contradiction"){
     s.answer="";s.review="hesap_celiski";
     s.checkNote="Bağımsız olarak soru metninden çözülen işlem modelin cevabıyla uyuşmadı; yanlış cevap gizlendi.";
-    return send({solution:s,remaining});
+    return send({solution:sanitizeUnverifiedSolution(s),remaining});
   }
   if(verified.hardMismatch){
     s.answer="";
     s.review="hesap_celiski";
     s.checkNote="Bağımsız işlem/atom/birim denetiminde tutarsızlık var. Kesin cevap gizlendi. "+verified.notes.join(" ");
-    return send({solution:s,remaining});
+    return send({solution:sanitizeUnverifiedSolution(s),remaining});
   }
   if(!s.readable||!s.steps.length){
    s.answer="";s.review="okunamadi";s.checkNote="Kritik bilgiler okunamadığı için tahminde bulunmadık.";
-   return send({solution:s,remaining});
+   return send({solution:sanitizeUnverifiedSolution(s),remaining});
   }
   if(mode==="hint"){
    s.answer="";s.review="ipucu";
@@ -191,7 +192,7 @@ Deno.serve(async(req:Request)=>{
   }
   if(!s.answer){
    s.checkNote="Kesin cevap üretilemedi; şık tahmin edilmiyor.";
-   return send({solution:s,remaining});
+   return send({solution:sanitizeUnverifiedSolution(s),remaining});
   }
   try{
    const sourceContext=evidence.map(x=>({id:x.id,title:x.title,url:x.url,excerpt:x.excerpt}));
@@ -231,7 +232,7 @@ Deno.serve(async(req:Request)=>{
    s.review="kontrol_gerekli";s.answer="";
    s.checkNote="İkinci kontrol yapılamadı; kesin şık gizlendi.";
   }
-  return send({solution:s,remaining});
+  return send({solution:shouldHideUnverified(s.review,s.answer)?sanitizeUnverifiedSolution(s):s,remaining});
  }catch(err){
   const e=err as {status?:number,message?:string,name?:string};
   if(e?.name==="TimeoutError")return send({error:"Model zaman aşımına uğradı. Tekrar dene."},504);
