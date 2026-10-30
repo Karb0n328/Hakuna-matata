@@ -3,6 +3,19 @@ const URL=Deno.env.get("SUPABASE_URL")||"";
 const ANON=Deno.env.get("SUPABASE_ANON_KEY")||"";
 const SERVICE=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||"";
 const KEY=Deno.env.get("HAKUNA_GEMINI_API_KEY")||"";
+import postgres from "npm:postgres@3.4.5";
+const DB_URL=Deno.env.get("SUPABASE_DB_URL")||"";
+const vaultClient=DB_URL?postgres(DB_URL,{max:1,prepare:false,ssl:"require",idle_timeout:10,connect_timeout:8}):null;
+let cachedGemini={value:"",time:0};
+async function geminiKey():Promise<string>{
+  if(KEY)return KEY;
+  if(cachedGemini.value&&Date.now()-cachedGemini.time<300000)return cachedGemini.value;
+  if(!vaultClient)return "";
+  const rows=await vaultClient.unsafe("select decrypted_secret from vault.decrypted_secrets where name = 'hakuna_gemini_api_key' limit 1");
+  const value=String(rows?.[0]?.decrypted_secret||"");
+  if(value)cachedGemini={value,time:Date.now()};
+  return value;
+}
 const BATU="8f2cf782-f4f2-4c85-a9e9-a560c623e6d5";
 const ORIGIN="https://karb0n328.github.io";
 const MAX_DAILY=25;
@@ -26,9 +39,11 @@ function parse(raw:string){
  return JSON.parse(raw.slice(a,b+1));
 }
 async function ai(parts:any[],model:string,maxOutputTokens=3400){
+ const providerKey=await geminiKey();
+ if(!providerKey)throw {status:503,message:"Gemini anahtarı sunucuda bulunamadı."};
  const res=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(model)+":generateContent",{
   method:"POST",signal:AbortSignal.timeout(43000),
-  headers:{"Content-Type":"application/json","x-goog-api-key":KEY},
+  headers:{"Content-Type":"application/json","x-goog-api-key":providerKey},
   body:JSON.stringify({contents:[{role:"user",parts}],generationConfig:{temperature:0.12,maxOutputTokens,responseMimeType:"application/json"}})
  });
  if(!res.ok){
@@ -58,9 +73,9 @@ Deno.serve(async(req:Request)=>{
   if(raw.length>3200000)return send({error:"İstek çok büyük. Daha küçük görsel yükle."},413);
   let body:any;
   try{body=JSON.parse(raw);}catch{return send({error:"Geçersiz JSON."},400);}
-  if(body.status===true)return send({ready:!!KEY,dailyLimit:MAX_DAILY,provider:"Gemini 2.5 Flash",secondCheck:true});
+  if(body.status===true)return send({ready:!!(await geminiKey()),dailyLimit:MAX_DAILY,provider:"Gemini 2.5 Flash",secondCheck:true});
   if(body.consent!==true)return send({error:"Görselin AI sağlayıcısına gönderilmesi için izin vermelisin."},400);
-  if(!KEY)return send({error:"Öğretmen henüz etkinleştirilmedi: Supabase Secrets içine HAKUNA_GEMINI_API_KEY girilmeli."},503);
+  if(!(await geminiKey()))return send({error:"Öğretmen AI sağlayıcısına bağlanamadı."},503);
   if(!SERVICE)return send({error:"Kota denetleyicisi yapılandırılmadı."},503);
   const text=str(body.text,2800),mode=str(body.mode,16);
   if(!["solve","hint","review","explain"].includes(mode))return send({error:"Çözüm modu tanınmadı."},400);
