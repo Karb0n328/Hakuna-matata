@@ -37,7 +37,7 @@ function polynomialValue(raw:string,at:number,operation:"derivative"|"integral",
 }
 export function independentMathProof(question:string,subject:string,candidateAnswer:string):Proof{
  const unavailable:Proof={status:"unavailable",kind:"unsupported",message:"Bu soru türü için doğrudan hesap ispatı bulunamadı."};
- const s=String(question||"").normalize("NFKC").replace(/[−–]/g,"-").replace(/³/g,"^3").replace(/²/g,"^2");
+ const s=String(question||"").replace(/³/g,"^3").replace(/²/g,"^2").normalize("NFKC").replace(/[−–]/g,"-");
  const name=String(subject||"").toLocaleLowerCase("tr-TR");
  if(!["matematik","geometri","fizik","kimya"].includes(name))return unavailable;
  let calculated:number|null=null,kind="unsupported";
