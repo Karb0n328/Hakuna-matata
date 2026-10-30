@@ -37,7 +37,12 @@ function possibleSubjects(question:string):string[]{
  */
 export function exactTextSolution(question:string, imagePresent=false):ExactSolution|null{
  const raw=String(question||"").trim();
- if(imagePresent||raw.length<25||raw.length>1300)return null;
+ if(imagePresent||raw.length<25||raw.length>700)return null;
+ // Never treat one convenient equation as the entire problem when extra premises,
+ // charts or second questions might change the requested quantity.
+ if(/şekilde|grafikte|tabloda|görselde|yukarıdaki|aşağıdaki|parçalı|parametre|verilen şekil|ek koşul|koşulları/iu.test(raw))return null;
+ if((raw.match(/[?？]/g)||[]).length>1)return null;
+ if(raw.includes("\n")||raw.includes(";"))return null;
  const subjects=possibleSubjects(raw);
  for(const subject of subjects){
    const initial=independentMathProof(raw,subject,"0");
