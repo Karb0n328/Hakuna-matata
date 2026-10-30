@@ -5,6 +5,7 @@ import {fetchOfficialEvidence} from "./retrieval.ts";
 import {independentMathProof} from "./math-proof.ts";
 import {answersAgree} from "./answers.ts";
 import {sanitizeUnverifiedSolution,shouldHideUnverified} from "./safety.ts";
+import {exactTextSolution} from "./exact-solver.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
 const URL=Deno.env.get("SUPABASE_URL")||"";
 const ANON=Deno.env.get("SUPABASE_ANON_KEY")||"";
@@ -53,7 +54,7 @@ async function ai(parts:any[],model:string,maxOutputTokens=6200){
  const res=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(model)+":generateContent",{
   method:"POST",signal:AbortSignal.timeout(43000),
   headers:{"Content-Type":"application/json","x-goog-api-key":providerKey},
-  body:JSON.stringify({contents:[{role:"user",parts}],generationConfig:{maxOutputTokens,responseMimeType:"application/json",...(model==="gemini-3.5-flash"?{thinkingConfig:{thinkingLevel:"medium"}}:{})}})
+  body:JSON.stringify({contents:[{role:"user",parts}],generationConfig:{maxOutputTokens,responseMimeType:"application/json",...(model==="gemini-3.5-flash-lite"?{thinkingConfig:{thinkingLevel:"high"}}:model==="gemini-3.6-flash"?{thinkingConfig:{thinkingLevel:"medium"}}:{})}})
  });
  if(!res.ok){
   if(res.status===429)throw {status:429,message:"Ücretsiz model kotası doldu. Daha sonra tekrar dene."};
@@ -115,6 +116,11 @@ Deno.serve(async(req:Request)=>{
   });
   if(quotaError||!Number.isInteger(remaining))return send({error:"Kota atomik olarak doğrulanamadı."},503);
   if(remaining<0)return send({error:"Bugünkü 25 soru hakkın doldu.",remaining:0},429);
+  // Mathematical source-of-truth path: answer a strictly supported text-only STEM template without any generative model calls.
+  if(mode==="solve"&&!photo){
+    const exact=exactTextSolution(text,false);
+    if(exact)return send({solution:exact,remaining,provider:"deterministic-math"});
+  }
   const modeText={
    solve:"Soruyu adım adım tam çöz; varsa şık veya sayısal sonucu açıkla.",
    hint:"Yalnızca en fazla 3 ipucu ver. Sonucu ve doğru şıkkı açıklama; answer boş olsun.",
@@ -130,7 +136,7 @@ Deno.serve(async(req:Request)=>{
   }catch(primaryError){
     const e=primaryError as {status?:number,name?:string};
     if(e.status!==502&&e.name!=="TimeoutError")throw primaryError;
-    primaryModel="gemini-3.5-flash";
+    primaryModel="gemini-3.5-flash-lite";
     a=await ai(parts,primaryModel);
   }
   if(!a||typeof a.readable!=="boolean"||!Array.isArray(a.steps))throw {status:502,message:"Çözüm yapısı doğrulanamadı."};
@@ -209,7 +215,9 @@ Deno.serve(async(req:Request)=>{
     " Müfredat izleme bilgisi: "+JSON.stringify(curriculumContext)+
     " Öğrenci metni: "+text}];
    if(photo)p.push({inlineData:{mimeType:photo.mime,data:photo.data}});
-   const b=await ai(p,"gemini-3.5-flash-lite",2600);
+   // Independent model; if the backup itself was Lite, compare with 3.6, not against itself.
+   const secondaryModel=primaryModel==="gemini-3.5-flash-lite"?"gemini-3.6-flash":"gemini-3.5-flash-lite";
+   const b=await ai(p,secondaryModel,4000);
    if(evidence.length>0&&b?.source_conflict===true){
     s.review="kaynak_celiski";s.answer="";
     s.checkNote="MEB kaynak notuyla çözüm arasında olası çelişki bulundu. Nihai cevap gizlendi.";

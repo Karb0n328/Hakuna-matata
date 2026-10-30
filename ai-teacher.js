@@ -81,9 +81,10 @@ import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2
     const sub=el("p","hakuna-ai-meta",data.exam+" · "+data.difficulty);
     card.append(sub);
     const state=data.review;
-    const acceptable=state==="tutarli"||state==="hesap_ve_model";
+    const acceptable=["tutarli","hesap_ve_model","kesin_hesap"].includes(state);
     const conflict=["celiski","hesap_celiski","kaynak_celiski"].includes(state);
     const badge=el("div","hakuna-ai-review "+(acceptable?"is-consistent":conflict?"is-conflict":""),(
+      state==="kesin_hesap"?"Soru kalıbı bağımsız hesaplamayla çözüldü":
       state==="hesap_ve_model"?"Hesap + ikinci model tutarlı (garanti değil)":
       state==="tutarli"?"İki model tutarlı (garanti değil)":
       state==="hesap_celiski"?"Hesap/birim/atom denetimi başarısız; cevap gizlendi":
@@ -277,7 +278,7 @@ import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2
       addSolution(answer.solution);
       if(Number.isFinite(answer.remaining))$("[data-ai-remaining]").textContent=answer.remaining+" günlük yeni soru hakkı";
       history.push({role:"user",text:prompt},{role:"assistant",text:(answer.solution.steps||[]).join(" ").slice(0,650)});
-      if(mode!=="hint"&&answer.solution?.readable&&["tutarli","hesap_ve_model"].includes(answer.solution.review))await saveQuestion(prompt,answer.solution,photo);
+      if(mode!=="hint"&&answer.solution?.readable&&["tutarli","hesap_ve_model","kesin_hesap"].includes(answer.solution.review))await saveQuestion(prompt,answer.solution,photo);
       $("[data-ai-text]").value="";
       $("[data-ai-photo]").value="";
       $("[data-ai-photoname]").textContent="Fotoğraf seçilmedi";
