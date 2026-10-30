@@ -1,0 +1,26 @@
+name: Official YKS PDF source preflight
+on:
+  push:
+    paths:
+      - evaluation/osym-2018-2026-sources.json
+      - evaluation/check_official_sources.py
+      - .github/workflows/osym-source-preflight.yml
+  pull_request:
+    paths:
+      - evaluation/osym-2018-2026-sources.json
+      - evaluation/check_official_sources.py
+      - .github/workflows/osym-source-preflight.yml
+  workflow_dispatch:
+jobs:
+  source-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check official-only manifest and public PDF accessibility
+        run: python evaluation/check_official_sources.py
