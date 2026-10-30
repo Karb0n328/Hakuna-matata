@@ -48,11 +48,9 @@ def download_question_booklet() -> bytes:
         for attempt in range(4):
             try:
                 req = urllib.request.Request(PDF_URL, headers={
-                    "User-Agent": "Mozilla/5.0",
+                    "User-Agent": "Mozilla/5.0 (compatible; Hakuna-Private-Syllabus-Audit/1.0)",
                     "Accept": "application/pdf",
                     "Range": f"bytes={start}-{end}",
-                    "Referer": "https://www.osym.gov.tr/",
-                    "Cache-Control": "no-cache",
                 })
                 with urllib.request.urlopen(req, timeout=40) as res:
                     data = res.read(2097153)
