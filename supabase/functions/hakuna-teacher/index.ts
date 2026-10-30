@@ -3,6 +3,7 @@ import {findOfficialReferences,OFFICIAL_REFERENCES} from "./sources.ts";
 import {findLegacyProgram,LEGACY_PROGRAM_CATALOG} from "./curriculum.ts";
 import {fetchOfficialEvidence} from "./retrieval.ts";
 import {independentMathProof} from "./math-proof.ts";
+import {answersAgree} from "./answers.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
 const URL=Deno.env.get("SUPABASE_URL")||"";
 const ANON=Deno.env.get("SUPABASE_ANON_KEY")||"";
@@ -27,7 +28,6 @@ const MAX_DAILY=25;
 const H={"Access-Control-Allow-Origin":ORIGIN,"Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","Vary":"Origin"};
 const send=(v:unknown,status=200)=>new Response(JSON.stringify(v),{status,headers:H});
 const str=(v:unknown,max=500)=>typeof v==="string"?v.trim().slice(0,max):"";
-const norm=(v:unknown)=>str(v,150).toLocaleUpperCase("tr-TR").replace(/^(CEVAP|DOĞRU CEVAP|ŞIK|SEÇENEK)\s*[:：-]?\s*/u,"").replace(/[().\s]/g,"").replace(/ŞIKKI$/u,"");
 const INSTRUCTION=[
  "Hakuna Matata YKS öğretmenisin. 2018 MEB öğretim programına ve ÖSYM TYT/AYT yaklaşımına sadık kal. Maarif Modeli kazanımlarını karıştırma.",
  "SFT dijital soru defteri ilkeleri: Fotoğraftaki soru kökünü, şıkları, grafikleri, şekilleri ve birimleri aynen oku. Okunamayan kritik değerleri ASLA tahmin etme.",
@@ -215,7 +215,7 @@ Deno.serve(async(req:Request)=>{
    }else if(b?.readable===false||b?.uncertain===true){
     s.review="kontrol_gerekli";s.answer="";
     s.checkNote="İkinci çözüm güvenle doğrulanamadı; kesin sonuç gösterilmiyor.";
-   }else if(norm(b?.answer)&&norm(b.answer)===norm(s.answer)){
+   }else if(answersAgree(b?.answer,s.answer)){
     s.review=(direct.status==="verified"||verified.passed>0)?"hesap_ve_model":"tutarli";
     s.checkNote=direct.status==="verified"
       ?"Soru metni üzerinden bağımsız hesap ve ikinci model cevabı eşleşti. Diğer soru türlerine genellenemez."
