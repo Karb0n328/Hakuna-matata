@@ -60,7 +60,7 @@ afterFirstPaint(()=>{
   void (async()=>{
     try{await importAccountSyncOptimized();}catch(err){console.warn('Hakuna cloud sync load',err);}
     // Batu pilot — separate module so the existing pages remain unchanged.
-    void import('./ai-teacher.js?v=batu1').catch(err=>console.warn('Hakuna AI teacher load',err));
+    void import('./ai-teacher.js?v=batu2').catch(err=>console.warn('Hakuna AI teacher load',err));
     await Promise.allSettled([
       import('./account-auth-hotfix.js?v=6'),
       import('./settings-copy-fix.js?v=1'),
