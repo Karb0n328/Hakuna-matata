@@ -88,9 +88,16 @@ Deno.serve(async(req)=>{
  }catch{return send({error:"Evaluation budget unavailable"},503);}
  const results:Record<string,Record<string,string>|null>={};
  const errors:Record<string,string>={};
- for(const model of ["gemini-3.6-flash","gemini-3.5-flash-lite"]){
-  try{results[model]=await generate(model,image,test);}
-  catch(e){results[model]=null;errors[model]=String((e as Error).message||"Failed").slice(0,100);}
+ const models=["gemini-3.6-flash","gemini-3.5-flash-lite"];
+ const settlements=await Promise.allSettled(models.map(model=>generate(model,image,test)));
+ for(let i=0;i<models.length;i++){
+  const state=settlements[i];
+  const model=models[i];
+  if(state.status==="fulfilled")results[model]=state.value;
+  else{
+   results[model]=null;
+   errors[model]=String((state.reason as Error)?.message||"Provider failure").slice(0,100);
+  }
  }
  const primary=results["gemini-3.6-flash"]||{};
  const secondary=results["gemini-3.5-flash-lite"]||{};
