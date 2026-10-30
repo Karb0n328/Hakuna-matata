@@ -1,0 +1,26 @@
+name: Private official ÖSYM image evaluation
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - evaluation/osym_image_evaluation.py
+      - supabase/functions/hakuna-teacher-benchmark/**
+      - .github/workflows/osym-image-evaluation.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  official-multimodal-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install PDF renderer (ephemeral runner only)
+        run: python -m pip install --disable-pip-version-check --no-input 'pymupdf==1.26.4'
+      - name: Test official question image without exposing answer key
+        run: python evaluation/osym_image_evaluation.py
