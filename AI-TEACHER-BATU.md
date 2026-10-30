@@ -55,3 +55,22 @@ Bu pilot yalnız Batu'ya açıktır. Yerel soru defteri cihazlar arasında senkr
 - `verification_test.ts` Deno testleri CI'ye bağlandı. Gerçek öğrenci oturumuyla canlı uçtan uca soru testi henüz doğrulanmadı.
 
 **Pilot kapsamı değişmedi:** Batu dışındaki hesaplar için API yetkisi yoktur.
+
+
+## 2018 MEB kapsam genişletmesi (30 Ekim 2026)
+
+**Yapılanlar:**
+- \`supabase/functions/hakuna-teacher/curriculum.ts\`: **14 ders/program** için MEB öğretim programları ve OGM kitap katalog bağlantıları; bunların **11'i 2018 programı**, üç seçmeli dal (mantık, psikoloji, sosyoloji) eski/2019 sürümü olarak işaretli ve 2018 başlığıyla yanlış etiketlenmiyor. TYT Türkçe→TDE, Geometri→Matematik aliasları var.
+- \`sources.ts\`: **22** kaynakla kısa, ilgili-konuda kullanılan kaynak notu. İçlerinde matematik, fizik, kimya, biyoloji, tarih, coğrafya, Türkçe/edebiyat, felsefe, din, inkılap, mantık, psikoloji, sosyoloji, İngilizce bulunuyor.
+- \`index.ts\`: Öğrenciye resmî program bağlantısını ve OGM kitap portalını verir; öğrenciye kaynak notlarıyla bağlantı gösterir. Gerekirse ikinci modele ilgili özet notlar geçer. Kaynağa aykırı cevapta kesin şık gizlenir. Araç hesaplamaları yine ayrı ve otomatik.
+- \`verification_test.ts\`: 2018 MEB program kapsamı, konu kaynakları, resmi alan adları ve “katalog yalnız bağlantıdır” tip bilgisi için testler.
+
+**Önemli doğruluk ve kapsam sınırı:**
+- **Bütün MEB kitaplarının PDF metinleri henüz çekilip parçalara ayrılarak indekslenmedi. Tam metni indekslenen ders kitabı: 0.**
+- “Kitap kataloğu” bir bağlantı listesidir; kitap metni modele yüklenmiş gibi gösterilmez. 22 konu notu, tüm TYT/AYT kazanımlarını karşılamaz.
+- 2018 müfredat PDF'si kazanım ve kapsam sınırını gösterir; bir ders kitabının tüm anlatım ve örneklerini içermez.
+- Google'ın yeni programlı/TYMM kitapları eski müfredat yerine **kullanılmaz**; OGM kataloğundaki bir kitabın basım/program sürümü seçilmeden güvenilir tam metin sayılmaz.
+- Tüm kitapları gerçek anlamda kaynak olarak kullanmak için resmî PDF/HTML kaynaklarının baskı-sürüm kontrolü, sayfa metin çıkarımı, tek tek kazanımlara eşleştirme, sayfa atfı, çelişki denetimi ve örnek soru testleri ayrı ayrı gereklidir.
+- Güvenilir olmayan veya eksik kaynak durumunda model açıkça belirsizlik bildirmeli; katalog bağlantısını “kitaptan kanıt” diye sunmamalıdır.
+- Pilot erişimi yalnız Batu. İleride 20, 50, 100 kullanıcıya geçiş için API proje kotaları (RPM/TPM/RPD) doğrulanmadan açılmamalı; günlük bütçe, denetlenmiş soru önbelleği, kullanıcı başına kota ve yük testi gerekir.
+
