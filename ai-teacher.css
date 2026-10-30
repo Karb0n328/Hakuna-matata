@@ -109,3 +109,8 @@
   #hakunaTeacherPrint li{margin-bottom:5px}
   #hakunaTeacherPrint .hakuna-ai-note{height:23mm;border:1px solid #bbb;padding:4mm;color:#555}
 }
+/* Grounding links and explicit verification metadata */
+.hakuna-ai-sources{display:flex;flex-wrap:wrap;gap:5px 11px;margin-top:12px;padding-top:8px;border-top:1px solid #e2e8f0;font-size:12px}
+.hakuna-ai-sources strong{width:100%;font-size:11px;color:#64748b}
+.hakuna-ai-sources a{color:#1d4ed8;text-decoration:underline;text-underline-offset:2px}
+@media print{#hakunaTeacherPrint article a{display:block;font-size:9pt;color:#555;overflow-wrap:anywhere}}
