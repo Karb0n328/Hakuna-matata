@@ -6,7 +6,7 @@ send a crop containing a question (NOT the answer key) to the locked-down
 benchmark Edge Function, then grade against the official PDF's answer page.
 No copyrighted question content or page images are printed or committed.
 
-This is a six-page 2024 TYT/AYT pilot, not a full historical benchmark.
+This is an eight-individual-question 2024 TYT/AYT pilot, not a full historical benchmark.
 """
 from __future__ import annotations
 import base64
@@ -31,14 +31,18 @@ AUDIENCE = "hakuna-osym-private-eval"
 DEST = f"https://{PROJECT}.supabase.co/functions/v1/hakuna-teacher-benchmark"
 RUN_ID = os.environ.get("GITHUB_RUN_ID", "")
 PAGE_CASES = [
-    # Each page's visible question range was independently checked in the official PDFs.
-    {"exam":"TYT","topic":"turkce","test":"TYT Türkçe","page":2,"last_question":4,"gold_prefix":"BAAD"},
-    {"exam":"TYT","topic":"matematik","test":"TYT Matematik","page":23,"last_question":3,"gold_prefix":"AEA"},
-    {"exam":"TYT","topic":"fen","test":"TYT Fen","page":36,"last_question":4,"gold_prefix":"EADB"},
-    {"exam":"AYT","topic":"edebiyat","test":"AYT Edebiyat","page":2,"last_question":3,"gold_prefix":"BEB"},
-    {"exam":"AYT","topic":"matematik","test":"AYT Matematik","page":25,"last_question":4,"gold_prefix":"DCED"},
-    {"exam":"AYT","topic":"fen","test":"AYT Fen","page":36,"last_question":3,"gold_prefix":"DEB"},
+    # Each question was independently located on the official page. Clip
+    # rectangles are fractions of the page, and include all answer options.
+    {"exam":"TYT","topic":"turkce","test":"TYT Türkçe","page":2,"question":1,"last_question":4,"gold_prefix":"BAAD","clip":(.07,.16,.50,.52)},
+    {"exam":"TYT","topic":"turkce","test":"TYT Türkçe","page":2,"question":3,"last_question":4,"gold_prefix":"BAAD","clip":(.52,.16,.95,.55)},
+    {"exam":"TYT","topic":"matematik","test":"TYT Matematik","page":23,"question":1,"last_question":3,"gold_prefix":"AEA","clip":(.07,.16,.50,.43)},
+    {"exam":"TYT","topic":"matematik","test":"TYT Matematik","page":23,"question":3,"last_question":3,"gold_prefix":"AEA","clip":(.52,.16,.95,.57)},
+    {"exam":"TYT","topic":"fen","test":"TYT Fen","page":36,"question":1,"last_question":4,"gold_prefix":"EADB","clip":(.07,.16,.50,.61)},
+    {"exam":"AYT","topic":"edebiyat","test":"AYT Edebiyat","page":2,"question":1,"last_question":3,"gold_prefix":"BEB","clip":(.07,.16,.50,.43)},
+    {"exam":"AYT","topic":"matematik","test":"AYT Matematik","page":25,"question":1,"last_question":4,"gold_prefix":"DCED","clip":(.07,.16,.50,.55)},
+    {"exam":"AYT","topic":"fen","test":"AYT Fen","page":36,"question":1,"last_question":3,"gold_prefix":"DEB","clip":(.07,.16,.50,.79)}
 ]
+
 ANSWER_HEADINGS = {
     "TYT": ["TÜRKÇE TESTİ","SOSYAL BİLİMLER TESTİ","TEMEL MATEMATİK TESTİ","FEN BİLİMLERİ TESTİ"],
     "AYT": ["TÜRK DİLİ VE EDEBİYATI-SOSYAL BİLİMLER-1 TESTİ","SOSYAL BİLİMLER-2 TESTİ","MATEMATİK TESTİ","FEN BİLİMLERİ TESTİ"],
@@ -128,7 +132,7 @@ def official_answers(doc: fitz.Document, case: dict) -> dict[str, str]:
     # The independent published key prefix catches a wrong page/section parse.
     if "".join(gold[str(k)] for k in range(1,n+1))!=case["gold_prefix"]:
         raise RuntimeError("Official PDF key disagrees with independently checked section prefix")
-    return gold
+    return {str(case["question"]):gold[str(case["question"])]}
 
 
 def question_page_image(doc: fitz.Document, case: dict) -> str:
@@ -138,9 +142,11 @@ def question_page_image(doc: fitz.Document, case: dict) -> str:
         raise RuntimeError("Invalid question page/answer page separation")
     page=doc[pageno]
     w,h=page.rect.width,page.rect.height
-    # Include question numbers, both columns, full figures and every option.
-    clip=fitz.Rect(w*.067,h*.079,w*.948,h*.887)
-    pix=page.get_pixmap(matrix=fitz.Matrix(1.9,1.9),clip=clip,alpha=False)
+    # Isolate one question at a time, as the actual student-facing app does.
+    # Never include the official answer key, which is on the final PDF page.
+    x0,y0,x1,y1=case["clip"]
+    clip=fitz.Rect(w*x0,h*y0,w*x1,h*y1)
+    pix=page.get_pixmap(matrix=fitz.Matrix(2.2,2.2),clip=clip,alpha=False)
     jpeg=pix.tobytes("jpeg",jpg_quality=78)
     if len(jpeg)>670000:
         pix=page.get_pixmap(matrix=fitz.Matrix(1.62,1.62),clip=clip,alpha=False)
@@ -180,7 +186,7 @@ def main() -> int:
     for case in PAGE_CASES:
         gold=official_answers(docs[case["exam"]],case)
         image=question_page_image(docs[case["exam"]],case)
-        case_id=f"2024-{case['exam']}-{case['topic']}-page1"
+        case_id=f"2024-{case['exam']}-{case['topic']}-q{case['question']}"
         body=json.dumps({"caseId":case_id,"test":case["test"],"image":image}).encode("utf-8")
         try:
             response=json_fetch(DEST,{
@@ -197,7 +203,7 @@ def main() -> int:
         answers=response.get("consensus") or {}
         models=response.get("models") or {}
         page_stat={"case_id":case_id,"scored":len(gold),"correct":0,"incorrect":0,"abstained":0,
-                   "model_counts":{}}
+                   "model_counts":{},"provider_errors":response.get("errors") or {}}
         for model in ["gemini-3.6-flash","gemini-3.5-flash-lite"]:
             guessed=models.get(model) or {}
             stats={"correct":0,"incorrect":0,"abstained":0}
@@ -220,12 +226,12 @@ def main() -> int:
         overall["consensus_abstained"]+=page_stat["abstained"]
         overall["page_count"]+=1
         print(json.dumps(page_stat,ensure_ascii=False,sort_keys=True),flush=True)
-    if overall["scored"]!=sum(c["last_question"] for c in PAGE_CASES):
+    if overall["scored"]!=len(PAGE_CASES):
         raise RuntimeError("Not all planned official questions were accounted for")
     overall["year"]=2024
     overall["types"]=["TYT","AYT"]
     overall["official_answer_page_separate"]=True
-    overall["all_question_pages_rendered"]=True
+    overall["all_eight_single_question_images_rendered"]=True
     overall["complete_2018_2026_evaluation"]=False
     overall["certifies_99_percent"]=False
     overall["accuracy_all_scored"]=overall["consensus_correct"]/overall["scored"]
