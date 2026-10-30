@@ -1,7 +1,7 @@
 // Accuracy gate: prevent accidental claims that small or synthetic samples prove 99% YKS reliability.
 // This is a benchmark scorer, not an AI solver.
 export type BenchmarkCase={
- id:string; subject:string; exam:"TYT"|"AYT"; format:"text"|"diagram"|"table"|"graph";
+ id:string; subject:string; exam:"TYT"|"AYT"|"YDT"; format:"text"|"diagram"|"table"|"graph";
  difficulty:"medium"|"hard"; expected:string;
  source:"official_heldout"|"hand_curated"|"synthetic";
  sourceUrl?:string; year?:number; questionNumber?:number;
