@@ -25,7 +25,7 @@ function numberText(n:number):string{
  return Number.isInteger(rounded)?String(rounded):String(rounded);
 }
 function possibleSubjects(question:string):string[]{
- if(/f\s*['’]\s*\(|belirli integral|\b[a-z]x\s*[+-]\s*\d+\s*=/iu.test(question))return ["Matematik"];
+ if(/f\s*['’]\s*\(|belirli integral|\b\d+\s*x\s*[+-]\s*\d+\s*=/iu.test(question))return ["Matematik"];
  if(/dik kenar uzunlukları|hipotenüs/iu.test(question))return ["Geometri"];
  if(/net kuvvet|direnci\b|volt|ohm/iu.test(question))return ["Fizik"];
  if(/mol\b|molar kütle|\bM'dir/iu.test(question))return ["Kimya"];
