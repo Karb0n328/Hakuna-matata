@@ -1,3 +1,5 @@
+import {verifyChecks} from "./verification.ts";
+import {findOfficialReferences} from "./sources.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
 const URL=Deno.env.get("SUPABASE_URL")||"";
 const ANON=Deno.env.get("SUPABASE_ANON_KEY")||"";
@@ -30,7 +32,10 @@ const INSTRUCTION=[
  "Yalnızca görünür öğrenci işlemlerinin hatasını yorumla. Öğrencinin neden yanlış yaptığına dair psikolojik tahmin yapma.",
  "İntegralin işaretli değeri ile geometrik alanı ayır. Fizikte vektör yönü ve birimi; kimyada denge/denklem; biyolojide MEB kavramlarını kontrol et.",
  "Emin değilsen kesin şık verme. İpucu modunda cevap ve şık gösterme. Her çözümde soru tipine özgü kısa SFT SINAV TAKTİĞİ sun.",
- "SADECE JSON nesnesi dön: {\"subject\":string,\"exam\":string,\"topic\":string,\"difficulty\":string,\"readable\":boolean,\"answer\":string,\"steps\":string[],\"examTip\":string,\"caution\":string}.",
+ "SADECE JSON nesnesi dön: {\"subject\":string,\"exam\":string,\"topic\":string,\"difficulty\":string,\"readable\":boolean,\"answer\":string,\"steps\":string[],\"examTip\":string,\"caution\":string,\"checks\":array}.",
+ "checks en çok 5 maddelik nesne dizisi: {kind:arithmetic,expression:(2+3)*4,expected:20}; {kind:chemical_balance,equation:2 H2 + O2 -> 2 H2O}; {kind:dimension,expression:kg*m/s^2,target:N}.",
+ "Aritmetik kontrol mutlaka çözümde KULLANDIĞIN sayısal işlem ve karşılaştırılan nihai sonuçtan oluşmalı. Yalnızca desteklenebilir kontrol yaz; zorlama kontrol üretme. Denklemde artı işaretleri etrafında boşluk bırak. Birimler SI boyutlarıyla eşleşmeli.",
+ "checks doğrudan soru cevabının doğruluğunu kanıtlamaz; mantıksal adım hatası varsa yüksek özgüvenli söylemden kaçın. Bilgi sorularında kontrol aracı yerine MEB kaynak gerektirdiğini caution alanında açıkla.",
  "exam TYT, AYT veya Belirsiz. difficulty Kolay, Orta veya Zor. readable=false ise answer boş olmalı. steps 1-8 öğretici adım."
 ].join("\n");
 function parse(raw:string){
@@ -73,7 +78,17 @@ Deno.serve(async(req:Request)=>{
   if(raw.length>3200000)return send({error:"İstek çok büyük. Daha küçük görsel yükle."},413);
   let body:any;
   try{body=JSON.parse(raw);}catch{return send({error:"Geçersiz JSON."},400);}
-  if(body.status===true)return send({ready:!!(await geminiKey()),dailyLimit:MAX_DAILY,provider:"Gemini 3.8 Flash",secondCheck:true});
+  if(body.status===true){
+   const ready=!!(await geminiKey());
+   let used:null|number=null;
+   if(SERVICE){
+     const client=createClient(URL,SERVICE,{auth:{persistSession:false,autoRefreshToken:false}});
+     const today=new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Istanbul",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+     const result=await client.from("hakuna_teacher_usage").select("request_id",{count:"exact",head:true}).eq("user_id",user.id).eq("day",today);
+     if(!result.error)used=result.count;
+   }
+   return send({ready,dailyLimit:MAX_DAILY,remaining:used===null?null:Math.max(0,MAX_DAILY-used),provider:"Gemini 3.8 Flash",secondCheck:true,deterministicChecks:["arithmetic","chemical_balance","dimension"],officialSources:9});
+  }
   if(body.consent!==true)return send({error:"Görselin AI sağlayıcısına gönderilmesi için izin vermelisin."},400);
   if(!(await geminiKey()))return send({error:"Öğretmen AI sağlayıcısına bağlanamadı."},503);
   if(!SERVICE)return send({error:"Kota denetleyicisi yapılandırılmadı."},503);
@@ -90,11 +105,12 @@ Deno.serve(async(req:Request)=>{
   if(mode==="review"&&!text)return send({error:"Hata analizi için işlemlerini de yaz."},400);
   const date=new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Istanbul",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
   const admin=createClient(URL,SERVICE,{auth:{persistSession:false,autoRefreshToken:false}});
-  const {count,error:qerr}=await admin.from("hakuna_teacher_usage").select("request_id",{count:"exact",head:true}).eq("user_id",user.id).eq("day",date);
-  if(qerr||count===null)return send({error:"Günlük kota doğrulanamadı."},503);
-  if(count>=MAX_DAILY)return send({error:"Bugünkü 25 soru hakkın doldu.",remaining:0},429);
-  const {error:ierr}=await admin.from("hakuna_teacher_usage").insert({request_id:crypto.randomUUID(),user_id:user.id,day:date});
-  if(ierr)return send({error:"Kota kaydı oluşturulamadı."},503);
+  // The service-role-only Postgres RPC serializes quota claims across concurrent requests.
+  const {data:remaining,error:quotaError}=await admin.rpc("hakuna_teacher_claim_quota",{
+    p_user_id:user.id,p_day:date,p_limit:MAX_DAILY
+  });
+  if(quotaError||!Number.isInteger(remaining))return send({error:"Kota atomik olarak doğrulanamadı."},503);
+  if(remaining<0)return send({error:"Bugünkü 25 soru hakkın doldu.",remaining:0},429);
   const modeText={
    solve:"Soruyu adım adım tam çöz; varsa şık veya sayısal sonucu açıkla.",
    hint:"Yalnızca en fazla 3 ipucu ver. Sonucu ve doğru şıkkı açıklama; answer boş olsun.",
@@ -114,7 +130,22 @@ Deno.serve(async(req:Request)=>{
    examTip:str(a.examTip,420),caution:str(a.caution,500),
    review:"kontrol_gerekli",checkNote:""
   };
-  const remaining=Math.max(0,MAX_DAILY-count-1);
+  const verified=verifyChecks(a.checks,s.subject);
+  const official=findOfficialReferences(s.subject,s.topic,text,s.steps);
+  s.verification={
+    attempted:verified.attempted,
+    passed:verified.passed,
+    failed:verified.failed,
+    skipped:verified.skipped,
+    labels:verified.labels
+  };
+  s.sources=official.map(x=>({id:x.id,title:x.title,url:x.url}));
+  if(verified.hardMismatch){
+    s.answer="";
+    s.review="hesap_celiski";
+    s.checkNote="Bağımsız işlem/atom/birim denetiminde tutarsızlık var. Kesin cevap gizlendi. "+verified.notes.join(" ");
+    return send({solution:s,remaining});
+  }
   if(!s.readable||!s.steps.length){
    s.answer="";s.review="okunamadi";s.checkNote="Kritik bilgiler okunamadığı için tahminde bulunmadık.";
    return send({solution:s,remaining});
@@ -128,23 +159,34 @@ Deno.serve(async(req:Request)=>{
    return send({solution:s,remaining});
   }
   try{
+   const sourceContext=official.map(x=>({id:x.id,title:x.title,note:x.note}));
    const p:any[]=[{text:"Sen ilk çözümü görmeyen bağımsız ikinci soru çözücüsün. "+
     "Görsel ve metni yeniden çöz. Eksikse readable=false yap. "+
-    "Yalnızca JSON: {\"readable\":boolean,\"answer\":string,\"uncertain\":boolean}. "+
-    "2018 MEB/ÖSYM. Öğrenci metni: "+text}];
+    "Aşağıdaki MEB/OGM kaynak notları yalnızca ilgili konudaysa doğru muhakeme için kullanılır; ilgili değilse kullanma. "+
+    "Kaynakla çözümün bariz çatışıyorsa source_conflict=true döndür. İlk modelin çözümünü görmüyorsun. "+
+    "Yalnızca JSON: {\"readable\":boolean,\"answer\":string,\"uncertain\":boolean,\"source_conflict\":boolean,\"reason\":string}. "+
+    "2018 MEB/ÖSYM. Kaynaklar: "+JSON.stringify(sourceContext)+" Öğrenci metni: "+text}];
    if(photo)p.push({inlineData:{mimeType:photo.mime,data:photo.data}});
    const b=await ai(p,"gemini-3.5-flash-lite",2600);
-   if(b?.readable===false||b?.uncertain===true){
-    s.checkNote="İkinci çözüm kesin cevabı doğrulayamadı.";
+   if(b?.source_conflict===true){
+    s.review="kaynak_celiski";s.answer="";
+    s.checkNote="MEB kaynak notuyla çözüm arasında olası çelişki bulundu. Nihai cevap gizlendi.";
+   }else if(b?.readable===false||b?.uncertain===true){
+    s.review="kontrol_gerekli";s.answer="";
+    s.checkNote="İkinci çözüm güvenle doğrulanamadı; kesin sonuç gösterilmiyor.";
    }else if(norm(b?.answer)&&norm(b.answer)===norm(s.answer)){
-    s.review="tutarli";
-    s.checkNote="İki modelin cevapları tutarlı; bu %100 kesinlik kanıtı değildir.";
+    s.review=verified.passed>0?"hesap_ve_model":"tutarli";
+    s.checkNote=verified.passed>0
+      ?verified.labels.join(", ")+ " ve ikinci model cevabı tutarlı; problem yorumunun kesin doğru olduğu anlamına gelmez."
+      :"İki model cevabı tutarlı buldu. Bu %100 doğruluk kanıtı değildir.";
+    if(official.length)s.checkNote+=" İlgili MEB/OGM kaynak notlarıyla karşılaştırma yapıldı; kaynaklar tek başına sorunun şıkkını kanıtlamaz.";
    }else{
     s.review="celiski";s.answer="";
     s.checkNote="İki çözüm farklı çıktı. Yanlış cevap verme riskine karşı şık gizlendi.";
    }
   }catch{
-   s.checkNote="İkinci kontrol yapılamadı; cevap doğrulanmış sayılmaz.";
+   s.review="kontrol_gerekli";s.answer="";
+   s.checkNote="İkinci kontrol yapılamadı; kesin şık gizlendi.";
   }
   return send({solution:s,remaining});
  }catch(err){
