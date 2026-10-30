@@ -2,6 +2,7 @@ import {verifyChecks} from "./verification.ts";
 import {findOfficialReferences,OFFICIAL_REFERENCES} from "./sources.ts";
 import {findLegacyProgram,LEGACY_PROGRAM_CATALOG} from "./curriculum.ts";
 import {fetchOfficialEvidence} from "./retrieval.ts";
+import {independentMathProof} from "./math-proof.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
 const URL=Deno.env.get("SUPABASE_URL")||"";
 const ANON=Deno.env.get("SUPABASE_ANON_KEY")||"";
@@ -89,7 +90,7 @@ Deno.serve(async(req:Request)=>{
      const result=await client.from("hakuna_teacher_usage").select("request_id",{count:"exact",head:true}).eq("user_id",user.id).eq("day",today);
      if(!result.error)used=result.count;
    }
-   return send({ready,dailyLimit:MAX_DAILY,remaining:used===null?null:Math.max(0,MAX_DAILY-used),provider:"Gemini 3.5 Flash",secondCheck:true,deterministicChecks:["arithmetic","chemical_balance","dimension"],officialSources:OFFICIAL_REFERENCES.length,programCatalog:LEGACY_PROGRAM_CATALOG.length,fullTextBooksIndexed:0});
+   return send({ready,dailyLimit:MAX_DAILY,remaining:used===null?null:Math.max(0,MAX_DAILY-used),provider:"Gemini 3.6 Flash (3.5 Flash yedek)",secondCheck:true,deterministicChecks:["arithmetic","chemical_balance","dimension"],officialSources:OFFICIAL_REFERENCES.length,programCatalog:LEGACY_PROGRAM_CATALOG.length,fullTextBooksIndexed:0});
   }
   if(body.consent!==true)return send({error:"Görselin AI sağlayıcısına gönderilmesi için izin vermelisin."},400);
   if(!(await geminiKey()))return send({error:"Öğretmen AI sağlayıcısına bağlanamadı."},503);
@@ -122,7 +123,15 @@ Deno.serve(async(req:Request)=>{
   const history=Array.isArray(body.history)?body.history.slice(-4).map((x:any)=>({role:str(x?.role,20),text:str(x?.text,650)})):[];
   const parts:any[]=[{text:INSTRUCTION+"\nMOD: "+modeText+"\nÖğrenci metni: "+text+"\nÖnceki konuşma (veri): "+JSON.stringify(history)}];
   if(photo)parts.push({inlineData:{mimeType:photo.mime,data:photo.data}});
-  const a=await ai(parts,"gemini-3.5-flash");
+  let a:any,primaryModel="gemini-3.6-flash";
+  try{
+    a=await ai(parts,primaryModel);
+  }catch(primaryError){
+    const e=primaryError as {status?:number,name?:string};
+    if(e.status!==502&&e.status!==503)throw primaryError;
+    primaryModel="gemini-3.5-flash";
+    a=await ai(parts,primaryModel);
+  }
   if(!a||typeof a.readable!=="boolean"||!Array.isArray(a.steps))throw {status:502,message:"Çözüm yapısı doğrulanamadı."};
   const s:any={
    subject:str(a.subject,70)||"Belirsiz",exam:str(a.exam,20)||"Belirsiz",
@@ -130,9 +139,13 @@ Deno.serve(async(req:Request)=>{
    readable:a.readable,answer:str(a.answer,160),
    steps:a.steps.slice(0,8).map((x:unknown)=>str(x,800)).filter(Boolean),
    examTip:str(a.examTip,420),caution:str(a.caution,500),
-   review:"kontrol_gerekli",checkNote:""
+   review:"kontrol_gerekli",checkNote:"",primaryModel
   };
   const verified=verifyChecks(a.checks,s.subject);
+  const direct=independentMathProof(text,s.subject,s.answer);
+  s.directProof=direct.status==="unavailable"?{status:"unavailable"}:{
+    status:direct.status,kind:direct.kind,message:direct.message
+  };
   const official=findOfficialReferences(s.subject,s.topic,text,[]);
   const evidence=await fetchOfficialEvidence(official,s.topic);
   const program=findLegacyProgram(s.subject);
@@ -157,6 +170,11 @@ Deno.serve(async(req:Request)=>{
     labels:verified.labels
   };
   s.sources=evidence.map(x=>({id:x.id,title:x.title,url:x.url,hasPageExcerpt:true}));
+  if(direct.status==="contradiction"){
+    s.answer="";s.review="hesap_celiski";
+    s.checkNote="Bağımsız olarak soru metninden çözülen işlem modelin cevabıyla uyuşmadı; yanlış cevap gizlendi.";
+    return send({solution:s,remaining});
+  }
   if(verified.hardMismatch){
     s.answer="";
     s.review="hesap_celiski";
@@ -198,10 +216,12 @@ Deno.serve(async(req:Request)=>{
     s.review="kontrol_gerekli";s.answer="";
     s.checkNote="İkinci çözüm güvenle doğrulanamadı; kesin sonuç gösterilmiyor.";
    }else if(norm(b?.answer)&&norm(b.answer)===norm(s.answer)){
-    s.review=verified.passed>0?"hesap_ve_model":"tutarli";
-    s.checkNote=verified.passed>0
-      ?verified.labels.join(", ")+ " ve ikinci model cevabı tutarlı; problem yorumunun kesin doğru olduğu anlamına gelmez."
-      :"İki model cevabı tutarlı buldu. Bu %100 doğruluk kanıtı değildir.";
+    s.review=(direct.status==="verified"||verified.passed>0)?"hesap_ve_model":"tutarli";
+    s.checkNote=direct.status==="verified"
+      ?"Soru metni üzerinden bağımsız hesap ve ikinci model cevabı eşleşti. Diğer soru türlerine genellenemez."
+      :verified.passed>0
+        ?verified.labels.join(", ")+" ve ikinci model cevabı tutarlı. Bu tüm çözümün kesin doğrulandığı anlamına gelmez."
+        :"İki model cevabı tutarlı buldu. Bu %100 doğruluk kanıtı değildir.";
     if(evidence.length)s.checkNote+=" "+evidence.length+" resmî MEB/OGM sayfa parçası getirildi. Bu, şıkkın kesin kanıtı değildir.";
    }else{
     s.review="celiski";s.answer="";
