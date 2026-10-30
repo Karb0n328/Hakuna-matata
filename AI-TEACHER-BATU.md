@@ -10,15 +10,15 @@ Bu pilotun **tek yetkili kullanıcısı** Supabase Auth kullanıcısı \`batu\` 
 - \`public.hakuna_teacher_usage\`: Kullanım limiti tablosu. RLS açık, \`anon\` ve \`authenticated\` rolleri için veri erişimi kapalı.
 - Yazdırılabilir soru defteri: 40 çözüm ve fotoğrafı cihazdaki IndexedDB'de saklar; yazdırma penceresinde PDF olarak kaydedilebilir.
 
-## Canlı AI için zorunlu tek seferlik ayar
+## Gemini anahtarı: Supabase Vault üzerinden etkin
 
-Supabase projesi \`zyrbbkbwrijnnykbgjvc\` → **Edge Functions → Secrets**.
+30 Ekim 2026 tarihinde kullanıcıdan alınan Gemini API anahtarı, Supabase projesinin **şifreli Vault kasasında** `hakuna_gemini_api_key` adıyla saklandı. Gerçek anahtar hiçbir zaman GitHub kaynaklarına yazılmamalıdır.
 
-Anahtar adı: **HAKUNA_GEMINI_API_KEY**.
+Edge Function, Supabase'in sunucuya otomatik verdiği `SUPABASE_DB_URL` üzerinden, sunucu tarafında `vault.decrypted_secrets` görünümünden anahtarı okur. Bunun için GitHub veya tarayıcı kaynaklarına API anahtarı gerekmez. Var olan `HAKUNA_GEMINI_API_KEY` ortam değişkeni alternatif olarak desteklenmeye devam eder.
 
-Değer: Google AI Studio'dan oluşturduğun Gemini API anahtarı. **Anahtarı GitHub'a, tarayıcı koduna veya sohbete yazma.**
+**Güvenlik:** Anahtar bir sohbet mesajında açıkça paylaşıldığından, kullanıcı Google AI Studio üzerinden bunu iptal edip yenisini üretmelidir. Yeni anahtar, sohbet yerine Supabase Dashboard > Vault üzerinden doğrudan güncellenmelidir. Varsayılan ücretli OpenAI/Mata anahtarını kullanmayız.
 
-Bu secret olmadan uygulama yanlış biçimde çalışıyor gibi görünmez: Batu ekranında "AI bağlantısı henüz yapılandırılmadı" uyarısı gösterir. Ücretli OpenAI API anahtarı kullanılmaz. Gemini ücretsiz plandaki kullanım limitleri geçerlidir; ücretsiz katmanda yüklenen veriler sağlayıcı tarafından ürün geliştirmede kullanılabilir. Sorulara kişisel bilgi koymama konusunda öğrenciyi uyar.
+**Doğrulama:** Supabase Vault kaydının varlığı ve biçimi doğrulandı; otomatik TypeScript/JS kontrolleri geçti. Gerçek Gemini çözüm çağrısı, Batu hesabında bir soru gönderilerek ayrıca doğrulanmalıdır. Başarılı canlı çağrı olmadan %99 doğruluk iddia edilmez.
 
 ## Manuel uçtan uca kontrol listesi
 
@@ -38,6 +38,6 @@ Bu secret olmadan uygulama yanlış biçimde çalışıyor gibi görünmez: Batu
 
 ## Gizlilik ve dağıtım
 
-Bu pilot yalnız Batu'ya açıktır. Yerel soru defteri cihazlar arasında senkronlanmaz ve kullanıcı tarayıcı verilerini silerse kaybolabilir. Fotoğraflar gönderim sırasında Gemini API'ye aktarılır; sunucu fotoğrafları saklamaz. Model anahtarı yalnız Edge Function ortam değişkeninde tutulur.
+Bu pilot yalnız Batu'ya açıktır. Yerel soru defteri cihazlar arasında senkronlanmaz ve kullanıcı tarayıcı verilerini silerse kaybolabilir. Fotoğraflar gönderim sırasında Gemini API'ye aktarılır; sunucu fotoğrafları saklamaz. Model anahtarı Supabase Vault içinde şifreli olarak tutulur; Edge Function onu sunucu tarafındaki DB bağlantısıyla okur.
 
-Geliştirme dalı: \`feature/batu-yks-ai-teacher\`.
+İlk sürüm `main` dalına PR #19 ile birleştirildi; devam eden güncellemeler de `main` dalındadır.
