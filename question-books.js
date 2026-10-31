@@ -197,10 +197,25 @@
       ctx.translate(offscreen.width/2,offscreen.height/2);
       ctx.rotate(rotated*Math.PI/180);
       ctx.drawImage(sourceImage,-sourceImage.naturalWidth*scale/2,-sourceImage.naturalHeight*scale/2,sourceImage.naturalWidth*scale,sourceImage.naturalHeight*scale);
-      // Use an ordinary image for display: never expose a canvas to global layout styles.
+      const availableWidth=Math.max(140,Math.min(540,wrap.getBoundingClientRect().width-42));
+      const factor=Math.min(availableWidth/width,280/height);
+      const displayWidth=Math.max(1,Math.round(width*factor));
+      const displayHeight=Math.max(1,Math.round(height*factor));
+      // The crop surface and the preview must have exactly the same physical dimensions.
+      // Set these on the elements themselves, with priority, to isolate them from global CSS.
+      for(const [el,w,h] of [[stage,displayWidth,displayHeight],[canvas,displayWidth,displayHeight]]){
+        el.style.setProperty('width',w+'px','important');
+        el.style.setProperty('height',h+'px','important');
+        el.style.setProperty('min-width','0','important');
+        el.style.setProperty('min-height','0','important');
+        el.style.setProperty('max-width',w+'px','important');
+        el.style.setProperty('max-height',h+'px','important');
+        el.style.setProperty('aspect-ratio','auto','important');
+      }
+      canvas.style.setProperty('position','absolute','important');
+      canvas.style.setProperty('inset','0','important');
+      canvas.style.setProperty('object-fit','fill','important');
       canvas.src=offscreen.toDataURL('image/jpeg',.9);
-      stage.style.aspectRatio=width+' / '+height;
-      stage.style.width='min(100%, '+Math.round(300*width/height)+'px)';
       renderSelection();
     };
     const renderSelection=()=>{
