@@ -125,3 +125,8 @@ html[data-batu-theme="dark"] .book-question-answer strong{background:#1e3956;col
 .book-crop-handle.tr{top:-2px;right:-2px;border-width:4px 4px 0 0}
 .book-crop-handle.bl{bottom:-2px;left:-2px;border-width:0 0 4px 4px}
 .book-crop-handle.br{bottom:-2px;right:-2px;border-width:0 4px 4px 0}
+
+/* Hard cap the editor preview so a tall source cannot fill the entire modal. */
+.book-image-editor .book-crop-stage{max-width:100%!important;max-height:340px!important;width:fit-content;margin:8px auto 0;overflow:hidden}
+.book-image-editor .book-crop-stage canvas{display:block;width:100%!important;height:100%!important;max-height:340px!important}
+.book-image-editor .book-image-actions{position:relative;z-index:1;margin:10px 0}
