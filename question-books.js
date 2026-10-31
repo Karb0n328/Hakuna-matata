@@ -115,7 +115,7 @@
         ey=Math.round(canvas.height*(1-Number(options.bottom||0)/100));
     if(ex-sx<40||ey-sy<40)throw new Error('Kırpma alanı çok küçük.');
 
-    if(options.trim && !['left','right','top','bottom'].some(side=>Number(options[side]||0)>0)){
+    if(options.trim && !options.manualCrop && !['left','right','top','bottom'].some(side=>Number(options[side]||0)>0)){
       // Trim only almost-white outer paper margins; never regenerate a question.
       const data=ctx.getImageData(sx,sy,ex-sx,ey-sy);
       const {width:w,height:h}=data,px=data.data;
@@ -166,58 +166,107 @@
       <label class="book-file-label">Fotoğraf çek / galeriden seç <input type="file" name="questionPhoto" accept="image/*"></label>
       ${editing?.hasPhoto?'<div class="book-existing-photo"><p class="book-helper">Kaydedilmiş soru fotoğrafı</p><img data-book-existing alt="Mevcut soru fotoğrafı"></div>':''}
       <div class="book-image-controls" hidden>
-        <img class="book-image-preview" alt="Yüklenecek soru fotoğrafı önizlemesi">
+        <div class="book-crop-stage"><canvas data-book-canvas aria-label="Fotoğraf kırpma alanı"></canvas><div data-book-selection class="book-crop-selection" hidden></div></div>
+        <p class="book-helper">Fotoğrafın üzerinde parmağınla veya fareyle istediğin dikdörtgen alanı seç. Kaydedilen fotoğraf tam olarak bu alan olacaktır.</p>
         <div class="book-image-actions">
           <button type="button" data-book-rotate>↻ 90° çevir</button>
-          <label><input type="checkbox" data-book-trim> Beyaz kenarları kırp (isteğe bağlı)</label>
+          <button type="button" data-book-reset-crop>Seçimi sıfırla</button>
           <label><input type="checkbox" data-book-gray> Siyah-beyaz netleştir</label>
         </div>
-        <details><summary>Kırpmayı elle ayarla</summary>
-          <div class="book-crop-grid">${['Sol','Sağ','Üst','Alt'].map((label,i)=>`<label>${label}<input type="range" data-book-crop="${['left','right','top','bottom'][i]}" min="0" max="80" value="0"><output>0%</output></label>`).join('')}</div>
-          <p class="book-helper">Birden fazla soru fotoğraftaysa sadece istediğin soruyu bırakacak şekilde kenarları kırp.</p>
-        </details>
+
       </div>
-      ${editing?.hasPhoto?'<label class="book-remove-photo"><input type="checkbox" data-book-remove> Fotoğrafı kaldır</label><p class="book-helper">Mevcut fotoğraf korunacak; kaldırmak için kutuyu işaretle.</p>':''}
+      ${editing?.hasPhoto?'<button type="button" class="secondary-btn" data-book-restore-original>Orijinal fotoğraftan yeniden kırp</button><label class="book-remove-photo"><input type="checkbox" data-book-remove> Fotoğrafı kaldır</label><p class="book-helper">Mevcut fotoğraf korunacak; kaldırmak için kutuyu işaretle.</p>':''}
     `;
     const actions=form.querySelector('.form-actions');
     if(actions)actions.before(wrap);else form.append(wrap);
     const input=wrap.querySelector('input[type=file]'), controls=wrap.querySelector('.book-image-controls');
-    let rotated=0,url=null;
+    let rotated=0,url=null,sourceImage=null,selection=null,dragStart=null;
+    const canvas=wrap.querySelector('[data-book-canvas]');
+    const stage=wrap.querySelector('.book-crop-stage');
+    const selectionBox=wrap.querySelector('[data-book-selection]');
+    const draw=()=>{
+      if(!sourceImage)return;
+      const swapped=rotated%180!==0;
+      const width=swapped?sourceImage.naturalHeight:sourceImage.naturalWidth;
+      const height=swapped?sourceImage.naturalWidth:sourceImage.naturalHeight;
+      const scale=Math.min(1,1400/Math.max(width,height));
+      canvas.width=Math.max(1,Math.round(width*scale));
+      canvas.height=Math.max(1,Math.round(height*scale));
+      const ctx=canvas.getContext('2d');
+      ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.translate(canvas.width/2,canvas.height/2);
+      ctx.rotate(rotated*Math.PI/180);
+      ctx.drawImage(sourceImage,-sourceImage.naturalWidth*scale/2,-sourceImage.naturalHeight*scale/2,sourceImage.naturalWidth*scale,sourceImage.naturalHeight*scale);
+      renderSelection();
+    };
+    const renderSelection=()=>{
+      if(!selection){selectionBox.hidden=true;return;}
+      selectionBox.hidden=false;
+      selectionBox.style.left=(selection.x*100)+'%';
+      selectionBox.style.top=(selection.y*100)+'%';
+      selectionBox.style.width=(selection.w*100)+'%';
+      selectionBox.style.height=(selection.h*100)+'%';
+    };
+    const point=e=>{
+      const rect=canvas.getBoundingClientRect();
+      return {x:Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width)),y:Math.max(0,Math.min(1,(e.clientY-rect.top)/rect.height))};
+    };
+    canvas.addEventListener('pointerdown',e=>{
+      if(!sourceImage)return;
+      e.preventDefault();dragStart=point(e);selection=null;
+      canvas.setPointerCapture(e.pointerId);
+    });
+    canvas.addEventListener('pointermove',e=>{
+      if(!dragStart)return;
+      const p=point(e),x=Math.min(dragStart.x,p.x),y=Math.min(dragStart.y,p.y);
+      selection={x,y,w:Math.abs(p.x-dragStart.x),h:Math.abs(p.y-dragStart.y)};
+      renderSelection();
+    });
+    const finish=e=>{
+      if(!dragStart)return;
+      const p=point(e),x=Math.min(dragStart.x,p.x),y=Math.min(dragStart.y,p.y);
+      const next={x,y,w:Math.abs(p.x-dragStart.x),h:Math.abs(p.y-dragStart.y)};
+      selection=next.w>.025&&next.h>.025?next:null;
+      dragStart=null;renderSelection();
+    };
+    canvas.addEventListener('pointerup',finish);
+    canvas.addEventListener('pointercancel',()=>{dragStart=null;renderSelection();});
     input.addEventListener('change',()=>{
       if(url)URL.revokeObjectURL(url);
-      const f=input.files?.[0];
-      if(!f){controls.hidden=true;return;}
-      url=URL.createObjectURL(f);
-      wrap.querySelector('img').src=url;
+      const file=input.files?.[0];
+      if(!file){controls.hidden=true;sourceImage=null;return;}
+      url=URL.createObjectURL(file);
+      rotated=0;selection=null;
+      const image=new Image();
+      image.onload=()=>{if(sourceImage===image)draw();};
+      image.onerror=()=>notify('Fotoğraf açılamadı. Başka bir görsel dene.');
+      sourceImage=image;image.src=url;
       controls.hidden=false;
       const previous=wrap.querySelector('.book-existing-photo');
       if(previous)previous.hidden=true;
-      wrap.querySelectorAll('[data-book-crop]').forEach(input=>{
-        input.value='0';
-        input.nextElementSibling.textContent='0%';
-      });
-      wrap.querySelector('.book-image-preview').style.clipPath='none';
       const remove=wrap.querySelector('[data-book-remove]');
       if(remove)remove.checked=false;
     });
     wrap.querySelector('[data-book-rotate]').onclick=()=>{
       rotated=(rotated+90)%360;
-      wrap.querySelector('img').style.transform='rotate('+rotated+'deg)';
+      selection=null;draw();
     };
-    const updateCropPreview=()=>{
-      const crop=Object.fromEntries([...wrap.querySelectorAll('[data-book-crop]')].map(el=>[el.dataset.bookCrop,el.value]));
-      const image=wrap.querySelector('.book-image-preview');
-      image.style.clipPath='inset('+crop.top+'% '+crop.right+'% '+crop.bottom+'% '+crop.left+'%)';
-    };
-    wrap.querySelectorAll('[data-book-crop]').forEach(slider=>slider.addEventListener('input',()=>{
-      slider.nextElementSibling.textContent=slider.value+'%';
-      updateCropPreview();
-    }));
+    wrap.querySelector('[data-book-reset-crop]').onclick=()=>{selection=null;renderSelection();};
     wrap.getImageOptions=()=>({
-      rotate:rotated,
-      trim:wrap.querySelector('[data-book-trim]').checked,
-      grayscale:wrap.querySelector('[data-book-gray]').checked,
-      ...Object.fromEntries([...wrap.querySelectorAll('[data-book-crop]')].map(el=>[el.dataset.bookCrop,el.value]))
+      rotate:rotated,trim:false,grayscale:wrap.querySelector('[data-book-gray]').checked,
+      manualCrop:!!selection,
+      left:selection?selection.x*100:0,
+      top:selection?selection.y*100:0,
+      right:selection?(1-selection.x-selection.w)*100:0,
+      bottom:selection?(1-selection.y-selection.h)*100:0
+    });
+    wrap.querySelector('[data-book-restore-original]')?.addEventListener('click',async()=>{
+      const blob=await getPhoto(editing.id+'.original');
+      if(!blob){notify('Bu sorunun orijinal fotoğraf yedeği bu cihazda bulunamadı.');return;}
+      const file=new File([blob],'orijinal-soru.jpg',{type:blob.type||'image/jpeg'});
+      const transfer=new DataTransfer();transfer.items.add(file);input.files=transfer.files;
+      input.dispatchEvent(new Event('change',{bubbles:true}));
+      notify('Orijinal fotoğraf açıldı. İstediğin alanı seçip soruyu kaydet.');
     });
     let existingUrl=null;
     if(editing?.hasPhoto){
