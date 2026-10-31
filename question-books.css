@@ -108,25 +108,35 @@ html[data-batu-theme="dark"] .book-unsolved-badge{
 html[data-batu-theme="dark"] .book-question-answer{color:#bad9ff}
 html[data-batu-theme="dark"] .book-question-answer strong{background:#1e3956;color:#e3f1ff}
 
-/* Direct, coordinate-accurate manual crop editor. */
-.book-crop-stage{position:relative;display:block;width:fit-content;max-width:100%;margin:0 auto;overflow:hidden;border-radius:10px;background:#e7ebef;line-height:0}
-.book-crop-stage canvas{display:block;max-width:100%;max-height:440px;width:auto;height:auto;touch-action:none;cursor:crosshair;user-select:none;-webkit-user-select:none}
-.book-crop-selection{position:absolute;box-sizing:border-box;border:2px solid #2784e5;background:rgba(39,132,229,.13);box-shadow:0 0 0 2000px rgba(0,0,0,.27);pointer-events:none}
+/* Single bounded crop layout: no conflicting canvas sizing rules. */
+.book-image-editor .book-image-controls{display:block;min-width:0;overflow:hidden}
+.book-image-editor .book-image-controls[hidden]{display:none!important}
+.book-image-editor .book-crop-stage{
+  position:relative!important;display:block!important;box-sizing:border-box!important;
+  width:100%!important;height:300px!important;max-width:100%!important;max-height:300px!important;
+  margin:10px auto!important;overflow:hidden!important;isolation:isolate;
+  border-radius:10px;background:#20242a;line-height:0;
+}
+.book-image-editor .book-crop-stage canvas{
+  position:absolute!important;inset:0!important;display:block!important;
+  width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;
+  margin:0!important;padding:0!important;object-fit:fill!important;
+  touch-action:none;user-select:none;-webkit-user-select:none;cursor:crosshair;
+}
+.book-crop-selection{
+  position:absolute;box-sizing:border-box;border:2px solid white;
+  background:transparent;box-shadow:0 0 0 2000px rgba(0,0,0,.48);
+  pointer-events:none;z-index:2;
+}
 .book-crop-selection[hidden]{display:none!important}
-[data-book-restore-original]{margin-top:10px}
-
-/* Compact iOS-style crop workspace, always preserving the image aspect ratio. */
-.book-crop-stage{width:min(100%,620px)!important;max-width:100%;max-height:none!important;aspect-ratio:auto;position:relative;margin:0 auto;overflow:hidden;background:#222}
-.book-crop-stage canvas{width:100%!important;height:100%!important;max-height:none!important;max-width:none!important;object-fit:fill;display:block;touch-action:none;cursor:crosshair}
-.book-crop-selection{border:2px solid #fff!important;background:transparent!important;box-shadow:0 0 0 2500px rgba(0,0,0,.48)!important}
-.book-crop-selection::before{content:"";position:absolute;inset:0;background:linear-gradient(to right,transparent 33.2%,rgba(255,255,255,.65) 33.3%,rgba(255,255,255,.65) 33.5%,transparent 33.6%,transparent 66.4%,rgba(255,255,255,.65) 66.5%,rgba(255,255,255,.65) 66.7%,transparent 66.8%),linear-gradient(to bottom,transparent 33.2%,rgba(255,255,255,.65) 33.3%,rgba(255,255,255,.65) 33.5%,transparent 33.6%,transparent 66.4%,rgba(255,255,255,.65) 66.5%,rgba(255,255,255,.65) 66.7%,transparent 66.8%);pointer-events:none}
-.book-crop-handle{position:absolute;width:18px;height:18px;border-color:white;border-style:solid;pointer-events:none}
+.book-crop-selection::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(to right,transparent 33.1%,#ffffff99 33.3%,transparent 33.5%,transparent 66.4%,#ffffff99 66.6%,transparent 66.8%),
+             linear-gradient(to bottom,transparent 33.1%,#ffffff99 33.3%,transparent 33.5%,transparent 66.4%,#ffffff99 66.6%,transparent 66.8%);
+}
+.book-crop-handle{position:absolute;width:18px;height:18px;border-color:#fff;border-style:solid;pointer-events:none}
 .book-crop-handle.tl{top:-2px;left:-2px;border-width:4px 0 0 4px}
 .book-crop-handle.tr{top:-2px;right:-2px;border-width:4px 4px 0 0}
 .book-crop-handle.bl{bottom:-2px;left:-2px;border-width:0 0 4px 4px}
 .book-crop-handle.br{bottom:-2px;right:-2px;border-width:0 4px 4px 0}
-
-/* Hard cap the editor preview so a tall source cannot fill the entire modal. */
-.book-image-editor .book-crop-stage{max-width:100%!important;max-height:340px!important;width:fit-content;margin:8px auto 0;overflow:hidden}
-.book-image-editor .book-crop-stage canvas{display:block;width:100%!important;height:100%!important;max-height:340px!important}
-.book-image-editor .book-image-actions{position:relative;z-index:1;margin:10px 0}
+.book-image-editor [data-book-restore-original]{margin-top:10px}
