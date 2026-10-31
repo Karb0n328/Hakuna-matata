@@ -64,11 +64,27 @@
     syncing=true;const uid=accountId();
     try{
       for(const q of (state?.questions||[]).filter(q=>q.hasPhoto)){
-        if(!q?.id||localStorage.getItem(uploadedKey(uid,q.id))==='1')continue;
-        const blob=await lookup(q.id);
-        if(!blob)continue;
-        await account().photoUpload(q.id,blob);
-        localStorage.setItem(uploadedKey(uid,q.id),'1');
+        if(!q?.id)continue;
+        if(localStorage.getItem(uploadedKey(uid,q.id))!=='1'){
+          const blob=await lookup(q.id).catch(()=>null);
+          if(blob){
+            await account().photoUpload(q.id,blob);
+            localStorage.setItem(uploadedKey(uid,q.id),'1');
+          }
+        }
+        // Keep the editable source across devices. The old app stored original
+        // images only in local IndexedDB, so another iPad could not re-crop them.
+        const originalKey=q.id+'__original';
+        if(localStorage.getItem(uploadedKey(uid,originalKey))!=='1'){
+          const original=await lookup(q.id+'.original').catch(()=>null);
+          if(original){
+            const jpeg=original.type==='image/jpeg'?original:await processPhoto(original,{
+              rotate:0,left:0,right:0,top:0,bottom:0,trim:false,grayscale:false,manualCrop:false
+            });
+            await account().photoUpload(originalKey,jpeg);
+            localStorage.setItem(uploadedKey(uid,originalKey),'1');
+          }
+        }
       }
     }catch(e){console.warn('Fotoğraf bulut senkronu bekliyor',e);}
     finally{syncing=false;}
@@ -367,7 +383,13 @@
       bottom:selection?(1-selection.y-selection.h)*100:0
     });
     wrap.querySelector('[data-book-restore-original]')?.addEventListener('click',async()=>{
-      const original=await lookup(editing.id+'.original').catch(()=>null);
+      let original=await lookup(editing.id+'.original').catch(()=>null);
+      if(!original&&accountId()&&account()?.photoDownload){
+        try{
+          original=await account().photoDownload(editing.id+'__original');
+          if(original)await store(editing.id+'.original',original).catch(()=>{});
+        }catch{ /* Older questions may have no cloud original. */ }
+      }
       let blob=original;
       if(!blob){
         blob=await getPhoto(editing.id);
@@ -425,8 +447,11 @@
       if(!editor.isUsingOriginalBackup?.())await store(id+'.original',file).catch(e=>console.warn('Orijinal fotoğraf yedeklenemedi',e));
       await store(id,blob);
       const uid=accountId();
-      if(uid)localStorage.removeItem(uploadedKey(uid,id));
-      void syncPending(await readState()).catch(()=>{});
+      if(uid){
+        localStorage.removeItem(uploadedKey(uid,id));
+        if(!editor.isUsingOriginalBackup?.())localStorage.removeItem(uploadedKey(uid,id+'__original'));
+      }
+      void readState().then(syncPending).catch(()=>{});
       form.dispatchEvent(new Event('book-cleanup'));
       return true;
     }
@@ -434,6 +459,7 @@
       await erase(id);
       await erase(id+'.original').catch(()=>{});
       void account()?.photoDelete?.(id).catch(e=>console.warn('Photo cleanup',e));
+      void account()?.photoDelete?.(id+'__original').catch(()=>{});
       form.dispatchEvent(new Event('book-cleanup'));
       return false;
     }
@@ -444,6 +470,7 @@
   async function forgetPhoto(id){
     try{await erase(id);await erase(id+'.original');}catch{}
     try{await account()?.photoDelete?.(id);}catch{}
+    try{await account()?.photoDelete?.(id+'__original');}catch{}
   }
 
   function releasePreviews(){
