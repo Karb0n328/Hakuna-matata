@@ -108,35 +108,30 @@ html[data-batu-theme="dark"] .book-unsolved-badge{
 html[data-batu-theme="dark"] .book-question-answer{color:#bad9ff}
 html[data-batu-theme="dark"] .book-question-answer strong{background:#1e3956;color:#e3f1ff}
 
-/* Single bounded crop layout: no conflicting canvas sizing rules. */
-.book-image-editor .book-image-controls{display:block;min-width:0;overflow:hidden}
+/* Photo crop preview is a regular image, not a canvas. */
 .book-image-editor .book-image-controls[hidden]{display:none!important}
 .book-image-editor .book-crop-stage{
-  position:relative!important;display:block!important;box-sizing:border-box!important;
-  width:100%!important;height:300px!important;max-width:100%!important;max-height:300px!important;
-  margin:10px auto!important;overflow:hidden!important;isolation:isolate;
-  border-radius:10px;background:#20242a;line-height:0;
+ position:relative!important;display:block!important;box-sizing:border-box!important;
+ width:100%;max-width:100%!important;height:auto!important;max-height:300px!important;
+ margin:12px auto!important;overflow:hidden!important;border-radius:10px;
+ background:#252525;line-height:0;isolation:isolate;
 }
-.book-image-editor .book-crop-stage canvas{
-  position:absolute!important;inset:0!important;display:block!important;
-  width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;
-  margin:0!important;padding:0!important;object-fit:fill!important;
-  touch-action:none;user-select:none;-webkit-user-select:none;cursor:crosshair;
+.book-image-editor .book-crop-stage img[data-book-canvas]{
+ display:block!important;position:relative!important;inset:auto!important;
+ width:100%!important;height:100%!important;max-width:100%!important;
+ max-height:300px!important;object-fit:fill!important;margin:0!important;
+ padding:0!important;touch-action:none;user-select:none;-webkit-user-select:none;
+ cursor:crosshair;
 }
-.book-crop-selection{
-  position:absolute;box-sizing:border-box;border:2px solid white;
-  background:transparent;box-shadow:0 0 0 2000px rgba(0,0,0,.48);
-  pointer-events:none;z-index:2;
-}
+.book-crop-selection{position:absolute;box-sizing:border-box;border:2px solid #fff;
+ background:transparent;box-shadow:0 0 0 2000px rgba(0,0,0,.4);
+ pointer-events:none;z-index:2}
 .book-crop-selection[hidden]{display:none!important}
-.book-crop-selection::before{
-  content:"";position:absolute;inset:0;pointer-events:none;
-  background:linear-gradient(to right,transparent 33.1%,#ffffff99 33.3%,transparent 33.5%,transparent 66.4%,#ffffff99 66.6%,transparent 66.8%),
-             linear-gradient(to bottom,transparent 33.1%,#ffffff99 33.3%,transparent 33.5%,transparent 66.4%,#ffffff99 66.6%,transparent 66.8%);
-}
+.book-crop-selection::before{content:"";position:absolute;inset:0;pointer-events:none;
+ background:linear-gradient(to right,transparent 33%,#ffffff88 33.3%,transparent 33.6%,transparent 66.3%,#ffffff88 66.6%,transparent 67%),
+ linear-gradient(to bottom,transparent 33%,#ffffff88 33.3%,transparent 33.6%,transparent 66.3%,#ffffff88 66.6%,transparent 67%)}
 .book-crop-handle{position:absolute;width:18px;height:18px;border-color:#fff;border-style:solid;pointer-events:none}
 .book-crop-handle.tl{top:-2px;left:-2px;border-width:4px 0 0 4px}
 .book-crop-handle.tr{top:-2px;right:-2px;border-width:4px 4px 0 0}
 .book-crop-handle.bl{bottom:-2px;left:-2px;border-width:0 0 4px 4px}
 .book-crop-handle.br{bottom:-2px;right:-2px;border-width:0 4px 4px 0}
-.book-image-editor [data-book-restore-original]{margin-top:10px}
