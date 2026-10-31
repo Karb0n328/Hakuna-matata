@@ -166,13 +166,13 @@
       <label class="book-file-label">Fotoğraf çek / galeriden seç <input type="file" name="questionPhoto" accept="image/*"></label>
       ${editing?.hasPhoto?'<div class="book-existing-photo"><p class="book-helper">Kaydedilmiş soru fotoğrafı</p><img data-book-existing alt="Mevcut soru fotoğrafı"></div>':''}
       <div class="book-image-controls" hidden>
-        <div class="book-crop-stage"><canvas data-book-canvas aria-label="Fotoğraf kırpma alanı"></canvas><div data-book-selection class="book-crop-selection" hidden><i class="book-crop-handle tl"></i><i class="book-crop-handle tr"></i><i class="book-crop-handle bl"></i><i class="book-crop-handle br"></i></div></div>
-        <p class="book-helper">Fotoğrafın üzerinde parmağınla veya fareyle istediğin dikdörtgen alanı seç. Kaydedilen fotoğraf tam olarak bu alan olacaktır.</p>
         <div class="book-image-actions">
           <button type="button" data-book-rotate>↻ 90° çevir</button>
           <button type="button" data-book-reset-crop>Seçimi sıfırla</button>
           <label><input type="checkbox" data-book-gray> Siyah-beyaz netleştir</label>
         </div>
+        <div class="book-crop-stage"><canvas data-book-canvas aria-label="Fotoğraf kırpma alanı"></canvas><div data-book-selection class="book-crop-selection" hidden><i class="book-crop-handle tl"></i><i class="book-crop-handle tr"></i><i class="book-crop-handle bl"></i><i class="book-crop-handle br"></i></div></div>
+        <p class="book-helper">Fotoğrafın üzerinde parmağınla alan seç, çerçeveyi taşı veya köşelerinden ayarla. Seçtiğin alan kaydedilir.</p>
 
       </div>
       ${editing?.hasPhoto?'<button type="button" class="secondary-btn" data-book-restore-original>Orijinal fotoğraftan yeniden kırp</button><label class="book-remove-photo"><input type="checkbox" data-book-remove> Fotoğrafı kaldır</label><p class="book-helper">Mevcut fotoğraf korunacak; kaldırmak için kutuyu işaretle.</p>':''}
@@ -192,7 +192,10 @@
       const scale=Math.min(1,1400/Math.max(width,height));
       canvas.width=Math.max(1,Math.round(width*scale));
       canvas.height=Math.max(1,Math.round(height*scale));
-      stage.style.aspectRatio=canvas.width+' / '+canvas.height;
+      const displayScale=Math.min(1,580/canvas.width,340/canvas.height);
+      stage.style.width=Math.max(1,Math.round(canvas.width*displayScale))+'px';
+      stage.style.height=Math.max(1,Math.round(canvas.height*displayScale))+'px';
+      stage.style.aspectRatio='auto';
       const ctx=canvas.getContext('2d');
       ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
       ctx.translate(canvas.width/2,canvas.height/2);
