@@ -166,7 +166,7 @@
       <label class="book-file-label">Fotoğraf çek / galeriden seç <input type="file" name="questionPhoto" accept="image/*"></label>
       ${editing?.hasPhoto?'<div class="book-existing-photo"><p class="book-helper">Kaydedilmiş soru fotoğrafı</p><img data-book-existing alt="Mevcut soru fotoğrafı"></div>':''}
       <div class="book-image-controls" hidden>
-        <div class="book-crop-stage"><canvas data-book-canvas aria-label="Fotoğraf kırpma alanı"></canvas><div data-book-selection class="book-crop-selection" hidden></div></div>
+        <div class="book-crop-stage"><canvas data-book-canvas aria-label="Fotoğraf kırpma alanı"></canvas><div data-book-selection class="book-crop-selection" hidden><i class="book-crop-handle tl"></i><i class="book-crop-handle tr"></i><i class="book-crop-handle bl"></i><i class="book-crop-handle br"></i></div></div>
         <p class="book-helper">Fotoğrafın üzerinde parmağınla veya fareyle istediğin dikdörtgen alanı seç. Kaydedilen fotoğraf tam olarak bu alan olacaktır.</p>
         <div class="book-image-actions">
           <button type="button" data-book-rotate>↻ 90° çevir</button>
@@ -180,7 +180,7 @@
     const actions=form.querySelector('.form-actions');
     if(actions)actions.before(wrap);else form.append(wrap);
     const input=wrap.querySelector('input[type=file]'), controls=wrap.querySelector('.book-image-controls');
-    let rotated=0,url=null,sourceImage=null,selection=null,dragStart=null;
+    let rotated=0,url=null,sourceImage=null,selection=null,dragStart=null,dragMode="new",initialSelection=null;
     const canvas=wrap.querySelector('[data-book-canvas]');
     const stage=wrap.querySelector('.book-crop-stage');
     const selectionBox=wrap.querySelector('[data-book-selection]');
@@ -192,6 +192,7 @@
       const scale=Math.min(1,1400/Math.max(width,height));
       canvas.width=Math.max(1,Math.round(width*scale));
       canvas.height=Math.max(1,Math.round(height*scale));
+      stage.style.aspectRatio=canvas.width+' / '+canvas.height;
       const ctx=canvas.getContext('2d');
       ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
       ctx.translate(canvas.width/2,canvas.height/2);
@@ -211,26 +212,54 @@
       const rect=canvas.getBoundingClientRect();
       return {x:Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width)),y:Math.max(0,Math.min(1,(e.clientY-rect.top)/rect.height))};
     };
+    const clamp=(n)=>Math.max(0,Math.min(1,n));
     canvas.addEventListener('pointerdown',e=>{
       if(!sourceImage)return;
-      e.preventDefault();dragStart=point(e);selection=null;
+      e.preventDefault();
+      const p=point(e);
+      dragStart=p;
+      initialSelection=selection?{...selection}:null;
+      dragMode='new';
+      if(selection){
+        const {x,y,w,h}=selection;
+        const r=canvas.getBoundingClientRect(),tolerance=22/Math.min(r.width,r.height);
+        const near=(a,b)=>Math.hypot(p.x-a,p.y-b)<tolerance;
+        if(near(x,y))dragMode='tl';
+        else if(near(x+w,y))dragMode='tr';
+        else if(near(x,y+h))dragMode='bl';
+        else if(near(x+w,y+h))dragMode='br';
+        else if(p.x>=x&&p.x<=x+w&&p.y>=y&&p.y<=y+h)dragMode='move';
+      }
+      if(dragMode==='new')selection=null;
       canvas.setPointerCapture(e.pointerId);
     });
-    canvas.addEventListener('pointermove',e=>{
+    const updateDrag=e=>{
       if(!dragStart)return;
-      const p=point(e),x=Math.min(dragStart.x,p.x),y=Math.min(dragStart.y,p.y);
-      selection={x,y,w:Math.abs(p.x-dragStart.x),h:Math.abs(p.y-dragStart.y)};
+      const p=point(e),start=dragStart;
+      if(dragMode==='move'&&initialSelection){
+        const old=initialSelection;
+        selection={...old,x:clamp(Math.min(1-old.w,old.x+p.x-start.x)),y:clamp(Math.min(1-old.h,old.y+p.y-start.y))};
+      }else{
+        let x1=start.x,y1=start.y,x2=p.x,y2=p.y;
+        if(initialSelection&&dragMode!=='new'){
+          const old=initialSelection;
+          x1=dragMode.includes('l')?p.x:old.x;
+          x2=dragMode.includes('r')?p.x:old.x+old.w;
+          y1=dragMode.includes('t')?p.y:old.y;
+          y2=dragMode.includes('b')?p.y:old.y+old.h;
+        }
+        selection={x:Math.min(x1,x2),y:Math.min(y1,y2),w:Math.abs(x2-x1),h:Math.abs(y2-y1)};
+      }
       renderSelection();
-    });
-    const finish=e=>{
-      if(!dragStart)return;
-      const p=point(e),x=Math.min(dragStart.x,p.x),y=Math.min(dragStart.y,p.y);
-      const next={x,y,w:Math.abs(p.x-dragStart.x),h:Math.abs(p.y-dragStart.y)};
-      selection=next.w>.025&&next.h>.025?next:null;
-      dragStart=null;renderSelection();
     };
-    canvas.addEventListener('pointerup',finish);
-    canvas.addEventListener('pointercancel',()=>{dragStart=null;renderSelection();});
+    canvas.addEventListener('pointermove',updateDrag);
+    canvas.addEventListener('pointerup',e=>{
+      if(!dragStart)return;
+      updateDrag(e);
+      if(selection&&(selection.w<.015||selection.h<.015))selection=initialSelection;
+      dragStart=null;initialSelection=null;renderSelection();
+    });
+    canvas.addEventListener('pointercancel',()=>{selection=initialSelection;dragStart=null;initialSelection=null;renderSelection();});
     input.addEventListener('change',()=>{
       if(url)URL.revokeObjectURL(url);
       const file=input.files?.[0];
@@ -261,7 +290,7 @@
       bottom:selection?(1-selection.y-selection.h)*100:0
     });
     wrap.querySelector('[data-book-restore-original]')?.addEventListener('click',async()=>{
-      const blob=await getPhoto(editing.id+'.original');
+      const blob=await lookup(editing.id+'.original').catch(()=>null);
       if(!blob){notify('Bu sorunun orijinal fotoğraf yedeği bu cihazda bulunamadı.');return;}
       const file=new File([blob],'orijinal-soru.jpg',{type:blob.type||'image/jpeg'});
       const transfer=new DataTransfer();transfer.items.add(file);input.files=transfer.files;
