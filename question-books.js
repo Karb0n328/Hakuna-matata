@@ -192,10 +192,12 @@
       const scale=Math.min(1,1400/Math.max(width,height));
       canvas.width=Math.max(1,Math.round(width*scale));
       canvas.height=Math.max(1,Math.round(height*scale));
-      const displayScale=Math.min(1,580/canvas.width,340/canvas.height);
-      stage.style.width=Math.max(1,Math.round(canvas.width*displayScale))+'px';
-      stage.style.height=Math.max(1,Math.round(canvas.height*displayScale))+'px';
-      stage.style.aspectRatio='auto';
+      // Explicit bounded dimensions override modal/global canvas styles.
+      const available=Math.max(180,Math.min(560,stage.parentElement.clientWidth-12||560));
+      const displayScale=Math.min(1,available/canvas.width,300/canvas.height);
+      stage.style.setProperty('width',Math.max(1,Math.round(canvas.width*displayScale))+'px','important');
+      stage.style.setProperty('height',Math.max(1,Math.round(canvas.height*displayScale))+'px','important');
+      stage.style.setProperty('max-height','300px','important');
       const ctx=canvas.getContext('2d');
       ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
       ctx.translate(canvas.width/2,canvas.height/2);
