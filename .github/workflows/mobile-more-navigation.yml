@@ -1,0 +1,34 @@
+name: Mobile More-menu navigation
+on:
+  push:
+    paths:
+      - app.js
+      - tests/mobile-more-navigation.test.mjs
+      - .github/workflows/mobile-more-navigation.yml
+  pull_request:
+    paths:
+      - app.js
+      - tests/mobile-more-navigation.test.mjs
+      - .github/workflows/mobile-more-navigation.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  phone-and-portrait-tablet:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify source and test syntax
+        run: |
+          node --check app.js
+          node --check tests/mobile-more-navigation.test.mjs
+      - name: Install browser testing dependency
+        run: npm install --no-save --ignore-scripts playwright@1.56.1
+      - name: Install Chromium and Safari/WebKit
+        run: npx playwright install --with-deps chromium webkit
+      - name: Test every More menu destination in phone and portrait tablet views
+        run: node tests/mobile-more-navigation.test.mjs
