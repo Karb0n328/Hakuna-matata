@@ -171,7 +171,7 @@
           <button type="button" data-book-reset-crop>Seçimi sıfırla</button>
           <label><input type="checkbox" data-book-gray> Siyah-beyaz netleştir</label>
         </div>
-        <div class="book-crop-stage"><canvas data-book-canvas aria-label="Fotoğraf kırpma alanı"></canvas><div data-book-selection class="book-crop-selection" hidden><i class="book-crop-handle tl"></i><i class="book-crop-handle tr"></i><i class="book-crop-handle bl"></i><i class="book-crop-handle br"></i></div></div>
+        <div class="book-crop-stage"><img data-book-canvas alt="Kırpılacak fotoğraf" draggable="false"><div data-book-selection class="book-crop-selection" hidden><i class="book-crop-handle tl"></i><i class="book-crop-handle tr"></i><i class="book-crop-handle bl"></i><i class="book-crop-handle br"></i></div></div>
         <p class="book-helper">Fotoğrafın üzerinde parmağınla alan seç, çerçeveyi taşı veya köşelerinden ayarla. Seçtiğin alan kaydedilir.</p>
 
       </div>
@@ -190,19 +190,17 @@
       const width=swapped?sourceImage.naturalHeight:sourceImage.naturalWidth;
       const height=swapped?sourceImage.naturalWidth:sourceImage.naturalHeight;
       const scale=Math.min(1,1400/Math.max(width,height));
-      canvas.width=Math.max(1,Math.round(width*scale));
-      canvas.height=Math.max(1,Math.round(height*scale));
-      // Explicit bounded dimensions override modal/global canvas styles.
-      const available=Math.max(180,Math.min(560,stage.parentElement.clientWidth-12||560));
-      const displayScale=Math.min(1,available/canvas.width,300/canvas.height);
-      stage.style.setProperty('width',Math.max(1,Math.round(canvas.width*displayScale))+'px','important');
-      stage.style.setProperty('height',Math.max(1,Math.round(canvas.height*displayScale))+'px','important');
-      stage.style.setProperty('max-height','300px','important');
-      const ctx=canvas.getContext('2d');
-      ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
-      ctx.translate(canvas.width/2,canvas.height/2);
+      const offscreen=document.createElement('canvas');
+      offscreen.width=Math.max(1,Math.round(width*scale));
+      offscreen.height=Math.max(1,Math.round(height*scale));
+      const ctx=offscreen.getContext('2d');
+      ctx.translate(offscreen.width/2,offscreen.height/2);
       ctx.rotate(rotated*Math.PI/180);
       ctx.drawImage(sourceImage,-sourceImage.naturalWidth*scale/2,-sourceImage.naturalHeight*scale/2,sourceImage.naturalWidth*scale,sourceImage.naturalHeight*scale);
+      // Use an ordinary image for display: never expose a canvas to global layout styles.
+      canvas.src=offscreen.toDataURL('image/jpeg',.9);
+      stage.style.aspectRatio=width+' / '+height;
+      stage.style.width='min(100%, '+Math.round(300*width/height)+'px)';
       renderSelection();
     };
     const renderSelection=()=>{
