@@ -20,17 +20,42 @@
     req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
   });}
   async function store(id,blob){
+    // WebKit (including iPad installed apps) can abort IndexedDB transactions
+    // containing File/Blob values with a null transaction.error. Store
+    // cloneable ArrayBuffers instead, while preserving legacy Blob reads.
+    const bytes=typeof blob.arrayBuffer==='function'?await blob.arrayBuffer():
+      await new Promise((resolve,reject)=>{
+        const reader=new FileReader();
+        reader.onload=()=>resolve(reader.result);
+        reader.onerror=()=>reject(reader.error||new Error('Fotoğraf okunamadı.'));
+        reader.readAsArrayBuffer(blob);
+      });
+    const record={v:2,bytes,type:blob.type||'image/jpeg'};
     const db=await openDb();
     try{await new Promise((resolve,reject)=>{
-      const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put(blob,String(id));
-      tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);
+      const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put(record,String(id));
+      tx.oncomplete=resolve;
+      tx.onerror=()=>reject(tx.error||new Error('Fotoğraf cihazın veritabanına yazılamadı.'));
+      tx.onabort=()=>reject(tx.error||new Error('Fotoğraf kaydı iPad tarafından durduruldu.'));
     });}finally{db.close();}
   }
   async function lookup(id){
     const db=await openDb();
     try{return await new Promise((resolve,reject)=>{
       const tx=db.transaction(STORE,'readonly'),r=tx.objectStore(STORE).get(String(id));
-      r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error);
+      r.onsuccess=()=>{
+        const value=r.result;
+        if(!value){resolve(null);return;}
+        if(value instanceof Blob){resolve(value);return;}
+        if(value.v===2&&value.bytes instanceof ArrayBuffer){
+          resolve(new Blob([value.bytes],{type:value.type||'image/jpeg'}));return;
+        }
+        if(value instanceof ArrayBuffer){
+          resolve(new Blob([value],{type:'image/jpeg'}));return;
+        }
+        reject(new Error('Kayıtlı fotoğraf biçimi desteklenmiyor.'));
+      };
+      r.onerror=()=>reject(r.error||new Error('Fotoğraf cihazdan okunamadı.'));
     });}finally{db.close();}
   }
   async function erase(id){
@@ -64,11 +89,27 @@
     syncing=true;const uid=accountId();
     try{
       for(const q of (state?.questions||[]).filter(q=>q.hasPhoto)){
-        if(!q?.id||localStorage.getItem(uploadedKey(uid,q.id))==='1')continue;
-        const blob=await lookup(q.id);
-        if(!blob)continue;
-        await account().photoUpload(q.id,blob);
-        localStorage.setItem(uploadedKey(uid,q.id),'1');
+        if(!q?.id)continue;
+        if(localStorage.getItem(uploadedKey(uid,q.id))!=='1'){
+          const blob=await lookup(q.id).catch(()=>null);
+          if(blob){
+            await account().photoUpload(q.id,blob);
+            localStorage.setItem(uploadedKey(uid,q.id),'1');
+          }
+        }
+        // Keep the editable source across devices. The old app stored original
+        // images only in local IndexedDB, so another iPad could not re-crop them.
+        const originalKey=q.id+'__original';
+        if(localStorage.getItem(uploadedKey(uid,originalKey))!=='1'){
+          const original=await lookup(q.id+'.original').catch(()=>null);
+          if(original){
+            const jpeg=original.type==='image/jpeg'?original:await processPhoto(original,{
+              rotate:0,left:0,right:0,top:0,bottom:0,trim:false,grayscale:false,manualCrop:false
+            });
+            await account().photoUpload(originalKey,jpeg);
+            localStorage.setItem(uploadedKey(uid,originalKey),'1');
+          }
+        }
       }
     }catch(e){console.warn('Fotoğraf bulut senkronu bekliyor',e);}
     finally{syncing=false;}
@@ -171,8 +212,8 @@
           <button type="button" data-book-reset-crop>Seçimi sıfırla</button>
           <label><input type="checkbox" data-book-gray> Siyah-beyaz netleştir</label>
         </div>
-        <div class="book-crop-stage"><img data-book-canvas alt="Kırpılacak fotoğraf" draggable="false"><div data-book-selection class="book-crop-selection" hidden><i class="book-crop-handle tl"></i><i class="book-crop-handle tr"></i><i class="book-crop-handle bl"></i><i class="book-crop-handle br"></i></div></div>
-        <p class="book-helper">Fotoğrafın üzerinde parmağınla alan seç, çerçeveyi taşı veya köşelerinden ayarla. Seçtiğin alan kaydedilir.</p>
+        <div class="book-crop-stage" role="group" aria-label="Fotoğrafı kırpmak için seçim alanı"><canvas data-book-canvas aria-label="Kırpılacak fotoğraf" role="img"></canvas><div data-book-selection class="book-crop-selection" hidden><i class="book-crop-handle tl"></i><i class="book-crop-handle tr"></i><i class="book-crop-handle bl"></i><i class="book-crop-handle br"></i></div></div>
+        <p class="book-helper">Kırpma çerçevesinin köşelerini sürükle; yeni bir alan çizmek için fotoğrafın ortasından kaydır. Kaydedilen fotoğraf yalnızca çerçevedeki kısımdır.</p>
 
       </div>
       ${editing?.hasPhoto?'<button type="button" class="secondary-btn" data-book-restore-original>Orijinal fotoğraftan yeniden kırp</button><label class="book-remove-photo"><input type="checkbox" data-book-remove> Fotoğrafı kaldır</label><p class="book-helper">Mevcut fotoğraf korunacak; kaldırmak için kutuyu işaretle.</p>':''}
@@ -180,85 +221,104 @@
     const actions=form.querySelector('.form-actions');
     if(actions)actions.before(wrap);else form.append(wrap);
     const input=wrap.querySelector('input[type=file]'), controls=wrap.querySelector('.book-image-controls');
-    let rotated=0,url=null,sourceImage=null,selection=null,dragStart=null,dragMode="new",initialSelection=null;
+    // One visible canvas is the source of truth for the crop preview.
+    // No offscreen data URLs, CSS object-fit, or async image preview races.
+    let rotated=0,url=null,sourceImage=null,sourceFile=null,selection=null;
+    let dragStart=null,dragMode='new',initialSelection=null,originalFromBackup=false;
+    let lastWidth=0,paintScheduled=false,closed=false;
     const canvas=wrap.querySelector('[data-book-canvas]');
     const stage=wrap.querySelector('.book-crop-stage');
     const selectionBox=wrap.querySelector('[data-book-selection]');
-    const draw=()=>{
-      if(!sourceImage)return;
-      const swapped=rotated%180!==0;
-      const width=swapped?sourceImage.naturalHeight:sourceImage.naturalWidth;
-      const height=swapped?sourceImage.naturalWidth:sourceImage.naturalHeight;
-      const scale=Math.min(1,1400/Math.max(width,height));
-      const offscreen=document.createElement('canvas');
-      offscreen.width=Math.max(1,Math.round(width*scale));
-      offscreen.height=Math.max(1,Math.round(height*scale));
-      const ctx=offscreen.getContext('2d');
-      ctx.translate(offscreen.width/2,offscreen.height/2);
-      ctx.rotate(rotated*Math.PI/180);
-      ctx.drawImage(sourceImage,-sourceImage.naturalWidth*scale/2,-sourceImage.naturalHeight*scale/2,sourceImage.naturalWidth*scale,sourceImage.naturalHeight*scale);
-      const availableWidth=Math.max(140,Math.min(540,wrap.getBoundingClientRect().width-42));
-      const factor=Math.min(availableWidth/width,280/height);
-      const displayWidth=Math.max(1,Math.round(width*factor));
-      const displayHeight=Math.max(1,Math.round(height*factor));
-      // The crop surface and the preview must have exactly the same physical dimensions.
-      // Set these on the elements themselves, with priority, to isolate them from global CSS.
-      for(const [el,w,h] of [[stage,displayWidth,displayHeight],[canvas,displayWidth,displayHeight]]){
-        el.style.setProperty('width',w+'px','important');
-        el.style.setProperty('height',h+'px','important');
-        el.style.setProperty('min-width','0','important');
-        el.style.setProperty('min-height','0','important');
-        el.style.setProperty('max-width',w+'px','important');
-        el.style.setProperty('max-height',h+'px','important');
-        el.style.setProperty('aspect-ratio','auto','important');
-      }
-      canvas.style.setProperty('position','absolute','important');
-      canvas.style.setProperty('inset','0','important');
-      canvas.style.setProperty('object-fit','fill','important');
-      canvas.src=offscreen.toDataURL('image/jpeg',.9);
-      renderSelection();
-    };
+    const clamp=(v,lo=0,hi=1)=>Math.max(lo,Math.min(hi,v));
+    const fullSelection=()=>({x:0,y:0,w:1,h:1});
     const renderSelection=()=>{
-      if(!selection){selectionBox.hidden=true;return;}
+      if(!selection||!sourceImage){selectionBox.hidden=true;return;}
       selectionBox.hidden=false;
       selectionBox.style.left=(selection.x*100)+'%';
       selectionBox.style.top=(selection.y*100)+'%';
       selectionBox.style.width=(selection.w*100)+'%';
       selectionBox.style.height=(selection.h*100)+'%';
     };
-    const point=e=>{
-      const rect=canvas.getBoundingClientRect();
-      return {x:Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width)),y:Math.max(0,Math.min(1,(e.clientY-rect.top)/rect.height))};
+    const draw=()=>{
+      if(!sourceImage||closed)return;
+      const naturalWidth=sourceImage.naturalWidth;
+      const naturalHeight=sourceImage.naturalHeight;
+      if(!naturalWidth||!naturalHeight){notify('Fotoğraf boyutları okunamadı.');return;}
+      const swapped=rotated%180!==0;
+      const imageWidth=swapped?naturalHeight:naturalWidth;
+      const imageHeight=swapped?naturalWidth:naturalHeight;
+      const measured=wrap.getBoundingClientRect().width||wrap.clientWidth;
+      const availableWidth=Math.max(180,Math.min(600,Math.floor((measured||330)-34)));
+      const availableHeight=Math.max(180,Math.min(440,Math.floor((window.innerHeight||800)*.46)));
+      const factor=Math.min(availableWidth/imageWidth,availableHeight/imageHeight);
+      const displayWidth=Math.max(1,Math.round(imageWidth*factor));
+      const displayHeight=Math.max(1,Math.round(imageHeight*factor));
+      // Stage, visible canvas, and selection use the EXACT same dimensions.
+      // CSS cannot stretch the photo independently of its crop coordinates.
+      stage.style.setProperty('width',displayWidth+'px','important');
+      stage.style.setProperty('height',displayHeight+'px','important');
+      canvas.width=displayWidth;
+      canvas.height=displayHeight;
+      const ctx=canvas.getContext('2d',{alpha:false});
+      if(!ctx){notify('Fotoğraf önizlemesi açılamadı.');return;}
+      ctx.setTransform(1,0,0,1,0,0);
+      ctx.fillStyle='#fff';
+      ctx.fillRect(0,0,displayWidth,displayHeight);
+      ctx.imageSmoothingEnabled=true;
+      ctx.imageSmoothingQuality='high';
+      ctx.translate(displayWidth/2,displayHeight/2);
+      ctx.rotate(rotated*Math.PI/180);
+      // This is also the exact transform used when processing the saved image.
+      ctx.drawImage(sourceImage,-naturalWidth*factor/2,-naturalHeight*factor/2,
+        naturalWidth*factor,naturalHeight*factor);
+      ctx.setTransform(1,0,0,1,0,0);
+      stage.dataset.cropReady='1';
+      renderSelection();
     };
-    const clamp=(n)=>Math.max(0,Math.min(1,n));
-    canvas.addEventListener('pointerdown',e=>{
-      if(!sourceImage)return;
-      e.preventDefault();
+    const scheduleDraw=()=>{
+      if(paintScheduled||closed)return;
+      paintScheduled=true;
+      requestAnimationFrame(()=>{paintScheduled=false;draw();});
+    };
+    const point=e=>{
+      const rect=stage.getBoundingClientRect();
+      if(!rect.width||!rect.height)return null;
+      const rawX=(e.clientX-rect.left)/rect.width;
+      const rawY=(e.clientY-rect.top)/rect.height;
+      return {x:clamp(rawX),y:clamp(rawY),inside:rawX>=0&&rawX<=1&&rawY>=0&&rawY<=1};
+    };
+    stage.addEventListener('pointerdown',e=>{
+      if(!sourceImage||stage.dataset.cropReady!=='1'||dragStart)return;
       const p=point(e);
+      if(!p||!p.inside)return;
+      e.preventDefault();
       dragStart=p;
       initialSelection=selection?{...selection}:null;
       dragMode='new';
       if(selection){
         const {x,y,w,h}=selection;
-        const r=canvas.getBoundingClientRect(),tolerance=22/Math.min(r.width,r.height);
-        const near=(a,b)=>Math.hypot(p.x-a,p.y-b)<tolerance;
+        const rect=stage.getBoundingClientRect();
+        const near=(px,py)=>Math.abs((p.x-px)*rect.width)<=24&&
+          Math.abs((p.y-py)*rect.height)<=24;
         if(near(x,y))dragMode='tl';
         else if(near(x+w,y))dragMode='tr';
         else if(near(x,y+h))dragMode='bl';
         else if(near(x+w,y+h))dragMode='br';
-        else if(p.x>=x&&p.x<=x+w&&p.y>=y&&p.y<=y+h)dragMode='move';
+        else if(w<.995&&h<.995&&p.x>=x&&p.x<=x+w&&p.y>=y&&p.y<=y+h)dragMode='move';
       }
       if(dragMode==='new')selection=null;
-      canvas.setPointerCapture(e.pointerId);
+      stage.setPointerCapture?.(e.pointerId);
     });
     const updateDrag=e=>{
       if(!dragStart)return;
-      const p=point(e),start=dragStart;
+      const p=point(e);
+      if(!p)return;
       if(dragMode==='move'&&initialSelection){
         const old=initialSelection;
-        selection={...old,x:clamp(Math.min(1-old.w,old.x+p.x-start.x)),y:clamp(Math.min(1-old.h,old.y+p.y-start.y))};
+        selection={...old,x:clamp(old.x+p.x-dragStart.x,0,1-old.w),
+          y:clamp(old.y+p.y-dragStart.y,0,1-old.h)};
       }else{
-        let x1=start.x,y1=start.y,x2=p.x,y2=p.y;
+        let x1=dragStart.x,y1=dragStart.y,x2=p.x,y2=p.y;
         if(initialSelection&&dragMode!=='new'){
           const old=initialSelection;
           x1=dragMode.includes('l')?p.x:old.x;
@@ -270,35 +330,75 @@
       }
       renderSelection();
     };
-    canvas.addEventListener('pointermove',updateDrag);
-    canvas.addEventListener('pointerup',e=>{
+    const endDrag=e=>{
       if(!dragStart)return;
       updateDrag(e);
-      if(selection&&(selection.w<.015||selection.h<.015))selection=initialSelection;
-      dragStart=null;initialSelection=null;renderSelection();
+      const w=rotated%180===0?sourceImage.naturalWidth:sourceImage.naturalHeight;
+      const h=rotated%180===0?sourceImage.naturalHeight:sourceImage.naturalWidth;
+      const minW=Math.min(1,Math.max(.02,40/w));
+      const minH=Math.min(1,Math.max(.02,40/h));
+      if(selection&&(selection.w<minW||selection.h<minH)){
+        selection=initialSelection||fullSelection();
+        notify('Kırpma alanı çok küçük; önceki seçim korundu.');
+      }
+      dragStart=null;initialSelection=null;
+      if(stage.hasPointerCapture?.(e.pointerId))stage.releasePointerCapture(e.pointerId);
+      renderSelection();
+    };
+    stage.addEventListener('pointermove',updateDrag);
+    stage.addEventListener('pointerup',endDrag);
+    stage.addEventListener('pointercancel',e=>{
+      if(!dragStart)return;
+      selection=initialSelection||fullSelection();
+      dragStart=null;initialSelection=null;
+      if(stage.hasPointerCapture?.(e.pointerId))stage.releasePointerCapture(e.pointerId);
+      renderSelection();
     });
-    canvas.addEventListener('pointercancel',()=>{selection=initialSelection;dragStart=null;initialSelection=null;renderSelection();});
-    input.addEventListener('change',()=>{
-      if(url)URL.revokeObjectURL(url);
-      const file=input.files?.[0];
-      if(!file){controls.hidden=true;sourceImage=null;return;}
+    const loadSelectedFile=(file,fromOriginalBackup=false)=>{
+      if(url){URL.revokeObjectURL(url);url=null;}
+      sourceFile=file||null;
+      originalFromBackup=!!fromOriginalBackup;
+      sourceImage=null;selection=null;dragStart=null;rotated=0;
+      stage.dataset.cropReady='0';
+      controls.hidden=true;
+      if(!file){renderSelection();return;}
+      if(file.size>15*1024*1024){
+        sourceFile=null;notify('Fotoğraf en fazla 15 MB olabilir.');return;
+      }
       url=URL.createObjectURL(file);
-      rotated=0;selection=null;
-      const image=new Image();
-      image.onload=()=>{if(sourceImage===image)draw();};
-      image.onerror=()=>notify('Fotoğraf açılamadı. Başka bir görsel dene.');
-      sourceImage=image;image.src=url;
-      controls.hidden=false;
+      const img=new Image();
+      sourceImage=img;
+      img.onload=()=>{
+        if(closed||sourceImage!==img)return;
+        controls.hidden=false;
+        selection=fullSelection();
+        draw();
+        scheduleDraw();
+      };
+      img.onerror=()=>{
+        if(sourceImage!==img)return;
+        sourceImage=null;sourceFile=null;controls.hidden=true;
+        notify('Fotoğraf açılamadı. Başka bir görsel dene.');
+      };
+      img.src=url;
       const previous=wrap.querySelector('.book-existing-photo');
       if(previous)previous.hidden=true;
       const remove=wrap.querySelector('[data-book-remove]');
       if(remove)remove.checked=false;
-    });
-    wrap.querySelector('[data-book-rotate]').onclick=()=>{
-      rotated=(rotated+90)%360;
-      selection=null;draw();
     };
-    wrap.querySelector('[data-book-reset-crop]').onclick=()=>{selection=null;renderSelection();};
+    input.addEventListener('change',()=>loadSelectedFile(input.files?.[0]||null,false));
+    wrap.querySelector('[data-book-rotate]').addEventListener('click',()=>{
+      if(!sourceImage)return;
+      rotated=(rotated+90)%360;
+      selection=fullSelection();
+      draw();
+    });
+    wrap.querySelector('[data-book-reset-crop]').addEventListener('click',()=>{
+      selection=fullSelection();
+      renderSelection();
+    });
+    wrap.getSourceFile=()=>sourceFile;
+    wrap.isUsingOriginalBackup=()=>originalFromBackup;
     wrap.getImageOptions=()=>({
       rotate:rotated,trim:false,grayscale:wrap.querySelector('[data-book-gray]').checked,
       manualCrop:!!selection,
@@ -308,13 +408,37 @@
       bottom:selection?(1-selection.y-selection.h)*100:0
     });
     wrap.querySelector('[data-book-restore-original]')?.addEventListener('click',async()=>{
-      const blob=await lookup(editing.id+'.original').catch(()=>null);
-      if(!blob){notify('Bu sorunun orijinal fotoğraf yedeği bu cihazda bulunamadı.');return;}
-      const file=new File([blob],'orijinal-soru.jpg',{type:blob.type||'image/jpeg'});
-      const transfer=new DataTransfer();transfer.items.add(file);input.files=transfer.files;
-      input.dispatchEvent(new Event('change',{bubbles:true}));
-      notify('Orijinal fotoğraf açıldı. İstediğin alanı seçip soruyu kaydet.');
+      let original=await lookup(editing.id+'.original').catch(()=>null);
+      if(!original&&accountId()&&account()?.photoDownload){
+        try{
+          original=await account().photoDownload(editing.id+'__original');
+          if(original)await store(editing.id+'.original',original).catch(()=>{});
+        }catch{ /* Older questions may have no cloud original. */ }
+      }
+      let blob=original;
+      if(!blob){
+        blob=await getPhoto(editing.id);
+        if(!blob){notify('Fotoğrafın bu cihazda veya hesabında yedeği bulunamadı.');return;}
+      }
+      const file=new File([blob],original?'orijinal-soru.jpg':'kayitli-soru.jpg',
+        {type:blob.type||'image/jpeg'});
+      // WebKit may reject programmatic input.files assignment. The photo is
+      // kept separately as sourceFile, so Save still works in that case.
+      try{
+        const transfer=new DataTransfer();transfer.items.add(file);input.files=transfer.files;
+      }catch{input.value='';}
+      loadSelectedFile(file,!!original);
+      notify(original?'Orijinal fotoğraf açıldı. Köşelerinden kırpıp kaydet.':
+        'Orijinal yedek bulunamadı; kayıtlı fotoğrafı yeniden kırpabilirsin. Önceden kesilmiş alan geri getirilemez.');
     });
+    const onResize=()=>scheduleDraw();
+    window.addEventListener('resize',onResize,{passive:true});
+    let observedWidth=0;
+    const resizeObserver=typeof ResizeObserver==='function'?new ResizeObserver(entries=>{
+      const w=entries[0]?.contentRect?.width||0;
+      if(w&&Math.abs(w-observedWidth)>2){observedWidth=w;scheduleDraw();}
+    }):null;
+    resizeObserver?.observe(wrap);
     let existingUrl=null;
     if(editing?.hasPhoto){
       void getPhoto(editing.id).then(blob=>{
@@ -327,6 +451,9 @@
     const cleanup=()=>{
       if(url)URL.revokeObjectURL(url);
       if(existingUrl)URL.revokeObjectURL(existingUrl);
+      closed=true;
+      window.removeEventListener('resize',onResize);
+      resizeObserver?.disconnect();
       watch.disconnect();
     };
     const root=document.getElementById('modalRoot');
@@ -338,15 +465,18 @@
   async function savePhoto(form,id,previous){
     const editor=form.querySelector('[data-book-image-editor]');
     if(!editor)return !!previous;
-    const file=editor.querySelector('input[type=file]')?.files?.[0];
+    const file=editor.getSourceFile?.()||editor.querySelector('input[type=file]')?.files?.[0];
     const remove=!!editor.querySelector('[data-book-remove]')?.checked;
     if(file){
       const blob=await processPhoto(file,editor.getImageOptions());
-      await store(id+'.original',file).catch(e=>console.warn('Orijinal fotoğraf yedeklenemedi',e));
+      if(!editor.isUsingOriginalBackup?.())await store(id+'.original',file).catch(e=>console.warn('Orijinal fotoğraf yedeklenemedi',e));
       await store(id,blob);
       const uid=accountId();
-      if(uid)localStorage.removeItem(uploadedKey(uid,id));
-      void syncPending(await readState()).catch(()=>{});
+      if(uid){
+        localStorage.removeItem(uploadedKey(uid,id));
+        if(!editor.isUsingOriginalBackup?.())localStorage.removeItem(uploadedKey(uid,id+'__original'));
+      }
+      void readState().then(syncPending).catch(()=>{});
       form.dispatchEvent(new Event('book-cleanup'));
       return true;
     }
@@ -354,6 +484,7 @@
       await erase(id);
       await erase(id+'.original').catch(()=>{});
       void account()?.photoDelete?.(id).catch(e=>console.warn('Photo cleanup',e));
+      void account()?.photoDelete?.(id+'__original').catch(()=>{});
       form.dispatchEvent(new Event('book-cleanup'));
       return false;
     }
@@ -364,6 +495,7 @@
   async function forgetPhoto(id){
     try{await erase(id);await erase(id+'.original');}catch{}
     try{await account()?.photoDelete?.(id);}catch{}
+    try{await account()?.photoDelete?.(id+'__original');}catch{}
   }
 
   function releasePreviews(){
