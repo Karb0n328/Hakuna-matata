@@ -107,3 +107,10 @@ html[data-batu-theme="dark"] .book-unsolved-badge{
 .book-question-answer strong{display:inline-flex;align-items:center;justify-content:center;background:#e9f2ff;border-radius:7px;min-width:22px;min-height:22px;padding:1px 5px;font-size:12px}
 html[data-batu-theme="dark"] .book-question-answer{color:#bad9ff}
 html[data-batu-theme="dark"] .book-question-answer strong{background:#1e3956;color:#e3f1ff}
+
+/* Direct, coordinate-accurate manual crop editor. */
+.book-crop-stage{position:relative;display:block;width:fit-content;max-width:100%;margin:0 auto;overflow:hidden;border-radius:10px;background:#e7ebef;line-height:0}
+.book-crop-stage canvas{display:block;max-width:100%;max-height:440px;width:auto;height:auto;touch-action:none;cursor:crosshair;user-select:none;-webkit-user-select:none}
+.book-crop-selection{position:absolute;box-sizing:border-box;border:2px solid #2784e5;background:rgba(39,132,229,.13);box-shadow:0 0 0 2000px rgba(0,0,0,.27);pointer-events:none}
+.book-crop-selection[hidden]{display:none!important}
+[data-book-restore-original]{margin-top:10px}
