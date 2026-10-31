@@ -20,17 +20,42 @@
     req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
   });}
   async function store(id,blob){
+    // WebKit (including iPad installed apps) can abort IndexedDB transactions
+    // containing File/Blob values with a null transaction.error. Store
+    // cloneable ArrayBuffers instead, while preserving legacy Blob reads.
+    const bytes=typeof blob.arrayBuffer==='function'?await blob.arrayBuffer():
+      await new Promise((resolve,reject)=>{
+        const reader=new FileReader();
+        reader.onload=()=>resolve(reader.result);
+        reader.onerror=()=>reject(reader.error||new Error('Fotoğraf okunamadı.'));
+        reader.readAsArrayBuffer(blob);
+      });
+    const record={v:2,bytes,type:blob.type||'image/jpeg'};
     const db=await openDb();
     try{await new Promise((resolve,reject)=>{
-      const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put(blob,String(id));
-      tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);
+      const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put(record,String(id));
+      tx.oncomplete=resolve;
+      tx.onerror=()=>reject(tx.error||new Error('Fotoğraf cihazın veritabanına yazılamadı.'));
+      tx.onabort=()=>reject(tx.error||new Error('Fotoğraf kaydı iPad tarafından durduruldu.'));
     });}finally{db.close();}
   }
   async function lookup(id){
     const db=await openDb();
     try{return await new Promise((resolve,reject)=>{
       const tx=db.transaction(STORE,'readonly'),r=tx.objectStore(STORE).get(String(id));
-      r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error);
+      r.onsuccess=()=>{
+        const value=r.result;
+        if(!value){resolve(null);return;}
+        if(value instanceof Blob){resolve(value);return;}
+        if(value.v===2&&value.bytes instanceof ArrayBuffer){
+          resolve(new Blob([value.bytes],{type:value.type||'image/jpeg'}));return;
+        }
+        if(value instanceof ArrayBuffer){
+          resolve(new Blob([value],{type:'image/jpeg'}));return;
+        }
+        reject(new Error('Kayıtlı fotoğraf biçimi desteklenmiyor.'));
+      };
+      r.onerror=()=>reject(r.error||new Error('Fotoğraf cihazdan okunamadı.'));
     });}finally{db.close();}
   }
   async function erase(id){
