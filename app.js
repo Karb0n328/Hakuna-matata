@@ -119,7 +119,7 @@
     const allowed=guidanceRole==='student'?NAV.filter(x=>['today','plan','tasks','settings'].includes(x[0])):NAV.filter(x=>x[0]!=='guidance'||guidanceRole==='mentor');
     $('#sidebarNav').innerHTML=navButtons(allowed);
     const mobile=guidanceRole==='student'?[['today','🏠','Bugün'],['plan','📅','Plan'],['tasks','✓','Görevler'],['settings','⚙️','Ayarlar']]:guidanceRole==='mentor'?[...MOBILE_NAV.slice(0,4),['more','•••','Daha']]:MOBILE_NAV;
-    $('#bottomNav').innerHTML=mobile.map(([id,icon,label]) => `<button class="${currentPage===id || (id==='more' && ['questions','books','analytics','guidance','settings'].includes(currentPage))?'active':''}" data-nav="${id}"><span class="nav-icon">${icon}</span><span>${label}</span></button>`).join('');
+    $('#bottomNav').innerHTML=mobile.map(([id,icon,label]) => `<button class="${currentPage===id || (id==='more' && NAV.slice(4).some(([page])=>page===currentPage))?'active':''}" data-nav="${id}"><span class="nav-icon">${icon}</span><span>${label}</span></button>`).join('');
     $$('[data-nav]').forEach(b=>b.onclick=()=>{
       const id=b.dataset.nav;
       if (id==='more') return openMoreMenu();
@@ -980,9 +980,40 @@ YANIT KURALI
     const tpl=$('#modalTemplate').content.cloneNode(true); $('.modal-title',tpl).textContent=title; $('.modal-eyebrow',tpl).textContent=eyebrow; $('.modal-body',tpl).innerHTML=html; const root=$('#modalRoot');root.innerHTML='';root.append(tpl); $$('[data-close-modal]',root).forEach(x=>x.onclick=closeModal); }
   function closeModal() { $('#modalRoot').innerHTML=''; }
   function openMoreMenu() {
-    openModal('Daha fazla','Hakuna Matata',`<div class="status-options"><button class="status-option" data-more-nav="questions"><div class="status-emoji">❓</div><div><strong>Sorular</strong><span>Çözdürülecek soru havuzu</span></div></button><button class="status-option" data-more-nav="books"><div class="status-emoji">📚</div><div><strong>Soru Kitaplığım</strong><span>Fotoğraflı sorular ve PDF kitapçık</span></div></button><button class="status-option" data-more-nav="analytics"><div class="status-emoji">📈</div><div><strong>Analiz</strong><span>Çalışma ve deneme gelişimi</span></div></button><button class="status-option" data-more-nav="guidance" id="guidanceMoreButton" style="display:none"><div class="status-emoji">🎓</div><div><strong>Rehberlik</strong><span>Ayzos ödev takibi</span></div></button><button class="status-option" data-more-nav="settings"><div class="status-emoji">⚙️</div><div><strong>Ayarlar</strong><span>Hakuna Bridge ve yedek</span></div></button></div>`);
-    const mentorButton=$('#guidanceMoreButton');if(mentorButton&&window.HakunaGuidance?.role()==='mentor')mentorButton.style.display='';
-    $('[data-more-nav]').forEach(b=>b.onclick=()=>{currentPage=b.dataset.moreNav;closeModal();render();});
+    const role=window.HakunaGuidance?.role();
+    // Keep the compact menu in sync with the actual sidebar pages.
+    // Student guidance accounts only have their explicit, restricted pages.
+    const extras=NAV.slice(4).filter(([id])=>
+      (id!=='guidance'||role==='mentor') &&
+      (role!=='student'||id==='settings')
+    );
+    const descriptions={
+      questions:'Çözdürülecek soru havuzu',
+      books:'Fotoğraflı sorular ve PDF kitapçık',
+      analytics:'Çalışma ve deneme gelişimi',
+      guidance:'Ayzos ödev takibi',
+      suggestions:'Geri bildirim ve geliştirme fikirleri',
+      settings:'Hakuna Bridge ve yedek'
+    };
+    const buttons=extras.map(([id,icon,label])=>
+      '<button type="button" class="status-option" data-more-nav="'+id+'">'+
+        '<div class="status-emoji">'+icon+'</div>'+
+        '<div><strong>'+esc(label)+'</strong><span>'+esc(descriptions[id]||label)+'</span></div>'+
+      '</button>'
+    ).join('');
+    openModal('Daha fazla','Hakuna Matata','<div class="status-options">'+buttons+'</div>');
+    const root=$('#modalRoot');
+    // Bind ALL menu buttons, not only the first querySelector match.
+    $$('[data-more-nav]',root).forEach(button=>{
+      button.addEventListener('click',event=>{
+        event.preventDefault();
+        const next=button.dataset.moreNav;
+        if(!extras.some(([id])=>id===next))return;
+        closeModal();
+        currentPage=next;
+        render();
+      });
+    });
   }
 
   function injectExtraStyles() {
