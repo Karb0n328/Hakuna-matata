@@ -123,14 +123,23 @@ async function checkBrowser(browserType,label,mobile=false){
    await drag(.19,.18,.80,.78);
    const saved=await page.evaluate(async()=>{
      const form=document.querySelector('#questionForm');
-     const exists=await window.HakunaQuestionBooks.savePhoto(form,'ipad-test-question',false);
-     const blob=await window.HakunaQuestionBooks.getPhoto('ipad-test-question');
-     const img=new Image();
-     const u=URL.createObjectURL(blob);
-     await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;img.src=u;});
-     const size={exists,w:img.naturalWidth,h:img.naturalHeight};
-     URL.revokeObjectURL(u);return size;
+     let step='saving';
+     try{
+       const exists=await window.HakunaQuestionBooks.savePhoto(form,'ipad-test-question',false);
+       step='reading saved blob';
+       const blob=await window.HakunaQuestionBooks.getPhoto('ipad-test-question');
+       if(!blob)throw new Error('IndexedDB did not return processed image');
+       step='decoding saved blob';
+       const img=new Image();
+       const u=URL.createObjectURL(blob);
+       await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;img.src=u;});
+       const size={exists,w:img.naturalWidth,h:img.naturalHeight};
+       URL.revokeObjectURL(u);return size;
+     }catch(error){
+       return {error:step+': '+(error?.name||'unknown')+': '+(error?.message||String(error))};
+     }
    });
+   assert(!saved.error,'iPad crop save error: '+saved.error);
    assert(saved.exists,'Saved question has image');
    assert(saved.w>300&&saved.w<470&&saved.h>450&&saved.h<700,
      'Saved JPEG contains selected rotated pixels');
