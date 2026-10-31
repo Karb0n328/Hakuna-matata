@@ -169,10 +169,15 @@ async function checkBrowser(browserType,label,mobile=false){
      });
      const original=await get('ipad-test-question.original');
      const processed=await get('ipad-test-question');
-     db.close();return {originalSize:original?.size||0,processedSize:processed?.size||0};
+     db.close();return {
+       originalSize:original?.bytes?.byteLength||original?.size||0,
+       processedSize:processed?.bytes?.byteLength||processed?.size||0,
+       storageVersion:processed?.v||1
+     };
    });
    assert(afterReedit.originalSize>0&&afterReedit.processedSize>0,
      'Editing preserves original backup and updates cropped question');
+   assert.equal(afterReedit.storageVersion,2,'Safari-safe ArrayBuffer storage is used');
    assert(errors.length===0,'Unexpected page errors: '+errors.join('; '));
    console.log('PASS '+label+': visible canvas, bounded preview, selection, corner resize, move, rotation, crop save and re-edit');
  }finally{await context.close();await browser.close();}
