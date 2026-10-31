@@ -42,6 +42,21 @@ async function checkBrowser(browserType,label,mobile=false){
  page.on('pageerror',e=>errors.push(e.message));
  try{
    await page.goto(url,{waitUntil:'domcontentloaded'});
+   // The standalone test fixture must create the application's unrelated
+   // state store, otherwise its background sync callback throws a false error.
+   await page.evaluate(()=>new Promise((resolve,reject)=>{
+     const request=indexedDB.open('hakuna-matata-db',1);
+     request.onupgradeneeded=()=>{
+       if(!request.result.objectStoreNames.contains('app'))request.result.createObjectStore('app');
+     };
+     request.onerror=()=>reject(request.error);
+     request.onsuccess=()=>{
+       const db=request.result,tx=db.transaction('app','readwrite');
+       tx.objectStore('app').put({questions:[]},'state');
+       tx.oncomplete=()=>{db.close();resolve();};
+       tx.onerror=()=>reject(tx.error);
+     };
+   }));
    assert.equal(await page.locator('[data-book-canvas]').count(),1,'A single visible crop canvas is mounted');
    await page.evaluate(async()=>{
      const source=document.createElement('canvas');
