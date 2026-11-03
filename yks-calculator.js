@@ -30,9 +30,78 @@ const answersToNets=input=>Object.fromEntries(Object.keys(LIMITS).map(k=>[k,clam
 const normalizeNets=input=>Object.fromEntries(Object.keys(LIMITS).map(k=>[k,clamp(num(input[k]),-LIMITS[k]/4,LIMITS[k])]));
 function weightedIndex(input){const n=normalizeNets(input);return 1.32*(n.tytTurkce+n.tytMatematik)+1.36*(n.tytSosyal+n.tytFen)+3*n.aytMatematik+2.85*n.aytFizik+3.07*(n.aytKimya+n.aytBiyoloji)}
 const diplomaToOBP=v=>{const n=num(v);return n>=250?clamp(n,250,500):clamp(n,50,100)*5};
-function interpolateRank(year,score){const c=RANK_CURVES[year],s=num(score);if(s>=c[0][0])return c[0][1];if(s<=c.at(-1)[0])return c.at(-1)[1];for(let i=0;i<c.length-1;i++){const [hs,hr]=c[i],[ls,lr]=c[i+1];if(s<=hs&&s>=ls){const x=(hs-s)/(hs-ls);return Math.round(Math.exp(Math.log(hr)+x*(Math.log(lr)-Math.log(hr))))}}return c.at(-1)[1]}
-function calculate(input){const nets=Object.keys(input).some(k=>k.endsWith('Correct'))?answersToNets(input):normalizeNets(input);const obp=diplomaToOBP(input.diploma||85),contribution=obp*(input.penalty?.06:.12),weighted=weightedIndex(nets);return{nets,diploma:obp/5,obp,contribution,weighted,results:YEARS.map(year=>{const [m,b]=SCORE_MODELS[year],rawScore=clamp(b+m*weighted,100,500),placementScore=clamp(rawScore+contribution,100,560),rank=interpolateRank(year,placementScore),margin=Math.max(350,Math.round(rank*(rank<100000?.055:.075)));return{year,rawScore,placementScore,rank,rangeLow:Math.max(1,rank-margin),rangeHigh:rank+margin}})}}
-const api={YEARS,LIMITS,answersToNets,normalizeNets,weightedIndex,diplomaToOBP,interpolateRank,calculate};
+function rankDetails(year,score){
+ const curve=RANK_CURVES[year],s=Number(score);
+ if(!curve||!Number.isFinite(s)||s<115)return null;
+ if(s>=curve[0][0])return {
+  rank:curve[0][1],rangeLow:1,rangeHigh:curve[0][1],
+  method:s===curve[0][0]?'published-threshold':'above-published-range',
+  note:'550 ve üzerindeki ayrıntılı sıralama ÖSYM tablosunda yayımlanmıyor.'
+ };
+ const last=curve[curve.length-1];
+ if(s<=last[0])return {rank:last[1],rangeLow:last[1],rangeHigh:last[1],
+  method:'published-threshold',note:'Resmî puan eşiğindeki aday sayısıdır.'};
+ for(let i=0;i<curve.length-1;i++){
+  const [hiScore,hiCount]=curve[i],[loScore,loCount]=curve[i+1];
+  if(s===hiScore)return {rank:hiCount,rangeLow:hiCount,rangeHigh:hiCount,
+   method:'published-threshold',note:'Resmî puan eşiğindeki aday sayısıdır.'};
+  if(s===loScore)return {rank:loCount,rangeLow:loCount,rangeHigh:loCount,
+   method:'published-threshold',note:'Resmî puan eşiğindeki aday sayısıdır.'};
+  if(s<hiScore&&s>loScore){
+   const ratio=(hiScore-s)/(hiScore-loScore);
+   const rank=Math.round(Math.exp(Math.log(hiCount)+ratio*(Math.log(loCount)-Math.log(hiCount))));
+   return {rank,rangeLow:hiCount,rangeHigh:loCount,
+    method:'interpolated',
+    note:'Resmî puan eşikleri arasında hesaplanan yaklaşık sıra; aralık yalnız puanı kesin bilinen adayın eşik bandıdır.'};
+  }
+ }
+ return null;
+}
+function interpolateRank(year,score){
+ return rankDetails(year,score)?.rank??null;
+}
+function eligibleForSay(n){
+ // The minimum raw-score requirement is not a weighted average: both stages
+ // must be met independently. AYT science is the combined Fen test.
+ const tyt=n.tytTurkce>=0.5||n.tytMatematik>=0.5;
+ const ayt=n.aytMatematik>=0.5||
+   n.aytFizik+n.aytKimya+n.aytBiyoloji>=0.5;
+ return tyt&&ayt;
+}
+function calculate(input){
+ const nets=Object.keys(input).some(k=>k.endsWith('Correct'))?answersToNets(input):normalizeNets(input);
+ const obp=diplomaToOBP(input.diploma??85);
+ const contribution=obp*(input.penalty?.06:.12);
+ const weighted=weightedIndex(nets);
+ const eligible=eligibleForSay(nets);
+ const knownScore=Number(String(input.knownPlacementScore??'').replace(',','.'));
+ const knownYear=Number(input.knownScoreYear??2026);
+ const hasOfficialScore=String(input.knownPlacementScore??'').trim()!==''&&
+   Number.isFinite(knownScore)&&knownScore>=115&&knownScore<=560&&YEARS.includes(knownYear);
+ const results=YEARS.flatMap(year=>{
+  if(!eligible&&!(hasOfficialScore&&year===knownYear))return [];
+  const [m,b]=SCORE_MODELS[year];
+  const estimatedRaw=clamp(b+m*weighted,100,500);
+  const estimatedPlacement=clamp(estimatedRaw+contribution,100,560);
+  const isKnown=hasOfficialScore&&year===knownYear;
+  const placementScore=isKnown?knownScore:estimatedPlacement;
+  const rawScore=isKnown?null:estimatedRaw;
+  const details=rankDetails(year,placementScore);
+  if(!details)return [];
+  return [{
+   year,rawScore,placementScore,...details,
+   scoreSource:isKnown?'official-entered':'estimated',
+   rankSource:OFFICIAL_RANK_SOURCES[year]
+  }];
+ });
+ return {
+  nets,diploma:obp/5,obp,contribution,weighted,eligible,
+  hasOfficialScore,knownYear,results,
+  eligibilityMessage:eligible?'':'SAY puanı için TYT Türkçe veya Matematikte en az 0,5 net ve AYT Matematik veya Fen toplamında en az 0,5 net gerekir.',
+  limitation:'Netten SAY puanı tahminidir. Resmî sınav puanı değildir; gerçek test standart puanlarının tam dönüşümü bilinmeden adayın kesin puanı ve sırası çıkarılamaz.'
+ };
+}
+const api={YEARS,LIMITS,SCORE_MODELS,RANK_CURVES,OFFICIAL_SCORE_THRESHOLDS,OFFICIAL_RANK_SOURCES,answersToNets,normalizeNets,weightedIndex,diplomaToOBP,eligibleForSay,rankDetails,interpolateRank,calculate};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;if(!root||!root.document)return;root.HakunaYKS=api;
 const doc=root.document;let programs=Array.isArray(root.HAKUNA_YOK_PROGRAMS)?root.HAKUNA_YOK_PROGRAMS:[];
 let active=false,lastCalculation=null,programLoadPromise=null,atlasError='',selectedTarget='Hemşirelik';
