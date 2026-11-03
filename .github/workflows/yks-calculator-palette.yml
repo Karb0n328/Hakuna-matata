@@ -2,13 +2,19 @@ name: YKS Calculator Palette Regression
 on:
   push:
     paths:
+      - yks-calculator.js
       - yks-calculator.css
+      - index.html
+      - tests/yks-official-rank-engine.test.cjs
       - yks-calculator-theme.css
       - tests/yks-calculator-theme.test.mjs
       - .github/workflows/yks-calculator-palette.yml
   pull_request:
     paths:
+      - yks-calculator.js
       - yks-calculator.css
+      - index.html
+      - tests/yks-official-rank-engine.test.cjs
       - yks-calculator-theme.css
       - tests/yks-calculator-theme.test.mjs
       - .github/workflows/yks-calculator-palette.yml
@@ -26,6 +32,10 @@ jobs:
           node-version: "22"
       - name: Syntax-check browser test
         run: node --check tests/yks-calculator-theme.test.mjs
+      - name: Verify 115 official Y-SAY points and calculation eligibility
+        run: |
+          node --check yks-calculator.js
+          node tests/yks-official-rank-engine.test.cjs
       - name: Install Playwright
         run: npm install --no-save --ignore-scripts playwright@1.56.1
       - name: Install Chromium and iOS WebKit

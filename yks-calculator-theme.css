@@ -146,3 +146,19 @@ html[data-batu-theme="dark"] :is(
   .yks-main-rank>strong,.yks-score-pair b,.yks-program-table td>strong,
   .yks-year-card-top>strong,.yks-obp-chip strong
 ){color:#f2f3f5!important}
+
+
+/* Score-methodology notice across default, Kırmızı and Dark palettes. */
+.yks-method-note{
+ margin:12px 16px 16px;padding:13px 15px;border-radius:12px;
+ background:#f1f5fa;border:1px solid #dde5ef;
+ color:#46556a;font-size:.84rem;line-height:1.65;
+}
+.yks-result-note{display:block;padding:0 15px 14px;color:var(--muted,#64748b);font-size:.73rem;line-height:1.5}
+html:is([data-hakuna-palette="republic"],.republic-day-2026) .yks-method-note{
+ background:#fff1f3;border-color:#f3cbd3;color:#843445;
+}
+html[data-batu-theme="dark"] .yks-method-note{
+ background:#1c222a;border-color:#39424e;color:#cad2dc;
+}
+html[data-batu-theme="dark"] .yks-result-note{color:#aab5c4}
