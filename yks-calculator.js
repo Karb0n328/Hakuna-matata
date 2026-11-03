@@ -5,12 +5,25 @@ const LIMITS={tytTurkce:40,tytSosyal:20,tytMatematik:40,tytFen:20,aytMatematik:4
 const LABELS={tytTurkce:'Türkçe',tytSosyal:'Sosyal Bilimler',tytMatematik:'Temel Matematik',tytFen:'Fen Bilimleri',aytMatematik:'Matematik',aytFizik:'Fizik',aytKimya:'Kimya',aytBiyoloji:'Biyoloji'};
 const GROUPS={tyt:['tytTurkce','tytSosyal','tytMatematik','tytFen'],ayt:['aytMatematik','aytFizik','aytKimya','aytBiyoloji']};
 const SCORE_MODELS={2022:[.9399,125.03],2023:[.9316,128.99],2024:[.9363,129.57],2025:[.9236,131.77],2026:[.95784391,122.03585]};
+/* ÖSYM published Y-SAY cumulative placement-score distribution, p.13 (0-based page 12).
+   Each entry is count of candidates with Y-SAY ≥ listed score.
+   These are official observations, NOT the exact rank of a specific candidate.
+   Interpolation between rows remains an estimate.
+   Sources: 2022: https://dokuman.osym.gov.tr/pdfdokuman/2022/YKS/sayisalbilgiler18072022.pdf
+   2023: https://dokuman.osym.gov.tr/pdfdokuman/2023/YKS/sayisalbilgiler20072023.pdf
+   2024: https://dokuman.osym.gov.tr/pdfdokuman/2024/YKS/sayisalbilgiler16072024.pdf
+   2025: https://dokuman.osym.gov.tr/pdfdokuman/2025/YKS/sayisalbilgiler_tayd21072025.pdf
+   2026: https://dokuman.osym.gov.tr/pdfdokuman/2026/YKS/SB/sayisal_ykdd21072026.pdf
+*/
+const OFFICIAL_SCORE_THRESHOLDS=[550,530,510,490,470,450,430,410,390,370,350,330,310,290,270,250,230,210,190,170,150,130,115];
+const OFFICIAL_RANK_SOURCES={"2022":"https://dokuman.osym.gov.tr/pdfdokuman/2022/YKS/sayisalbilgiler18072022.pdf","2023":"https://dokuman.osym.gov.tr/pdfdokuman/2023/YKS/sayisalbilgiler20072023.pdf","2024":"https://dokuman.osym.gov.tr/pdfdokuman/2024/YKS/sayisalbilgiler16072024.pdf","2025":"https://dokuman.osym.gov.tr/pdfdokuman/2025/YKS/sayisalbilgiler_tayd21072025.pdf","2026":"https://dokuman.osym.gov.tr/pdfdokuman/2026/YKS/SB/sayisal_ykdd21072026.pdf"};
 const RANK_CURVES={
-2022:[[560,1],[520,6500],[498.56,18383],[460.92,47168],[417.70,87114],[380,145000],[340,235000],[300,385000],[250,650000],[180,1100000],[100,1450000]],
-2023:[[560,1],[520,7000],[499.70,18721],[462.32,47105],[419.55,88077],[380,150000],[340,245000],[300,410000],[250,690000],[180,1160000],[100,1500000]],
-2024:[[560,1],[520,4300],[501.87,9760],[464.29,28790],[421.32,61844],[380,115000],[340,205000],[300,360000],[250,640000],[180,1120000],[100,1480000]],
-2025:[[560,1],[520,5000],[499.72,11214],[462.34,35432],[420.27,75677],[380,135000],[340,230000],[300,395000],[250,690000],[180,1180000],[100,1550000]],
-2026:[[560,1],[537.27,1797],[501.67,18357],[460,58000],[411.94,102900],[380,145000],[353.78,184422],[320,290000],[280,500000],[230,780000],[180,1050000],[100,1135718]]};
+ 2022: [[550,158],[530,3124],[510,11514],[490,24295],[470,39660],[450,56594],[430,74846],[410,95207],[390,117745],[370,144116],[350,175948],[330,215369],[310,264371],[290,326592],[270,407612],[250,521061],[230,691818],[210,931300],[190,1202733],[170,1398870],[150,1429347],[130,1429832],[115,1429833]],
+ 2023: [[550,231],[530,4106],[510,12729],[490,25220],[470,40564],[450,58212],[430,77195],[410,98718],[390,123578],[370,152827],[350,188759],[330,234032],[310,292003],[290,368410],[270,469700],[250,610788],[230,810947],[210,1063434],[190,1312454],[170,1475827],[150,1499955],[130,1500309],[115,1500310]],
+ 2024: [[550,162],[530,2271],[510,7029],[490,14673],[470,25274],[450,38578],[430,54307],[410,72418],[390,93485],[370,118001],[350,148110],[330,185681],[310,234882],[290,300531],[270,392302],[250,531055],[230,746123],[210,1000554],[190,1208531],[170,1300183],[150,1306920],[130,1307007],[115,1307007]],
+ 2025: [[550,57],[530,1930],[510,7081],[490,16140],[470,29410],[450,46142],[430,65449],[410,87117],[390,111498],[370,139619],[350,174355],[330,217778],[310,274252],[290,348397],[270,449880],[250,596635],[230,811201],[210,1052783],[190,1228141],[170,1287932],[150,1291491],[130,1291531],[115,1291531]],
+ 2026: [[550,154],[530,3500],[510,12887],[490,27402],[470,44919],[450,63669],[430,83511],[410,105112],[390,129485],[370,157778],[350,191247],[330,232317],[310,282213],[290,344726],[270,425443],[250,533920],[230,681176],[210,858167],[190,1019046],[170,1117304],[150,1135198],[130,1135713],[115,1135718]]
+};
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
 const num=v=>{const n=Number(String(v??'').replace(',','.'));return Number.isFinite(n)?n:0};
 const answersToNets=input=>Object.fromEntries(Object.keys(LIMITS).map(k=>[k,clamp(num(input[k+'Correct'])-num(input[k+'Wrong'])/4,-LIMITS[k]/4,LIMITS[k])]));
