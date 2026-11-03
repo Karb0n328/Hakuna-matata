@@ -1,0 +1,148 @@
+/*
+  YKS sıralama hesaplayıcısı — Tema uyumu
+  Theme selectors are scoped to this feature: blue stays blue, Kırmızı gets
+  burgundy/coral, and Dark is neutral charcoal. No change to calculations.
+*/
+html[data-hakuna-palette="republic"] .yks-hero,
+html.republic-day-2026 .yks-hero{
+  background:
+    radial-gradient(circle at 95% 10%,rgba(255,137,149,.22) 0,transparent 40%),
+    linear-gradient(135deg,#790b1c 0%,#af1630 55%,#6e0c1c 100%)!important;
+  color:#fff!important;
+}
+html:is([data-hakuna-palette="republic"],.republic-day-2026) .yks-hero p{color:#ffe0e4!important}
+html:is([data-hakuna-palette="republic"],.republic-day-2026) .yks-hero .yks-kicker{color:#ffd9df!important}
+html:is([data-hakuna-palette="republic"],.republic-day-2026) .yks-year-stack span{
+  color:#fff4f5;border-color:rgba(255,212,220,.32);
+  background:rgba(255,255,255,.09);
+}
+html:is([data-hakuna-palette="republic"],.republic-day-2026) .yks-data-pill{
+  color:#961329;background:#fff0f2;border-color:#efc0c8;
+}
+html:is([data-hakuna-palette="republic"],.republic-day-2026) :is(
+  .yks-section-head>div>span,.yks-live-net strong,.yks-empty-icon
+){
+  color:#a7112b;background:#ffe9ed;
+}
+html:is([data-hakuna-palette="republic"],.republic-day-2026) :is(
+  .yks-section-head>strong,.yks-score-pair div
+){
+  color:#854454;background:#fff0f2;
+}
+html:is([data-hakuna-palette="republic"],.republic-day-2026) :is(
+  .yks-answer-field,.yks-check,.yks-obp-chip,.yks-legend span
+){
+  background:#fffafa;border-color:#efd7dc;
+}
+html:is([data-hakuna-palette="republic"],.republic-day-2026) :is(
+  .yks-answer-inputs input,.yks-control input,.yks-control select
+){
+  background:#fff;border-color:#e9cdd4;
+}
+html:is([data-hakuna-palette="republic"],.republic-day-2026) :is(
+  .yks-answer-inputs input,.yks-control input,.yks-control select
+):focus{
+  border-color:#c2203a!important;
+  outline-color:#c2203a!important;
+  box-shadow:0 0 0 3px #ffe3e9!important;
+}
+html:is([data-hakuna-palette="republic"],.republic-day-2026) .yks-check input{accent-color:#ba1731}
+html:is([data-hakuna-palette="republic"],.republic-day-2026) .yks-university-intro{
+  background:linear-gradient(135deg,#fff9fa,#ffe9ed)!important;
+}
+html:is([data-hakuna-palette="republic"],.republic-day-2026) .yks-program-table th{
+  color:#865261;background:#fff0f2;
+}
+html:is([data-hakuna-palette="republic"],.republic-day-2026) :is(
+  .yks-program-meta,.yks-data-note
+){background:#fff7f8;color:#845661}
+html:is([data-hakuna-palette="republic"],.republic-day-2026) :is(
+  .yks-program-table td,.yks-program-table th
+){border-bottom-color:#f2dfe3}
+html:is([data-hakuna-palette="republic"],.republic-day-2026) .yks-data-note a{color:#b21430}
+html:is([data-hakuna-palette="republic"],.republic-day-2026) .yks-kicker{color:#b21935}
+html:is([data-hakuna-palette="republic"],.republic-day-2026) .yks-atlas-spinner{
+  border-color:#f9d9e0;border-top-color:#b91e37;
+}
+html:is([data-hakuna-palette="republic"],.republic-day-2026) .yks-year-card.is-current{
+  background:linear-gradient(145deg,#fff,#fff0f2);
+}
+html:is([data-hakuna-palette="republic"],.republic-day-2026) .yks-year-card.is-current::before{
+  background:#bf2940;
+}
+html:is([data-hakuna-palette="republic"],.republic-day-2026) .yks-year-card-top>span{
+  background:#ffe5e9;color:#9b1b32;
+}
+
+/* Dark is deliberately neutral, not the blue hero carried from the default. */
+html[data-batu-theme="dark"] .yks-hero{
+  background:
+    radial-gradient(circle at 95% 10%,rgba(130,138,148,.13) 0,transparent 41%),
+    linear-gradient(135deg,#11151b 0%,#242a32 55%,#101216 100%)!important;
+  color:#f4f5f7!important;
+}
+html[data-batu-theme="dark"] .yks-hero p{color:#bbc2cc!important}
+html[data-batu-theme="dark"] .yks-kicker{color:#dadde3!important}
+html[data-batu-theme="dark"] .yks-year-stack span{
+  color:#e3e7eb;background:#ffffff0d;border-color:#46505b;
+}
+html[data-batu-theme="dark"] .yks-data-pill{
+  color:#e8ecf0!important;background:#22272e!important;border-color:#39414c!important;
+}
+html[data-batu-theme="dark"] :is(
+  .yks-section-head>div>span,.yks-live-net strong,.yks-empty-icon
+){
+  color:#f3f4f6!important;background:#30363e!important;
+}
+html[data-batu-theme="dark"] :is(
+  .yks-section-head>strong,.yks-score-pair div,.yks-year-card-top>span
+){
+  color:#cbd0d7!important;background:#232831!important;
+}
+html[data-batu-theme="dark"] :is(
+  .yks-answer-field,.yks-check,.yks-obp-chip,.yks-legend span
+){
+  color:#eceff2!important;background:#181c22!important;border-color:#303741!important;
+}
+html[data-batu-theme="dark"] :is(
+  .yks-answer-inputs input,.yks-control input,.yks-control select
+){
+  background:#11151a!important;border-color:#39414c!important;color:#f0f2f5!important;
+}
+html[data-batu-theme="dark"] :is(
+  .yks-answer-inputs input,.yks-control input,.yks-control select
+):focus{
+  border-color:#aeb8c5!important;
+  outline-color:#aeb8c5!important;
+  box-shadow:0 0 0 3px rgba(183,192,203,.15)!important;
+}
+html[data-batu-theme="dark"] .yks-check input{accent-color:#dfe3e8}
+html[data-batu-theme="dark"] :is(
+  .yks-answer-title span,.yks-answer-inputs label span,.yks-live-net span,
+  .yks-control>span,.yks-control small,.yks-main-rank small,.yks-program-table td>span
+){color:#a6b0bd!important}
+html[data-batu-theme="dark"] .yks-university-intro{
+  background:linear-gradient(135deg,#181d24,#242a32)!important;
+  border-bottom:1px solid #343b46;
+}
+html[data-batu-theme="dark"] :is(
+  .yks-program-meta,.yks-data-note,.yks-program-table th
+){
+  color:#b9c2ce!important;background:#1b2027!important;
+}
+html[data-batu-theme="dark"] :is(
+  .yks-program-table td,.yks-program-table th
+){border-bottom-color:#30363e!important}
+html[data-batu-theme="dark"] .yks-data-note{border-top-color:#343c46!important}
+html[data-batu-theme="dark"] .yks-data-note a{color:#e1e6ed!important}
+html[data-batu-theme="dark"] .yks-atlas-spinner{
+  border-color:#373e48;border-top-color:#e6e8ec;
+}
+html[data-batu-theme="dark"] .yks-year-card.is-current{
+  background:linear-gradient(145deg,#191d23,#20262c)!important;
+}
+html[data-batu-theme="dark"] .yks-year-card.is-current::before{background:#e4e7ec}
+html[data-batu-theme="dark"] :is(
+  .yks-main-rank>strong,.yks-score-pair b,.yks-program-table td>strong,
+  .yks-year-card-top>strong,.yks-obp-chip strong
+){color:#f2f3f5!important}

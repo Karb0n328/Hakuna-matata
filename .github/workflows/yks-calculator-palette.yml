@@ -1,0 +1,34 @@
+name: YKS Calculator Palette Regression
+on:
+  push:
+    paths:
+      - yks-calculator.css
+      - yks-calculator-theme.css
+      - tests/yks-calculator-theme.test.mjs
+      - .github/workflows/yks-calculator-palette.yml
+  pull_request:
+    paths:
+      - yks-calculator.css
+      - yks-calculator-theme.css
+      - tests/yks-calculator-theme.test.mjs
+      - .github/workflows/yks-calculator-palette.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  palette-browser-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Syntax-check browser test
+        run: node --check tests/yks-calculator-theme.test.mjs
+      - name: Install Playwright
+        run: npm install --no-save --ignore-scripts playwright@1.56.1
+      - name: Install Chromium and iOS WebKit
+        run: npx playwright install --with-deps chromium webkit
+      - name: Test red, dark and blue themes in live YKS calculator
+        run: node tests/yks-calculator-theme.test.mjs
