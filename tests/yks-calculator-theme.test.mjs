@@ -50,6 +50,8 @@ async function test(browserType,view,label){
  try{
   await page.goto(url,{waitUntil:'domcontentloaded'});
   await page.locator('[data-yks-nav]').click();
+  await page.locator('[name="tytTurkceCorrect"]').fill('3');
+  await page.locator('[name="aytMatematikCorrect"]').fill('3');
   await page.locator('button.yks-submit').click();
   await page.locator('.yks-university-intro').waitFor();
   const capture=async palette=>{
