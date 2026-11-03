@@ -93,22 +93,25 @@ async function test(browserType,view,label){
   const backToBlue=await capture('blue');
   assert.deepEqual(backToBlue.hero,blue.hero,label+': returning to Mavi should restore original hero');
   assert.deepEqual(backToBlue.pill,blue.pill,label+': returning to Mavi should restore original pill');
-  // Official Y-SAY overrides unknown net-based score in the selected year.
+  assert.equal(await page.locator('[name="knownPlacementScore"]').count(),0,
+    'Removed official score field must not appear');
+  assert.equal(await page.locator('[name="knownScoreYear"]').count(),0,
+    'Removed score year selector must not appear');
+  assert.equal(await page.locator('#yksResults .yks-year-card').count(),5,
+    'Normal net inputs still show five estimated years');
+  assert.equal(await page.locator('#yksResults .yks-accuracy-note').count(),1,
+    'Only one brief accuracy note remains');
+  assert.equal(await page.locator('#yksResults .yks-main-rank small').count(),0,
+    'Do not repeat unsupported rank ranges under each year');
+  assert.equal(await page.locator('#yksResults .yks-result-note').count(),0,
+    'Do not repeat technical notes under every card');
   await page.locator('[name="tytTurkceCorrect"]').fill('');
   await page.locator('[name="aytMatematikCorrect"]').fill('');
-  await page.locator('[name="knownPlacementScore"]').fill('530');
-  await page.locator('[name="knownScoreYear"]').selectOption('2026');
-  await page.locator('button.yks-submit').click();
-  assert.equal(await page.locator('#yksResults .yks-year-card').count(),1,
-    'Known official score without nets must produce only its own year');
-  const official=await page.locator('#yksResults .yks-main-rank strong').first().textContent();
-  assert.equal(official?.trim(),'3.500','2026 official Y-SAY 530 score should map to official rank threshold');
-  await page.locator('[name="knownPlacementScore"]').fill('');
   await page.locator('button.yks-submit').click();
   assert.equal(await page.locator('#yksResults .yks-year-card').count(),0,
     'Blank ineligible candidate must not get arbitrary ranking');
   assert(await page.locator('#yksResults').textContent().then(t=>t.includes('SAY puanı hesaplanamaz')),
-    'Ineligible condition should show explanation');
+    'Ineligible condition should show one concise explanation');
   assert.equal(errors.length,0,label+' runtime errors: '+errors.join('; '));
   console.log('PASS '+label+': Mavi retained; Kırmızı and Dark hero, YÖK badge, focus, net, tables, current year update live');
  }finally{await ctx.close();await browser.close();}
