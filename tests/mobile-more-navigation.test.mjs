@@ -59,7 +59,7 @@ async function scenario(browserType,contextProps,label,role){
    const nav=page.locator('#bottomNav [data-nav="more"]');
    assert(await nav.isVisible(),'The More tab must be visible in '+label);
    const extras=['questions','books','rooms','analytics','suggestions','settings'];
-   if(role==='mentor')extras.splice(3,0,'guidance');
+   if(role==='mentor')extras.splice(4,0,'guidance');
    const names={
      questions:'Sorular',books:'Soru Kitaplığım',rooms:'Odalar',analytics:'Analiz',
      guidance:'Rehberlik',suggestions:'Öneriler',settings:'Ayarlar'
