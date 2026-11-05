@@ -104,6 +104,7 @@ window.HakunaAccount=Object.freeze({
   roomRpc:async(name,args={})=>{
     const allowed=['study_room_create','study_room_join','study_room_leave','study_room_settings',
       'study_room_set_phase','study_room_start','study_room_stop','study_room_close',
+      'study_room_touch','study_room_create_v2','study_room_configure',
       'study_room_overview','study_room_snapshot'];
     if(!allowed.includes(name))throw new Error('Geçersiz çalışma odası işlemi.');
     if(!user?.id)throw new Error('Çalışma odaları için Hakuna hesabına giriş yap.');
