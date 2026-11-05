@@ -3,6 +3,7 @@
   'use strict';
   let host=null,roomId=null,snapshot=null,unsubscribe=null,poll=null,clock=null;
   let loading=false,busy=false,epoch=0,skewMs=0,lastUser=null,realtimeDelay=null;
+  let heartbeat=null,personalTasks=[],selectedTask='',starting=false,countdownTimeout=null;
   const E=(value='')=>String(value==null?'':value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const id=()=>window.HakunaAccount?.info?.().id||null;
   const rpc=(name,args={})=>{
@@ -32,10 +33,11 @@
   function clearLoops(){
     if(unsubscribe){unsubscribe();unsubscribe=null;}
     clearInterval(poll);clearInterval(clock);clearTimeout(realtimeDelay);
-    poll=null;clock=null;realtimeDelay=null;loading=false;
+    clearInterval(heartbeat);clearTimeout(countdownTimeout);
+    poll=null;clock=null;heartbeat=null;realtimeDelay=null;countdownTimeout=null;starting=false;loading=false;
   }
   function leaveView(){
-    clearLoops();epoch++;host=null;roomId=null;snapshot=null;busy=false;
+    clearLoops();epoch++;host=null;roomId=null;snapshot=null;busy=false;personalTasks=[];selectedTask='';
   }
   function notice(message,isError=false){
     const n=host?.querySelector('[data-sr-notice]');
@@ -90,7 +92,7 @@
       +'<p data-sr-notice hidden role="status"></p></div>';
   }
   function showLobby(){
-    clearLoops();roomId=null;snapshot=null;epoch++;
+    clearLoops();roomId=null;snapshot=null;epoch++;personalTasks=[];selectedTask='';
     if(!active())return;
     host.innerHTML=lobbyMarkup();
     const code=new URLSearchParams(location.search).get('room');
@@ -140,14 +142,19 @@
   }
   function openRoom(next){
     if(!active())return;
-    clearLoops();roomId=next;snapshot=null;epoch++;host.innerHTML=roomMarkup();
-    void loadRoom();
+    clearLoops();roomId=next;snapshot=null;epoch++;personalTasks=[];selectedTask='';host.innerHTML=roomMarkup();
+    void loadRoom();void loadPersonalTasks();void touchRoom();
+    heartbeat=setInterval(()=>{if(document.visibilityState==='visible')void touchRoom();},25000);
     unsubscribe=window.HakunaAccount?.roomListen?.(roomId,()=>{
       clearTimeout(realtimeDelay);
       realtimeDelay=setTimeout(()=>{if(active()&&roomId===next)void loadRoom();},300);
     })||null;
     poll=setInterval(()=>{if(document.visibilityState==='visible')void loadRoom();},12000);
     clock=setInterval(tick,1000);
+  }
+  async function touchRoom(){
+    if(!active()||!roomId||!navigator.onLine)return;
+    try{await rpc('study_room_touch',{p_room_id:roomId});}catch(error){console.warn('Room presence',error);}
   }
   async function loadRoom(){
     if(!active()||!roomId||loading)return;
@@ -162,6 +169,37 @@
     }catch(error){
       if(ticket===epoch&&active())notice(error?.message||'Oda bilgileri alınamadı.',true);
     }finally{if(ticket===epoch)loading=false;}
+  }
+
+  function currentISO(){
+    const d=new Date(),y=d.getFullYear();
+    return y+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  async function loadPersonalTasks(){
+    const ticket=epoch;
+    try{
+      const state=await new Promise((resolve,reject)=>{
+        if(!indexedDB?.open){resolve(null);return;}
+        const req=indexedDB.open('hakuna-matata-db',1);
+        req.onerror=()=>reject(req.error||new Error('Local state unavailable'));
+        req.onsuccess=()=>{
+          const db=req.result;
+          if(!db.objectStoreNames.contains('app')){db.close();resolve(null);return;}
+          const tx=db.transaction('app','readonly');
+          const read=tx.objectStore('app').get('state');
+          read.onsuccess=()=>{db.close();resolve(read.result||null);};
+          read.onerror=()=>{db.close();reject(read.error);};
+        };
+      });
+      if(ticket!==epoch||!active()||!roomId)return;
+      const today=currentISO();
+      const entries=[
+        ...(state?.blocks||[]).filter(b=>b.date===today).map(b=>b.title),
+        ...(state?.tasks||[]).filter(t=>!t.completed).map(t=>t.title)
+      ].map(v=>String(v||'').trim()).filter(v=>v&&v.length<=90);
+      personalTasks=[...new Set(entries)].slice(0,40);
+      if(snapshot)drawSnapshot();
+    }catch{personalTasks=[];}
   }
   function liveSeconds(m,now){
     let value=seconds(m.seconds);
