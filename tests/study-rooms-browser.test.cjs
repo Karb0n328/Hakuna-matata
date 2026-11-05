@@ -1,10 +1,9 @@
 const assert=require('node:assert/strict');
 const {createServer}=require('node:http');
-const fs=require('node:fs/promises');
+const fs=require('node:fs');
 const {chromium,webkit}=require('playwright');
 const files={};
-for(const name of ['styles.css','study-rooms.css','study-rooms.js'])files[name]=awaitText(name);
-async function awaitText(name){return fs.readFile(require('node:path').join(__dirname,'..',name),'utf8');}
+for(const name of ['styles.css','study-rooms.css','study-rooms.js'])files[name]=fs.readFileSync(require('node:path').join(__dirname,'..',name),'utf8');
 const fixture=[
   '<!doctype html><html lang="tr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
   '<link href="/styles.css" rel="stylesheet"><link href="/study-rooms.css" rel="stylesheet">',
@@ -84,8 +83,8 @@ const server=createServer((req,res)=>{
     await page.waitForFunction(()=>document.querySelector('[data-sr-room-meta]')?.textContent.includes('40 dk'));
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2);
     assert.equal(overflow,false,'study room must not overflow viewport at '+width);
-    await page.locator('[data-sr-action=close]').click({force:true});
     page.once('dialog',dialog=>dialog.accept());
+    await page.locator('[data-sr-action=close]').click();
     // browser dialog may race the click above, so wait for room list after it resolves.
     await page.locator('[data-sr-form=create]').waitFor({timeout:10000});
     assert.equal(errors.length,0,'Page errors: '+errors.join(', '));
