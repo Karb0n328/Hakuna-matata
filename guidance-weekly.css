@@ -1,5 +1,20 @@
 
 /* Weekly paper-planner inspired layout */
+.gw-mentor .gw-item{flex-wrap:wrap;gap:7px}
+.gw-mentor .gw-item-info{flex-basis:calc(100% - 36px)}
+.gw-mentor .gw-item-actions{width:100%;justify-content:flex-end;gap:5px}
+.gw-mentor .gw-item-actions button{min-width:32px;min-height:34px;font-size:17px}
+.gw-mentor .gw-item-actions .gw-drag-handle{margin-right:auto;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+.gw-drag-handle:focus-visible{outline:2px solid var(--accent,#7056d7);outline-offset:2px}
+.gw-mentor .gw-day-items{align-content:start;flex:1;min-height:80px}
+.gw-day.gw-drop-target{outline:2px solid var(--accent,#7056d7);outline-offset:-2px;box-shadow:inset 0 0 0 4px #a898ef33}
+.gw-drag-source{opacity:.3}
+.gw-item.gw-drag-ghost{position:fixed;top:0;left:0;z-index:100000;pointer-events:none;box-sizing:border-box;display:flex;flex-wrap:wrap;box-shadow:0 14px 35px #0003;will-change:transform;opacity:.96}
+.gw-drag-ghost .gw-item-info{flex-basis:calc(100% - 40px)}
+.gw-drag-ghost .gw-item-actions{display:none}
+.gw-is-dragging,.gw-is-dragging *{cursor:grabbing!important;user-select:none!important;-webkit-user-select:none!important}
+.gw-operation-status{min-height:18px;color:var(--ink);font-size:12px}
+.gw-saving button{opacity:.6}
 .gw-shell{display:grid;gap:18px;max-width:1450px;margin:auto;color:var(--ink)}
 .gw-top{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
 .gw-top h2{font-size:clamp(23px,3vw,33px);margin:6px 0;letter-spacing:-.04em}.gw-top p{font-size:13px;color:var(--muted);margin:0}
@@ -29,3 +44,5 @@
 
 .gw-day-count{display:block;margin-top:5px;color:#3c8762!important;font-size:10px!important;font-weight:800}.gw-mentor-status{display:inline-block;font-size:10px;font-weight:800;border-radius:7px;padding:4px 6px;margin-top:7px}.gw-mentor-status.done{background:#d9f7e3;color:#217347}.gw-mentor-status.waiting{background:#f5e8df;color:#a66b39}
 .suggestion-reply-list{display:grid;gap:12px;margin-bottom:18px}.suggestion-reply-card{display:flex;align-items:flex-start;gap:12px;position:relative;padding:19px 45px 18px 17px;border-radius:17px;background:linear-gradient(115deg,#f1edff,#e8f6ff);border:1px solid #cfc8f5;box-shadow:0 7px 24px rgba(96,88,160,.09);color:#263252}.suggestion-reply-icon{font-size:24px}.suggestion-reply-content{min-width:0}.suggestion-reply-content strong{font-size:16px;display:block;margin-bottom:7px}.suggestion-reply-content p{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.55;margin:0 0 12px}.suggestion-reply-content small{font-size:11px;line-height:1.5;opacity:.75;display:block;overflow-wrap:anywhere}.suggestion-reply-close{position:absolute;top:10px;right:10px;width:32px;height:32px;display:grid;place-items:center;border:1px solid #d2caec;border-radius:9px;background:#fff;color:#3c3c65;font-size:23px;cursor:pointer}.suggestion-reply-close:disabled{opacity:.5}
+
+.gw-mentor .gw-grid{grid-template-columns:repeat(7,minmax(220px,1fr))}
