@@ -1030,6 +1030,9 @@ YANIT KURALI
     try { await openDB(); state=(await dbGet(STATE_KEY))||defaultState(); }
     catch { state=defaultState(); toast('Yerel veritabanı açılamadı; bu oturum geçici olabilir.'); }
     state.selectedDate=todayISO();
+    // Room invite links open the Odalar page and prefill the invite code.
+    const sharedCode=new URLSearchParams(location.search).get('room');
+    if(sharedCode&&/^[A-Fa-f0-9]{18}$/.test(sharedCode))currentPage='rooms';
     render();
     let lastGuidanceRole=window.HakunaGuidance?.role();
     setInterval(()=>{const nextRole=window.HakunaGuidance?.role();if(nextRole!==lastGuidanceRole){lastGuidanceRole=nextRole;render();}},1200);
