@@ -73,6 +73,7 @@
       +'<div class="sr-forms"><form class="sr-panel" data-sr-form="create">'
       +'<div class="sr-panel-title">✨ Yeni oda oluştur</div>'
       +'<label>Odanın adı<input name="name" type="text" maxlength="60" minlength="3" placeholder="Örn. Kütüphane Ekibi" autocomplete="off" required></label>'
+      +'<label>Oda düzeni<select name="mode" class="sr-mode-select"><option value="shared">⏳ Ortak etüt · birlikte başla</option><option value="free">🌿 Serbest etüt · herkes kendi hızında</option></select></label>'
       +'<div class="sr-form-row"><label>Etüt (dk)<input name="focus" type="number" min="5" max="180" value="50" required></label>'
       +'<label>Mola (dk)<input name="break" type="number" min="1" max="60" value="10" required></label></div>'
       +'<button type="submit" class="primary-btn sr-cta">Odayı oluştur</button></form>'
@@ -83,7 +84,7 @@
       +'<div class="sr-section-head"><h3>Odalarım</h3><button type="button" class="secondary-btn" data-sr-action="refresh">Yenile</button></div>'
       +'<div class="sr-room-list" data-sr-list><div class="sr-loading">Odalar yükleniyor…</div></div>'
       +'<p class="sr-note" data-sr-notice hidden role="status"></p>'
-      +'<p class="sr-footnote">Süreler sunucuda kaydedilir. Yalnızca Etüde başla dediğinde çalışman sayılır; mola sayılmaz.</p></div>';
+      +'<p class="sr-footnote">Ortak modda herkes aynı etüt/mola turuna katılır. Serbest modda herkes kendi süresini başlatır. Molalar ve çalışmadığın zamanlar toplamına eklenmez.</p></div>';
   }
   function loginMarkup(){
     return '<div class="sr-shell sr-login"><div class="sr-login-icon">📚</div><h2>Arkadaşlarla çalışmaya hazır mısın?</h2>'
@@ -113,7 +114,7 @@
       host.querySelector('[data-sr-list]').innerHTML=items.length?items.map(r=>
         '<button class="sr-room-item" type="button" data-sr-action="open" data-id="'+E(r.id)+'">'
         +'<span class="sr-room-bubble">📚</span><span class="sr-room-info"><strong>'+E(r.name)+'</strong>'
-        +'<small>'+Number(r.member_count)+' üye · '+Number(r.focus_minutes)+'/'+Number(r.break_minutes)+' dk</small></span>'
+        +'<small>'+(r.mode==='free'?'🌿 Serbest':'⏳ Ortak')+' · '+Number(r.member_count)+' üye · '+Number(r.focus_minutes)+'/'+Number(r.break_minutes)+' dk</small></span>'
         +'<span class="sr-room-go">Giriş →</span></button>'
       ).join(''):'<div class="sr-empty">Henüz odan yok. Bir oda kur veya arkadaşının davet kodunu gir. 🌱</div>';
       notice('');
@@ -124,7 +125,7 @@
   function roomMarkup(){
     return '<div class="sr-shell sr-room">'
       +'<header class="sr-room-header"><button type="button" class="secondary-btn" data-sr-action="back">← Odalarım</button>'
-      +'<div class="sr-room-heading"><span class="sr-kicker">BİRLİKTE ETÜT</span><h2 data-sr-room-title>Oda açılıyor…</h2>'
+      +'<div class="sr-room-heading"><span class="sr-kicker" data-sr-room-mode>BİRLİKTE ETÜT</span><h2 data-sr-room-title>Oda açılıyor…</h2>'
       +'<div class="sr-room-sub" data-sr-room-meta></div></div>'
       +'<div class="sr-invite"><span data-sr-invite>••••••••</span><button type="button" data-sr-action="copy" class="secondary-btn">Davet bağlantısını kopyala</button></div></header>'
       +'<div class="sr-room-grid"><section class="sr-session-card">'
@@ -138,6 +139,7 @@
       +'<span class="sr-live-mark">● Canlı</span></div><div class="sr-roster" data-sr-roster><div class="sr-loading">Katılımcılar yükleniyor…</div></div>'
       +'<p class="sr-friends-tip">📖 Birisi etüde başladığında masasındaki kitap hareketlenir.</p></section></div>'
       +'<div class="sr-room-footer" data-sr-footer></div>'
+      +'<div class="sr-countdown" data-sr-countdown hidden aria-live="assertive"><div class="sr-countdown-inner"><div>ODAKLANMAYA HAZIRLAN</div><strong data-sr-countdown-num>3</strong><span>Kalemini al, başlıyoruz!</span></div></div>'
       +'<p class="sr-note" data-sr-notice hidden role="status"></p></div>';
   }
   function openRoom(next){
@@ -201,15 +203,37 @@
       if(snapshot)drawSnapshot();
     }catch{personalTasks=[];}
   }
+
   function liveSeconds(m,now){
     let value=seconds(m.seconds);
-    const room=snapshot?.room;
-    if(m.studying&&room?.phase==='focus'){
-      const updated=Date.parse(snapshot.server_now);
-      const until=Math.min(now,phaseEnd(room));
+    if(m.studying){
+      const updated=Date.parse(snapshot?.server_now||'');
+      const end=Date.parse(m.active_end_at||'');
+      const until=Math.min(now,Number.isFinite(end)?end:now);
       if(Number.isFinite(updated)&&until>updated)value+=Math.floor((until-updated)/1000);
     }
     return value;
+  }
+  function isAtDesk(m,now){
+    const last=Date.parse(m.last_seen_at||'');
+    return !Number.isFinite(last)||now-last<75000;
+  }
+  function memberWorking(m,now){
+    const end=Date.parse(m.active_end_at||'');
+    return !!m.studying&&(!Number.isFinite(end)||now<end);
+  }
+  function deskMarkup(m,index,working,online){
+    const avatar=(m.user_id||m.username||'').split('').reduce((a,c)=>a+c.charCodeAt(0),0)%5;
+    const state=online?(working?'working':'resting'):'away';
+    return '<div class="sr-desk-scene sr-desk-'+state+' sr-outfit-'+avatar+'" aria-hidden="true">'
+      +'<span class="sr-scene-stars">✦</span><div class="sr-scene-window"><span></span><span></span></div>'
+      +'<div class="sr-scene-chair"></div>'
+      +(online?'<div class="sr-avatar"><div class="sr-avatar-hair"></div><div class="sr-avatar-head"><i></i><b></b></div>'
+      +'<div class="sr-avatar-body"></div><div class="sr-avatar-arm"></div></div>':'<span class="sr-vacant">🪑</span>')
+      +'<div class="sr-scene-table"></div><div class="sr-scene-notebook"><i></i><i></i><i></i></div>'
+      +'<div class="sr-scene-coffee"><span></span></div>'
+      +'<div class="sr-scene-lamp"><i></i></div>'
+      +'</div>';
   }
   function drawSnapshot(){
     if(!snapshot||!active()||!roomId)return;
