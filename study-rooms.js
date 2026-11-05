@@ -103,7 +103,7 @@
       +'<div class="sr-section-head"><h3>Odalarım</h3><button type="button" class="secondary-btn" data-sr-action="refresh">Yenile</button></div>'
       +'<div class="sr-room-list" data-sr-list><div class="sr-loading">Odalar yükleniyor…</div></div>'
       +'<p class="sr-note" data-sr-notice hidden role="status"></p>'
-      +'<p class="sr-footnote">Ortak modda herkes aynı etüt/mola turuna katılır. Serbest modda herkes kendi süresini başlatır. Molalar ve çalışmadığın zamanlar toplamına eklenmez.</p></div>';
+      +'</div>';
   }
   function loginMarkup(){
     return '<div class="sr-shell sr-login"><div class="sr-login-icon">📚</div><h2>Arkadaşlarla çalışmaya hazır mısın?</h2>'
@@ -273,14 +273,14 @@
     host.querySelector('[data-sr-room-mode]').textContent=free?'🌿 SERBEST ÇALIŞMA':'⏳ ORTAK ETÜT';
     const total=members.reduce((sum,m)=>sum+seconds(m.seconds),0);
     host.querySelector('[data-sr-room-meta]').textContent=(free?'Serbest odak':'Ortak etüt')
-      +' · '+members.length+' kişi · '+r.focus_minutes+' dk odak / '+r.break_minutes+' dk mola'
-      +' · Odanın toplamı '+duration(total);
+      +' · '+members.length+' kişi · '+r.focus_minutes+' dk / '+r.break_minutes+' dk'
+      +' · '+duration(total)+' toplam';
     host.querySelector('[data-sr-invite]').textContent=r.invite_code;
     host.querySelector('[data-sr-member-count]').textContent='('+members.length+'/30)';
     const taskOptions=personalTasks.map(t=>'<option value="'+E(t)+'">'+E(t)+'</option>').join('');
     const taskPicker='<label class="sr-task-pick">Çalışacağın görev (isteğe bağlı)'
       +'<select data-sr-task><option value="">Görev seçmeden çalış</option>'+taskOptions+'</select>'
-      +'<small>Seçtiğin görev oda arkadaşlarınla görünür; otomatik tamamlanmaz.</small></label>';
+      +'</label>';
     const hint=free
       ?'Kendi '+r.focus_minutes+' dakikalık etüdünü istediğin zaman başlat.'
       :r.phase==='break'?'Moladasınız · süre sayılmaz'
@@ -290,11 +290,11 @@
     const personalHtml=!r.is_active
       ?'<div class="sr-muted">Bu oda kapatıldı. Önceki sürelerin kayıtlı.</div>'
       :working
-        ?'<div class="sr-working-chip"><span class="sr-working-pulse"></span> Çalışmaya devam ediyorsun</div>'
+        ?'<div class="sr-working-chip">✦ Etütte</div>'
           +'<button class="sr-button-stop" type="button" data-sr-action="stop">⏹ Etüdü bitir</button>'
         :taskPicker
           +'<button class="primary-btn sr-cta" type="button" data-sr-action="start" '+(canStart?'':'disabled')+'>▶ Çalışmaya başla</button>'
-          +'<small>'+hint+'</small>';
+          +'<small class="sr-action-hint">'+hint+'</small>';
     const personalKey=personalHtml+'|'+selectedTask;
     if(personalKey!==lastPersonalKey){
       lastPersonalKey=personalKey;
@@ -304,7 +304,7 @@
     if(picker){picker.value=selectedTask;if(!picker.value)selectedTask='';}
     let actions='';
     if(owner&&r.is_active){
-      actions='<div class="sr-owner-title">Oda yöneticisi</div>';
+      actions='<div class="sr-owner-title">Oda kontrolleri</div>';
       if(!free)actions+='<div class="sr-owner-buttons">'
         +'<button type="button" class="secondary-btn" data-sr-action="focus">📖 Yeni etüt</button>'
         +'<button type="button" class="secondary-btn" data-sr-action="break">☕ Mola ver</button>'
@@ -317,7 +317,7 @@
         +'<option value="free" '+(free?'selected':'')+'>🌿 Serbest çalışma</option>'
         +'</select></label>'
         +'<button type="submit" class="secondary-btn">Ayarları kaydet</button></form>';
-      if(free)actions+='<div class="sr-owner-hint">🌿 Herkes kendi etüdünü ayrı başlatır. Devam eden biri varken mod veya süre değiştirilemez.</div>';
+      
     }
     const ownerArea=host.querySelector('[data-sr-owner-actions]');
     ownerArea.innerHTML=actions;ownerArea.hidden=!actions;
@@ -331,12 +331,12 @@
       host.querySelector('[data-sr-roster]').innerHTML=roster.map((m,i)=>{
       // Backgrounded phones can keep a valid focus session while WebKit suspends presence pings.
       const inClass=memberWorking(m,now)||isAtDesk(m,now),atWork=inClass&&memberWorking(m,now);
-      const label=!inClass?'Çevrimdışı':atWork?'Odaklanıyor':!free&&r.phase==='break'?'Molada':'Hazır';
+      const label=!inClass?'Uzakta':atWork?'Etütte':!free&&r.phase==='break'?'Molada':'Masada';
       const task=atWork&&m.task_title?'<small class="sr-person-task">✎ '+E(m.task_title)+'</small>':'';
       return '<article class="sr-person '+(atWork?'sr-person-working ':'')+(inClass?'':'sr-person-away')+'">'
         +deskMarkup(m,i,atWork,inClass)
         +'<div class="sr-person-info"><strong>'+E(m.username)+(m.user_id===id()?' <span class="sr-me">sen</span>':'')+'</strong>'
-        +'<small>'+(atWork?'🟢 ':inClass?'☕ ':'⚪ ')+label+'</small>'
+        +'<small>'+label+'</small>'
         +task+'<span data-sr-member-time="'+E(m.user_id)+'">'+duration(liveSeconds(m,now))+'</span></div></article>';
       }).join('');
     }
@@ -364,13 +364,13 @@
     const note=host.querySelector('[data-sr-clock-note]'),icon=host.querySelector('[data-sr-ring-icon]');
     const startAt=Date.parse(r.phase_started_at||'');
     const countdown=!free&&r.phase==='focus'&&Number.isFinite(startAt)&&now<startAt;
-    if(label)label.textContent=!r.is_active?'Oda kapalı':free?working?'Kendi etüdündesin':'Kendi hızında odaklan':countdown?'Birazdan başlıyoruz':r.phase==='idle'?'Hazır olduğunuzda başlayın':left===0?'Süre tamamlandı':r.phase==='focus'?'Odaklanma zamanı':'Mola zamanı';
+    if(label)label.textContent=!r.is_active?'Oda kapalı':free?working?'Odak':'Hazır':countdown?'Başlıyor':r.phase==='idle'?'Hazır':left===0?'Tamamlandı':r.phase==='focus'?'Odak':'Mola';
     if(timer)timer.textContent=displayClock(left);
-    if(note)note.textContent=free?'İstediğin an kendi etüdüne katıl':r.phase==='idle'?'Ortak etüt henüz başlamadı':countdown?'Herkes hazır olsun!':left===0?'Yeni turu oda sahibi başlatabilir':r.phase==='focus'?'Herkes aynı odak süresinde':'Bu sürede çalışma sayılmaz';
-    if(icon)icon.textContent=(free?working:r.phase==='focus'&&left>0)?'📚':r.phase==='break'&&!free?'☕':'🌱';
+    if(note)note.textContent=free?'Kendi ritminde':r.phase==='idle'?'Tur bekleniyor':countdown?'3 · 2 · 1':left===0?'Tur tamamlandı':r.phase==='focus'?'Sessizce devam':'Dinlen';
+    if(icon)icon.textContent=(free?working:r.phase==='focus'&&left>0)?'✎':r.phase==='break'&&!free?'☕':'☾';
     if(ring)ring.classList.toggle('sr-ring-active',free?working:r.phase==='focus'&&left>0);
     const own=host.querySelector('[data-sr-own-status]');
-    if(own)own.textContent=(working?'🟢 Çalışman sayılıyor · ':'Toplam çalışman · ')
+    if(own)own.textContent=(working?'Süren sayılıyor · ':'Çalışman · ')
       +duration(self?liveSeconds(self,now):0);
     for(const m of snapshot.members||[]){
       const node=host.querySelector('[data-sr-member-time="'+m.user_id+'"]');
