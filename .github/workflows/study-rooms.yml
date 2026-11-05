@@ -1,0 +1,56 @@
+name: Hakuna study rooms verification
+on:
+  push:
+    paths:
+      - app.js
+      - main.js
+      - index.html
+      - sw.js
+      - account-sync-v2.js
+      - study-rooms.js
+      - study-rooms.css
+      - tests/study-rooms-unit.test.cjs
+      - tests/study-rooms-browser.test.cjs
+      - supabase/migrations/20261105_study_rooms.sql
+      - .github/workflows/study-rooms.yml
+  pull_request:
+    paths:
+      - app.js
+      - main.js
+      - index.html
+      - sw.js
+      - account-sync-v2.js
+      - study-rooms.js
+      - study-rooms.css
+      - tests/study-rooms-unit.test.cjs
+      - tests/study-rooms-browser.test.cjs
+      - supabase/migrations/20261105_study_rooms.sql
+      - .github/workflows/study-rooms.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  rooms:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify scripts and deterministic room logic
+        run: |
+          node --check app.js
+          node --check main.js
+          node --check sw.js
+          node --check study-rooms.js
+          node --check account-sync-v2.js
+          node --check tests/study-rooms-unit.test.cjs
+          node --check tests/study-rooms-browser.test.cjs
+          node tests/study-rooms-unit.test.cjs
+      - name: Install browser test runner
+        run: npm install --no-save --ignore-scripts playwright@1.56.1
+      - name: Install Chromium and Safari/WebKit
+        run: npx playwright install --with-deps chromium webkit
+      - name: Run desktop, iPhone and iPad room flows
+        run: node tests/study-rooms-browser.test.cjs

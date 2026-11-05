@@ -12,7 +12,7 @@ function showBootError(error){
 // cloud sync and enhancements are maintenance work and must never keep the PWA
 // on a blank screen during startup.
 try{
-  await import('./app.js?v=more-nav-all-tabs-v1');
+  await import('./app.js?v=study-rooms-v1');
 }catch(error){
   showBootError(error);
 }
@@ -59,6 +59,10 @@ afterFirstPaint(()=>{
 
   void (async()=>{
     try{await importAccountSyncOptimized();}catch(err){console.warn('Hakuna cloud sync load',err);}
+    try{
+      await import('./study-rooms.js?v=1');
+      if(document.querySelector('#pageTitle')?.textContent==='Odalar')window.HakunaStudyRooms?.render(document.querySelector('#view'));
+    }catch(err){console.warn('Hakuna study rooms load',err);}
     // Batu pilot — separate module so the existing pages remain unchanged.
     void import('./ai-teacher.js?v=batu4').catch(err=>console.warn('Hakuna AI teacher load',err));
     await Promise.allSettled([

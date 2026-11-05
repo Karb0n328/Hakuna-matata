@@ -9,7 +9,7 @@
   const UNITS = ['dakika','test','soru','sayfa','bölüm'];
   const NAV = [
     ['today','🏠','Bugün'], ['plan','📅','Plan'], ['tasks','✓','Görevler'], ['exams','📊','Denemeler'],
-    ['questions','❓','Sorular'], ['books','📚','Soru Kitaplığım'], ['analytics','📈','Analiz'], ['guidance','🎓','Rehberlik'], ['suggestions','✦','Öneriler'], ['settings','⚙️','Ayarlar']
+    ['questions','❓','Sorular'], ['books','📚','Soru Kitaplığım'], ['rooms','🫂','Odalar'], ['analytics','📈','Analiz'], ['guidance','🎓','Rehberlik'], ['suggestions','✦','Öneriler'], ['settings','⚙️','Ayarlar']
   ];
   const MOBILE_NAV = [['today','🏠','Bugün'],['plan','📅','Plan'],['tasks','✓','Görevler'],['exams','📊','Deneme'],['more','•••','Daha']];
   const DB_NAME = 'hakuna-matata-db';
@@ -116,9 +116,9 @@
 
   function renderNavigation() {
     const guidanceRole=window.HakunaGuidance?.role();
-    const allowed=guidanceRole==='student'?NAV.filter(x=>['today','plan','tasks','settings'].includes(x[0])):NAV.filter(x=>x[0]!=='guidance'||guidanceRole==='mentor');
+    const allowed=guidanceRole==='student'?NAV.filter(x=>['today','plan','tasks','rooms','settings'].includes(x[0])):NAV.filter(x=>x[0]!=='guidance'||guidanceRole==='mentor');
     $('#sidebarNav').innerHTML=navButtons(allowed);
-    const mobile=guidanceRole==='student'?[['today','🏠','Bugün'],['plan','📅','Plan'],['tasks','✓','Görevler'],['settings','⚙️','Ayarlar']]:guidanceRole==='mentor'?[...MOBILE_NAV.slice(0,4),['more','•••','Daha']]:MOBILE_NAV;
+    const mobile=guidanceRole==='student'?[['today','🏠','Bugün'],['plan','📅','Plan'],['tasks','✓','Görevler'],['rooms','🫂','Odalar'],['settings','⚙️','Ayarlar']]:guidanceRole==='mentor'?[...MOBILE_NAV.slice(0,4),['more','•••','Daha']]:MOBILE_NAV;
     $('#bottomNav').innerHTML=mobile.map(([id,icon,label]) => `<button class="${currentPage===id || (id==='more' && NAV.slice(4).some(([page])=>page===currentPage))?'active':''}" data-nav="${id}"><span class="nav-icon">${icon}</span><span>${label}</span></button>`).join('');
     $$('[data-nav]').forEach(b=>b.onclick=()=>{
       const id=b.dataset.nav;
@@ -130,20 +130,21 @@
   function pageMeta() {
     const map={
       today:['Günlük çalışma merkezi','Bugün'], plan:['Haftayı tek bakışta gör','Plan'], tasks:['Görev havuzu + haftalık borçlar','Görevler'],
-      exams:['Netlerini ve gelişimini kaydet','Denemeler'], questions:['Çözdürülecek soruları kaybetme','Sorular'], books:['Kişisel soru bankan ve PDF kitapçıkların','Soru Kitaplığım'], analytics:['Gerçek çalışma verin','Analiz'], suggestions:['Geri bildirim ve geliştirme fikirleri','Öneriler'], guidance:['Ayzos’un ödevlerini yönet','Rehberlik'], settings:['Cihaz ve veri yedeği','Ayarlar']
+      exams:['Netlerini ve gelişimini kaydet','Denemeler'], questions:['Çözdürülecek soruları kaybetme','Sorular'], books:['Kişisel soru bankan ve PDF kitapçıkların','Soru Kitaplığım'], rooms:['Arkadaşlarınla aynı etütte','Odalar'], analytics:['Gerçek çalışma verin','Analiz'], suggestions:['Geri bildirim ve geliştirme fikirleri','Öneriler'], guidance:['Ayzos’un ödevlerini yönet','Rehberlik'], settings:['Cihaz ve veri yedeği','Ayarlar']
     };
     return map[currentPage]||map.today;
   }
 
   function render() {
     const activeRole=window.HakunaGuidance?.role();
-    if(activeRole==='student'&&!['today','plan','tasks','settings'].includes(currentPage))currentPage='today';
+    if(activeRole==='student'&&!['today','plan','tasks','rooms','settings'].includes(currentPage))currentPage='today';
     if(currentPage==='guidance'&&activeRole!=='mentor')currentPage='today';
+    if(currentPage!=='rooms')window.HakunaStudyRooms?.leaveView?.();
     renderNavigation();
     const [eye,title]=pageMeta(); $('#pageEyebrow').textContent=eye; $('#pageTitle').textContent=title;
     const view=$('#view'); const actions=$('#topbarActions'); actions.innerHTML='';
     const guidanceRole=window.HakunaGuidance?.role();
-    if(guidanceRole==='student'&&!['today','plan','tasks','settings'].includes(currentPage))currentPage='today';
+    if(guidanceRole==='student'&&!['today','plan','tasks','rooms','settings'].includes(currentPage))currentPage='today';
     if(currentPage==='guidance'&&guidanceRole!=='mentor')currentPage='today';
     if(guidanceRole==='student'&&['today','plan','tasks'].includes(currentPage)){window.HakunaGuidance.render(view,currentPage);return;}
     if(currentPage==='guidance'&&guidanceRole==='mentor'){window.HakunaGuidance.render(view,'guidance');return;}
@@ -153,6 +154,7 @@
     else if (currentPage==='exams') renderExams(view,actions);
     else if (currentPage==='questions') renderQuestions(view,actions);
     else if (currentPage==='books') { if(window.HakunaQuestionBooks) window.HakunaQuestionBooks.render(view,actions,state); else view.innerHTML='<div class="card"><div class="card-body">Soru kitaplığı yükleniyor…</div></div>'; }
+    else if (currentPage==='rooms') { if(window.HakunaStudyRooms)window.HakunaStudyRooms.render(view); else view.innerHTML='<div class="card"><div class="card-body">Çalışma odaları yükleniyor…</div></div>'; }
     else if (currentPage==='analytics') renderAnalytics(view,actions);
     else if (currentPage==='suggestions') renderSuggestions(view,actions);
     else if (currentPage==='settings') renderSettings(view,actions);
@@ -985,11 +987,12 @@ YANIT KURALI
     // Student guidance accounts only have their explicit, restricted pages.
     const extras=NAV.slice(4).filter(([id])=>
       (id!=='guidance'||role==='mentor') &&
-      (role!=='student'||id==='settings')
+      (role!=='student'||id==='settings'||id==='rooms')
     );
     const descriptions={
       questions:'Çözdürülecek soru havuzu',
       books:'Fotoğraflı sorular ve PDF kitapçık',
+      rooms:'Arkadaşlarınla ortak etüt',
       analytics:'Çalışma ve deneme gelişimi',
       guidance:'Ayzos ödev takibi',
       suggestions:'Geri bildirim ve geliştirme fikirleri',
@@ -1027,6 +1030,9 @@ YANIT KURALI
     try { await openDB(); state=(await dbGet(STATE_KEY))||defaultState(); }
     catch { state=defaultState(); toast('Yerel veritabanı açılamadı; bu oturum geçici olabilir.'); }
     state.selectedDate=todayISO();
+    // Room invite links open the Odalar page and prefill the invite code.
+    const sharedCode=new URLSearchParams(location.search).get('room');
+    if(sharedCode&&/^[A-Fa-f0-9]{18}$/.test(sharedCode))currentPage='rooms';
     render();
     let lastGuidanceRole=window.HakunaGuidance?.role();
     setInterval(()=>{const nextRole=window.HakunaGuidance?.role();if(nextRole!==lastGuidanceRole){lastGuidanceRole=nextRole;render();}},1200);
