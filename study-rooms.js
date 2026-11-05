@@ -3,7 +3,7 @@
   'use strict';
   let host=null,roomId=null,snapshot=null,unsubscribe=null,poll=null,clock=null;
   let loading=false,busy=false,epoch=0,skewMs=0,lastUser=null,realtimeDelay=null;
-  let heartbeat=null,personalTasks=[],selectedTask='',starting=false,countdownTimeout=null;
+  let heartbeat=null,personalTasks=[],selectedTask='',starting=false,countdownTimeout=null,countdownResolve=null;
   const E=(value='')=>String(value==null?'':value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const id=()=>window.HakunaAccount?.info?.().id||null;
   const rpc=(name,args={})=>{
@@ -34,6 +34,7 @@
     if(unsubscribe){unsubscribe();unsubscribe=null;}
     clearInterval(poll);clearInterval(clock);clearTimeout(realtimeDelay);
     clearInterval(heartbeat);clearTimeout(countdownTimeout);
+    if(countdownResolve){const resolve=countdownResolve;countdownResolve=null;resolve();}
     poll=null;clock=null;heartbeat=null;realtimeDelay=null;countdownTimeout=null;starting=false;loading=false;
   }
   function leaveView(){
@@ -345,6 +346,38 @@
     }
     host.classList.toggle('sr-timer-ended',!free&&r.phase!=='idle'&&left===0);
   }
+
+  async function startWithCountdown(button){
+    if(starting||busy||!snapshot||!roomId)return;
+    const ticket=epoch,room=roomId;
+    starting=true;busy=true;button.disabled=true;
+    const panel=host.querySelector('[data-sr-countdown]');
+    if(panel)panel.hidden=false;
+    try{
+      for(let n=3;n>=1;n--){
+        if(ticket!==epoch||!active()||room!==roomId)return;
+        const number=panel?.querySelector('[data-sr-countdown-num]');
+        if(number){number.textContent=String(n);number.classList.remove('sr-countdown-beat');void number.offsetWidth;number.classList.add('sr-countdown-beat');}
+        await new Promise(resolve=>{
+          countdownResolve=resolve;
+          countdownTimeout=setTimeout(()=>{countdownResolve=null;resolve();},880);
+        });
+      }
+      if(ticket!==epoch||room!==roomId||!active())return;
+      if(panel)panel.hidden=true;
+      notice('Etüdün başlatılıyor…');
+      await rpc('study_room_start',{p_room_id:room,p_task_title:selectedTask||null});
+      if(ticket===epoch&&room===roomId&&active())await loadRoom();
+    }catch(error){
+      if(ticket===epoch&&room===roomId&&active())notice(error?.message||'Etüt başlatılamadı.',true);
+    }finally{
+      if(ticket===epoch&&room===roomId&&active()){
+        if(panel)panel.hidden=true;
+        starting=false;busy=false;
+        if(button.isConnected)button.disabled=false;
+      }
+    }
+  }
   async function act(action,button){
     if(busy)return;
     if(action==='back'){showLobby();return;}
@@ -353,9 +386,9 @@
     if(action==='open'){openRoom(button.dataset.id);return;}
     if(action==='copy'){if(snapshot)void copy(inviteUrl(snapshot.room.invite_code));return;}
     if(!roomId)return;
+    if(action==='start'){void startWithCountdown(button);return;}
     let name=null,args={p_room_id:roomId};
-    if(action==='start')name='study_room_start';
-    else if(action==='stop')name='study_room_stop';
+    if(action==='stop')name='study_room_stop';
     else if(['focus','break','idle'].includes(action)){name='study_room_set_phase';args.p_phase=action;}
     else if(action==='leave'){
       if(!confirm('Bu odadan ayrılmak istiyor musun?'))return;
@@ -378,12 +411,12 @@
     const type=form.dataset.srForm,fd=new FormData(form);
     let name,args;
     if(type==='create'){
-      name='study_room_create';
-      args={p_name:String(fd.get('name')||'').trim(),p_focus_minutes:Number(fd.get('focus')),p_break_minutes:Number(fd.get('break'))};
+      name='study_room_create_v2';
+      args={p_name:String(fd.get('name')||'').trim(),p_focus_minutes:Number(fd.get('focus')),p_break_minutes:Number(fd.get('break')),p_mode:String(fd.get('mode')||'shared')};
     }else if(type==='join'){
       name='study_room_join';args={p_invite_code:String(fd.get('code')||'').trim().toUpperCase()};
     }else if(type==='settings'&&roomId){
-      name='study_room_settings';args={p_room_id:roomId,p_focus_minutes:Number(fd.get('focus')),p_break_minutes:Number(fd.get('break'))};
+      name='study_room_configure';args={p_room_id:roomId,p_focus_minutes:Number(fd.get('focus')),p_break_minutes:Number(fd.get('break')),p_mode:String(fd.get('mode')||'shared')};
     }else return;
     const btn=form.querySelector('[type=submit]');busy=true;if(btn)btn.disabled=true;notice('Kaydediliyor…');
     try{
@@ -399,6 +432,9 @@
       const b=e.target.closest('[data-sr-action]');
       if(b&&host.contains(b))void act(b.dataset.srAction,b);
     };
+    host.onchange=e=>{
+      if(e.target?.matches?.('[data-sr-task]'))selectedTask=String(e.target.value||'');
+    };
     host.onsubmit=e=>{
       const form=e.target.closest('[data-sr-form]');
       if(form&&host.contains(form)){e.preventDefault();void submit(form);}
@@ -411,7 +447,7 @@
   });
   window.addEventListener('online',()=>{if(active()){if(roomId)void loadRoom();else void loadLobby();}});
   document.addEventListener('visibilitychange',()=>{
-    if(document.visibilityState==='visible'&&active()){if(roomId)void loadRoom();else void loadLobby();tick();}
+    if(document.visibilityState==='visible'&&active()){if(roomId){void touchRoom();void loadRoom();}else void loadLobby();tick();}
   });
   window.HakunaStudyRooms=Object.freeze({render,leaveView,
     utils:Object.freeze({duration,displayClock,phaseLeft,phaseEnd})});
