@@ -35,5 +35,7 @@ assert.ok(app.includes("['rooms','🫂','Odalar']"),'desktop navigation should e
 assert.ok(app.includes("currentPage==='rooms'"),'router should render study rooms');
 assert.ok(app.includes("window.HakunaStudyRooms?.leaveView?.()"),'page navigation should stop room listeners');
 assert.ok(html.includes('study-rooms.css'),'page should load room CSS');
+assert.ok(html.includes('study-rooms-immersive.css'),'page should load isolated room CSS');
 assert.ok(sw.includes("'./study-rooms.js','./study-rooms.css'"),'service worker should cache new feature');
+assert.ok(sw.includes("'./study-rooms-immersive.css'"),'service worker should cache private focus space visual layer');
 console.log('PASS study-room clock math, navigation wiring and PWA assets');

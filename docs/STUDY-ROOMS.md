@@ -40,6 +40,13 @@ Supabase migration 5 Kasım 2026 tarihinde canlı Hakuna projesine uygulanmışt
 - Odanın ön planda açık olduğu cihazda her 25 saniyede bir güvenli son-görülme güncellenir; 75 saniyeden uzun süre çevrimdışı kalan ve aktif etüdü olmayan kullanıcının masası boş görünür. Ekran kilidinde devam eden geçerli etütler çalışıyor görünmeye devam eder.
 - YPT'deki telif hakkıyla korunan görseller kullanılmaz; masa karakterleri özgün HTML/CSS parçalarıyla oluşturulur.
 
+## Sessiz Oda — kişisel atmosfer v2
+- Oda açıldığında normal Hakuna gezinmesi gizlenir. Odalar geri düğmesi lobiyi, normal Hakuna gezinmesini geri getirir.
+- Gece / Yağmur / Sabah atmosferleri ve sade görünüm cihazda yerel tercihtir (`localStorage`). Oda arkadaşlarının tercihini, süreleri, RPC verilerini, Realtime aboneliğini ya da masa durumunu değiştirmez.
+- Yeşil durum işaretleri ve uzun yönergeler kaldırılmıştır. Çalışma süresi yalnızca sunucunun tuttuğu oturumlardan hesaplanmaya devam eder.
+- Yağmur görsel efekttir, otomatik ses oynatılmaz; hareket azaltma sistemi tercihi desteklenir.
+- Ek görsel katman `study-rooms-immersive.css` dosyasındadır. iPhone/iPad/dar ekran ve PWA çevrimdışı cache için v2 olarak bağlanmıştır.
+
 ## Kapsam dışında / sonraki sürüm
 - Odada sesli veya görüntülü görüşme, mesajlaşma, moderatör atama yok.
 - Push bildirimi veya çevrimdışı yeni çalışma kaydı yok.

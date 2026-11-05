@@ -5,6 +5,21 @@
   let loading=false,busy=false,epoch=0,skewMs=0,lastUser=null,realtimeDelay=null;
   let heartbeat=null,personalTasks=[],selectedTask='',starting=false,countdownTimeout=null,countdownResolve=null;
   let lastRosterKey='',lastPersonalKey='';
+  let spaceTheme='night',spaceZen=false;
+  const THEMES=new Set(['night','rain','dawn']);
+  function loadPersonalSpace(){
+    try{const choice=localStorage.getItem('hakuna.studyRooms.atmosphere');spaceTheme=THEMES.has(choice)?choice:'night';spaceZen=localStorage.getItem('hakuna.studyRooms.quiet')==='1';}
+    catch{spaceTheme='night';spaceZen=false;}
+  }
+  function applyPersonalSpace(){
+    if(!host||!roomId)return;
+    const room=host.querySelector('.sr-room');if(!room)return;
+    room.setAttribute('data-atmosphere',spaceTheme);
+    room.classList.toggle('sr-zen',spaceZen);
+    room.querySelectorAll('[data-sr-action="atmosphere"]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.theme===spaceTheme)));
+    const button=room.querySelector('[data-sr-action="zen"]');
+    if(button){button.setAttribute('aria-pressed',String(spaceZen));button.textContent=spaceZen?'Ayrıntıları göster':'Sade görünüm';}
+  }
   const E=(value='')=>String(value==null?'':value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const id=()=>window.HakunaAccount?.info?.().id||null;
   const rpc=(name,args={})=>{
@@ -40,6 +55,7 @@
     lastRosterKey='';lastPersonalKey='';
   }
   function leaveView(){
+    document.body.classList.remove('sr-immersed');
     clearLoops();epoch++;host=null;roomId=null;snapshot=null;busy=false;personalTasks=[];selectedTask='';
   }
   function notice(message,isError=false){
@@ -87,7 +103,7 @@
       +'<div class="sr-section-head"><h3>Odalarım</h3><button type="button" class="secondary-btn" data-sr-action="refresh">Yenile</button></div>'
       +'<div class="sr-room-list" data-sr-list><div class="sr-loading">Odalar yükleniyor…</div></div>'
       +'<p class="sr-note" data-sr-notice hidden role="status"></p>'
-      +'<p class="sr-footnote">Ortak modda herkes aynı etüt/mola turuna katılır. Serbest modda herkes kendi süresini başlatır. Molalar ve çalışmadığın zamanlar toplamına eklenmez.</p></div>';
+      +'</div>';
   }
   function loginMarkup(){
     return '<div class="sr-shell sr-login"><div class="sr-login-icon">📚</div><h2>Arkadaşlarla çalışmaya hazır mısın?</h2>'
@@ -96,6 +112,7 @@
       +'<p data-sr-notice hidden role="status"></p></div>';
   }
   function showLobby(){
+    document.body.classList.remove('sr-immersed');
     clearLoops();roomId=null;snapshot=null;epoch++;personalTasks=[];selectedTask='';
     if(!active())return;
     host.innerHTML=lobbyMarkup();
@@ -126,28 +143,33 @@
     }finally{if(ticket===epoch)loading=false;}
   }
   function roomMarkup(){
-    return '<div class="sr-shell sr-room">'
-      +'<header class="sr-room-header"><button type="button" class="secondary-btn" data-sr-action="back">← Odalarım</button>'
-      +'<div class="sr-room-heading"><span class="sr-kicker" data-sr-room-mode>BİRLİKTE ETÜT</span><h2 data-sr-room-title>Oda açılıyor…</h2>'
+    return '<div class="sr-shell sr-room" data-atmosphere="night">'
+      +'<header class="sr-room-header"><button type="button" class="secondary-btn" data-sr-action="back">← Odalar</button>'
+      +'<div class="sr-room-heading"><span class="sr-kicker" data-sr-room-mode>SESSİZ ODA</span><h2 data-sr-room-title>Oda açılıyor…</h2>'
       +'<div class="sr-room-sub" data-sr-room-meta></div></div>'
-      +'<div class="sr-invite"><span data-sr-invite>••••••••</span><button type="button" data-sr-action="copy" class="secondary-btn">Davet bağlantısını kopyala</button></div></header>'
+      +'<div class="sr-space-tools"><div class="sr-scene-picker" role="group" aria-label="Çalışma ortamı">'
+      +'<button type="button" data-sr-action="atmosphere" data-theme="night" aria-pressed="true">Gece</button>'
+      +'<button type="button" data-sr-action="atmosphere" data-theme="rain" aria-pressed="false">Yağmur</button>'
+      +'<button type="button" data-sr-action="atmosphere" data-theme="dawn" aria-pressed="false">Sabah</button></div>'
+      +'<button type="button" class="sr-zen-toggle" data-sr-action="zen" aria-pressed="false">Sade görünüm</button></div>'
+      +'<details class="sr-invite"><summary>+ Davet</summary><span data-sr-invite>••••••••</span><button type="button" data-sr-action="copy" class="secondary-btn">Bağlantıyı kopyala</button></details></header>'
       +'<div class="sr-room-grid"><section class="sr-session-card">'
-      +'<div class="sr-phase-label" data-sr-phase>Etüt bekleniyor</div>'
-      +'<div class="sr-focus-ring" data-sr-ring><div class="sr-ring-core"><span class="sr-ring-icon" data-sr-ring-icon>🌱</span>'
-      +'<strong data-sr-clock>00:00:00</strong><small data-sr-clock-note>Ortak etüt henüz başlamadı</small></div></div>'
-      +'<div data-sr-own-status class="sr-own-status">Çalışman henüz başlamadı</div>'
+      +'<div class="sr-phase-label" data-sr-phase>Hazırlanıyor</div>'
+      +'<div class="sr-focus-ring" data-sr-ring><div class="sr-ring-core"><span class="sr-ring-icon" data-sr-ring-icon>☾</span>'
+      +'<strong data-sr-clock>00:00:00</strong><small data-sr-clock-note></small></div></div>'
+      +'<div data-sr-own-status class="sr-own-status"></div>'
       +'<div data-sr-personal-actions class="sr-action-area"></div>'
       +'<div data-sr-owner-actions class="sr-owner-area"></div></section>'
-      +'<section class="sr-friends"><div class="sr-section-head"><h3>Çalışma masası <span data-sr-member-count></span></h3>'
-      +'<span class="sr-live-mark">● Canlı</span></div><div class="sr-roster" data-sr-roster><div class="sr-loading">Katılımcılar yükleniyor…</div></div>'
-      +'<p class="sr-friends-tip">📖 Birisi etüde başladığında masasındaki kitap hareketlenir.</p></section></div>'
+      +'<section class="sr-friends"><div class="sr-section-head"><h3>Masalar <span data-sr-member-count></span></h3></div>'
+      +'<div class="sr-roster" data-sr-roster><div class="sr-loading">Yükleniyor…</div></div></section></div>'
       +'<div class="sr-room-footer" data-sr-footer></div>'
-      +'<div class="sr-countdown" data-sr-countdown hidden aria-live="assertive"><div class="sr-countdown-inner"><div>ODAKLANMAYA HAZIRLAN</div><strong data-sr-countdown-num>3</strong><span>Kalemini al, başlıyoruz!</span></div></div>'
+      +'<div class="sr-countdown" data-sr-countdown hidden aria-live="assertive"><div class="sr-countdown-inner"><div>ETÜT BAŞLIYOR</div><strong data-sr-countdown-num>3</strong></div></div>'
       +'<p class="sr-note" data-sr-notice hidden role="status"></p></div>';
   }
   function openRoom(next){
     if(!active())return;
     clearLoops();roomId=next;snapshot=null;epoch++;personalTasks=[];selectedTask='';host.innerHTML=roomMarkup();
+    document.body.classList.add('sr-immersed');applyPersonalSpace();
     void loadRoom();void loadPersonalTasks();void touchRoom();
     heartbeat=setInterval(()=>{if(document.visibilityState==='visible')void touchRoom();},25000);
     unsubscribe=window.HakunaAccount?.roomListen?.(roomId,()=>{
@@ -251,14 +273,14 @@
     host.querySelector('[data-sr-room-mode]').textContent=free?'🌿 SERBEST ÇALIŞMA':'⏳ ORTAK ETÜT';
     const total=members.reduce((sum,m)=>sum+seconds(m.seconds),0);
     host.querySelector('[data-sr-room-meta]').textContent=(free?'Serbest odak':'Ortak etüt')
-      +' · '+members.length+' kişi · '+r.focus_minutes+' dk odak / '+r.break_minutes+' dk mola'
-      +' · Odanın toplamı '+duration(total);
+      +' · '+members.length+' kişi · '+r.focus_minutes+' dk / '+r.break_minutes+' dk'
+      +' · '+duration(total)+' toplam';
     host.querySelector('[data-sr-invite]').textContent=r.invite_code;
     host.querySelector('[data-sr-member-count]').textContent='('+members.length+'/30)';
     const taskOptions=personalTasks.map(t=>'<option value="'+E(t)+'">'+E(t)+'</option>').join('');
     const taskPicker='<label class="sr-task-pick">Çalışacağın görev (isteğe bağlı)'
       +'<select data-sr-task><option value="">Görev seçmeden çalış</option>'+taskOptions+'</select>'
-      +'<small>Seçtiğin görev oda arkadaşlarınla görünür; otomatik tamamlanmaz.</small></label>';
+      +'</label>';
     const hint=free
       ?'Kendi '+r.focus_minutes+' dakikalık etüdünü istediğin zaman başlat.'
       :r.phase==='break'?'Moladasınız · süre sayılmaz'
@@ -268,11 +290,11 @@
     const personalHtml=!r.is_active
       ?'<div class="sr-muted">Bu oda kapatıldı. Önceki sürelerin kayıtlı.</div>'
       :working
-        ?'<div class="sr-working-chip"><span class="sr-working-pulse"></span> Çalışmaya devam ediyorsun</div>'
+        ?'<div class="sr-working-chip">✦ Etütte</div>'
           +'<button class="sr-button-stop" type="button" data-sr-action="stop">⏹ Etüdü bitir</button>'
         :taskPicker
           +'<button class="primary-btn sr-cta" type="button" data-sr-action="start" '+(canStart?'':'disabled')+'>▶ Çalışmaya başla</button>'
-          +'<small>'+hint+'</small>';
+          +'<small class="sr-action-hint">'+hint+'</small>';
     const personalKey=personalHtml+'|'+selectedTask;
     if(personalKey!==lastPersonalKey){
       lastPersonalKey=personalKey;
@@ -282,7 +304,7 @@
     if(picker){picker.value=selectedTask;if(!picker.value)selectedTask='';}
     let actions='';
     if(owner&&r.is_active){
-      actions='<div class="sr-owner-title">Oda yöneticisi</div>';
+      actions='<div class="sr-owner-title">Oda kontrolleri</div>';
       if(!free)actions+='<div class="sr-owner-buttons">'
         +'<button type="button" class="secondary-btn" data-sr-action="focus">📖 Yeni etüt</button>'
         +'<button type="button" class="secondary-btn" data-sr-action="break">☕ Mola ver</button>'
@@ -295,7 +317,7 @@
         +'<option value="free" '+(free?'selected':'')+'>🌿 Serbest çalışma</option>'
         +'</select></label>'
         +'<button type="submit" class="secondary-btn">Ayarları kaydet</button></form>';
-      if(free)actions+='<div class="sr-owner-hint">🌿 Herkes kendi etüdünü ayrı başlatır. Devam eden biri varken mod veya süre değiştirilemez.</div>';
+      
     }
     const ownerArea=host.querySelector('[data-sr-owner-actions]');
     ownerArea.innerHTML=actions;ownerArea.hidden=!actions;
@@ -309,12 +331,12 @@
       host.querySelector('[data-sr-roster]').innerHTML=roster.map((m,i)=>{
       // Backgrounded phones can keep a valid focus session while WebKit suspends presence pings.
       const inClass=memberWorking(m,now)||isAtDesk(m,now),atWork=inClass&&memberWorking(m,now);
-      const label=!inClass?'Çevrimdışı':atWork?'Odaklanıyor':!free&&r.phase==='break'?'Molada':'Hazır';
+      const label=!inClass?'Uzakta':atWork?'Etütte':!free&&r.phase==='break'?'Molada':'Masada';
       const task=atWork&&m.task_title?'<small class="sr-person-task">✎ '+E(m.task_title)+'</small>':'';
       return '<article class="sr-person '+(atWork?'sr-person-working ':'')+(inClass?'':'sr-person-away')+'">'
         +deskMarkup(m,i,atWork,inClass)
         +'<div class="sr-person-info"><strong>'+E(m.username)+(m.user_id===id()?' <span class="sr-me">sen</span>':'')+'</strong>'
-        +'<small>'+(atWork?'🟢 ':inClass?'☕ ':'⚪ ')+label+'</small>'
+        +'<small>'+label+'</small>'
         +task+'<span data-sr-member-time="'+E(m.user_id)+'">'+duration(liveSeconds(m,now))+'</span></div></article>';
       }).join('');
     }
@@ -342,13 +364,13 @@
     const note=host.querySelector('[data-sr-clock-note]'),icon=host.querySelector('[data-sr-ring-icon]');
     const startAt=Date.parse(r.phase_started_at||'');
     const countdown=!free&&r.phase==='focus'&&Number.isFinite(startAt)&&now<startAt;
-    if(label)label.textContent=!r.is_active?'Oda kapalı':free?working?'Kendi etüdündesin':'Kendi hızında odaklan':countdown?'Birazdan başlıyoruz':r.phase==='idle'?'Hazır olduğunuzda başlayın':left===0?'Süre tamamlandı':r.phase==='focus'?'Odaklanma zamanı':'Mola zamanı';
+    if(label)label.textContent=!r.is_active?'Oda kapalı':free?working?'Odak':'Hazır':countdown?'Başlıyor':r.phase==='idle'?'Hazır':left===0?'Tamamlandı':r.phase==='focus'?'Odak':'Mola';
     if(timer)timer.textContent=displayClock(left);
-    if(note)note.textContent=free?'İstediğin an kendi etüdüne katıl':r.phase==='idle'?'Ortak etüt henüz başlamadı':countdown?'Herkes hazır olsun!':left===0?'Yeni turu oda sahibi başlatabilir':r.phase==='focus'?'Herkes aynı odak süresinde':'Bu sürede çalışma sayılmaz';
-    if(icon)icon.textContent=(free?working:r.phase==='focus'&&left>0)?'📚':r.phase==='break'&&!free?'☕':'🌱';
+    if(note)note.textContent=free?'Kendi ritminde':r.phase==='idle'?'Tur bekleniyor':countdown?'3 · 2 · 1':left===0?'Tur tamamlandı':r.phase==='focus'?'Sessizce devam':'Dinlen';
+    if(icon)icon.textContent=(free?working:r.phase==='focus'&&left>0)?'✎':r.phase==='break'&&!free?'☕':'☾';
     if(ring)ring.classList.toggle('sr-ring-active',free?working:r.phase==='focus'&&left>0);
     const own=host.querySelector('[data-sr-own-status]');
-    if(own)own.textContent=(working?'🟢 Çalışman sayılıyor · ':'Toplam çalışman · ')
+    if(own)own.textContent=(working?'Süren sayılıyor · ':'Çalışman · ')
       +duration(self?liveSeconds(self,now):0);
     for(const m of snapshot.members||[]){
       const node=host.querySelector('[data-sr-member-time="'+m.user_id+'"]');
@@ -394,6 +416,18 @@
     }
   }
   async function act(action,button){
+    if(action==='atmosphere'){
+      if(!THEMES.has(button.dataset.theme)||!roomId)return;
+      spaceTheme=button.dataset.theme;
+      try{localStorage.setItem('hakuna.studyRooms.atmosphere',spaceTheme);}catch{}
+      applyPersonalSpace();return;
+    }
+    if(action==='zen'){
+      if(!roomId)return;
+      spaceZen=!spaceZen;
+      try{localStorage.setItem('hakuna.studyRooms.quiet',spaceZen?'1':'0');}catch{}
+      applyPersonalSpace();return;
+    }
     if(busy)return;
     if(action==='back'){showLobby();return;}
     if(action==='refresh'){void loadLobby();return;}
@@ -442,7 +476,7 @@
     finally{busy=false;if(btn?.isConnected)btn.disabled=false;}
   }
   function render(view){
-    leaveView();host=view;host.dataset.studyRooms='1';lastUser=id();
+    leaveView();host=view;host.dataset.studyRooms='1';lastUser=id();loadPersonalSpace();
     host.onclick=e=>{
       const b=e.target.closest('[data-sr-action]');
       if(b&&host.contains(b))void act(b.dataset.srAction,b);
