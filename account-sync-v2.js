@@ -74,7 +74,7 @@ function openAccountModal(mode='login'){document.querySelector('.hakuna-cloud-mo
 async function logout(){try{await pushLocalState();}catch{}await supabase.auth.signOut();session=null;user=null;profile=null;knownRevision=0;lastSyncedHash='';lastObservedHash='';setSyncState('Yerel kullanım');toast('Hesaptan çıkıldı. Cihazdaki veriler silinmedi.');scheduleUI();}
 
 async function bootstrap(){injectStyles();const{data}=await supabase.auth.getSession();session=data.session||null;user=session?.user||null;if(user?.id){const meta=loadMeta(user.id);knownRevision=Number(meta.revision||0);lastSyncedHash=String(meta.lastSyncedHash||'');await reconcileAccount().catch(error=>{console.warn(error);setSyncState('Yerelde kayıtlı · bulut bekliyor','warn');});}else setSyncState('Yerel kullanım');scheduleUI();}
-supabase.auth.onAuthStateChange((_event,nextSession)=>{session=nextSession;const next=nextSession?.user||null,changed=next?.id!==user?.id;user=next;if(changed&&user?.id)reconcileAccount().catch(console.warn);if(!user){profile=null;knownRevision=0;lastSyncedHash='';lastObservedHash='';}scheduleUI();});
+supabase.auth.onAuthStateChange((_event,nextSession)=>{session=nextSession;const next=nextSession?.user||null,changed=next?.id!==user?.id;user=next;if(changed&&user?.id)reconcileAccount().catch(console.warn);if(!user){profile=null;knownRevision=0;lastSyncedHash='';lastObservedHash='';}scheduleUI();window.dispatchEvent(new Event('hakuna-account-changed'));});
 
 const view=document.querySelector('#view');if(view)new MutationObserver(()=>scheduleUI()).observe(view,{childList:true,subtree:true});
 window.addEventListener('online',()=>{schedulePush();checkRemote();});window.addEventListener('focus',()=>checkRemote());document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkRemote();});setInterval(observeLocal,1800);setInterval(checkRemote,45000);
@@ -101,9 +101,27 @@ window.HakunaAccount=Object.freeze({
     const {error}=await supabase.storage.from('hakuna-question-photos').remove([path]);
     if(error)throw error;
   },
+  roomRpc:async(name,args={})=>{
+    const allowed=['study_room_create','study_room_join','study_room_leave','study_room_settings',
+      'study_room_set_phase','study_room_start','study_room_stop','study_room_close',
+      'study_room_overview','study_room_snapshot'];
+    if(!allowed.includes(name))throw new Error('Geçersiz çalışma odası işlemi.');
+    if(!user?.id)throw new Error('Çalışma odaları için Hakuna hesabına giriş yap.');
+    if(!navigator.onLine)throw new Error('Ortak çalışma odaları için internet bağlantısı gerekiyor.');
+    const {data,error}=await supabase.rpc(name,args);
+    if(error)throw error;
+    return data;
+  },
+  roomListen:(id,callback)=>{
+    if(!user?.id||!id)return()=>{};
+    const ch=supabase.channel('hakuna-study-room-'+id+'-'+crypto.randomUUID())
+      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'study_rooms',filter:'id=eq.'+id},callback)
+      .subscribe();
+    return()=>{void supabase.removeChannel(ch);};
+  },
   open:mode=>openAccountModal(mode==='register'?'register':'login'),
   logout,
   sync:async()=>{if(!user?.id)throw new Error('Önce giriş yap.');if(!navigator.onLine)throw new Error('İnternet bağlantısı yok; verilerin yerelde duruyor.');if(syncBusy)throw new Error('Senkronizasyon sürüyor. Biraz sonra tekrar dene.');await pushLocalState();await checkRemote();},
   plan:async body=>{if(!user?.id)throw new Error('Gelişmiş Mata için hesabına giriş yap.');const {data,error}=await supabase.functions.invoke('mata-planner',{body});if(error){let message='Mata model bağlantısı kurulamadı. Yerel modu kullanabilir veya tekrar deneyebilirsin.';try{const detail=await error.context.json();if(detail.error)message=detail.error;}catch{}throw new Error(message);}if(data?.error)throw new Error(data.error);return data;}
 });
-bootstrap().catch(error=>console.warn('Hakuna account bootstrap failed',error));
+bootstrap().catch(error=>console.warn('Hakuna account bootstrap failed',error)).finally(()=>window.dispatchEvent(new Event('hakuna-account-changed')));
