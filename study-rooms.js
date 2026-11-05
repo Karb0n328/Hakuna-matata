@@ -294,7 +294,8 @@
     ownerArea.innerHTML=actions;ownerArea.hidden=!actions;
     const roster=members.slice().sort((a,b)=>Number(memberWorking(b,now))-Number(memberWorking(a,now))||a.username.localeCompare(b.username,'tr'));
     host.querySelector('[data-sr-roster]').innerHTML=roster.map((m,i)=>{
-      const inClass=isAtDesk(m,now),atWork=inClass&&memberWorking(m,now);
+      // Backgrounded phones can keep a valid focus session while WebKit suspends presence pings.
+      const inClass=memberWorking(m,now)||isAtDesk(m,now),atWork=inClass&&memberWorking(m,now);
       const label=!inClass?'Çevrimdışı':atWork?'Odaklanıyor':!free&&r.phase==='break'?'Molada':'Hazır';
       const task=atWork&&m.task_title?'<small class="sr-person-task">✎ '+E(m.task_title)+'</small>':'';
       return '<article class="sr-person '+(atWork?'sr-person-working ':'')+(inClass?'':'sr-person-away')+'">'
