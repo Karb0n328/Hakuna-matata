@@ -3,10 +3,10 @@ const {createServer}=require('node:http');
 const fs=require('node:fs');
 const {chromium,webkit}=require('playwright');
 const files={};
-for(const name of ['styles.css','study-rooms.css','study-rooms.js'])files[name]=fs.readFileSync(require('node:path').join(__dirname,'..',name),'utf8');
+for(const name of ['styles.css','study-rooms.css','study-rooms-immersive.css','study-rooms.js'])files[name]=fs.readFileSync(require('node:path').join(__dirname,'..',name),'utf8');
 const fixture=[
   '<!doctype html><html lang="tr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
-  '<link href="/styles.css" rel="stylesheet"><link href="/study-rooms.css" rel="stylesheet">',
+  '<link href="/styles.css" rel="stylesheet"><link href="/study-rooms.css" rel="stylesheet"><link href="/study-rooms-immersive.css" rel="stylesheet">',
   '<main class="main-area"><h1 id="pageTitle">Odalar</h1><section id="view"></section></main>',
   '<script>',
   'window.__uid="user-1";',
@@ -113,6 +113,13 @@ const server=createServer((req,res)=>{
     await page.locator('[data-sr-form=create] [name=mode]').selectOption('free');
     await page.locator('[data-sr-form=create] button[type=submit]').click();
     await page.locator('[data-sr-room-mode]').getByText('SERBEST ÇALIŞMA').waitFor();
+    assert(await page.locator('body').evaluate(el=>el.classList.contains('sr-immersed')),'room should enter isolated screen');
+    await page.locator('[data-theme=rain]').click();
+    assert.equal(await page.locator('.sr-room').getAttribute('data-atmosphere'),'rain','user should be able to choose an atmosphere');
+    await page.locator('[data-sr-action=zen]').click();
+    assert.equal(await page.locator('.sr-room').getAttribute('class').then(x=>x.includes('sr-zen')),true,'quiet view should be active');
+    assert.equal(await page.evaluate(()=>localStorage.getItem('hakuna.studyRooms.atmosphere')),'rain','atmosphere should persist locally');
+    await page.locator('[data-sr-action=zen]').click();
     await page.locator('[data-sr-action=start]').click();
     await page.locator('[data-sr-action=stop]').waitFor({timeout:10000});
     assert((await page.locator('[data-sr-room-mode]').textContent()).includes('SERBEST'));
@@ -121,6 +128,7 @@ const server=createServer((req,res)=>{
     page.once('dialog',dialog=>dialog.accept());
     await page.locator('[data-sr-action=close]').click();
     await page.locator('[data-sr-form=create]').waitFor();
+    assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('sr-immersed')),false,'lobby should restore regular shell');
     assert.equal(errors.length,0,'Page errors: '+errors.join(', '));
     console.log('PASS '+label+': room creation, shared clock, timer, roster security, presets, close, responsive layout');
   }finally{await context.close();await browser.close();}
