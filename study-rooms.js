@@ -4,6 +4,7 @@
   let host=null,roomId=null,snapshot=null,unsubscribe=null,poll=null,clock=null;
   let loading=false,busy=false,epoch=0,skewMs=0,lastUser=null,realtimeDelay=null;
   let heartbeat=null,personalTasks=[],selectedTask='',starting=false,countdownTimeout=null,countdownResolve=null;
+  let lastRosterKey='',lastPersonalKey='';
   const E=(value='')=>String(value==null?'':value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const id=()=>window.HakunaAccount?.info?.().id||null;
   const rpc=(name,args={})=>{
@@ -36,6 +37,7 @@
     clearInterval(heartbeat);clearTimeout(countdownTimeout);
     if(countdownResolve){const resolve=countdownResolve;countdownResolve=null;resolve();}
     poll=null;clock=null;heartbeat=null;realtimeDelay=null;countdownTimeout=null;starting=false;loading=false;
+    lastRosterKey='';lastPersonalKey='';
   }
   function leaveView(){
     clearLoops();epoch++;host=null;roomId=null;snapshot=null;busy=false;personalTasks=[];selectedTask='';
@@ -263,7 +265,7 @@
       :r.phase==='idle'?'Oda sahibinin etüdü başlatmasını bekle'
       :!started?'Ortak etüt için geri sayım başladı'
       :phaseLeft(r,now)===0?'Ortak etüt süresi tamamlandı.':'Kendi etüdünü başlat; süre kaldığı yerden sayılır.';
-    host.querySelector('[data-sr-personal-actions]').innerHTML=!r.is_active
+    const personalHtml=!r.is_active
       ?'<div class="sr-muted">Bu oda kapatıldı. Önceki sürelerin kayıtlı.</div>'
       :working
         ?'<div class="sr-working-chip"><span class="sr-working-pulse"></span> Çalışmaya devam ediyorsun</div>'
@@ -271,6 +273,11 @@
         :taskPicker
           +'<button class="primary-btn sr-cta" type="button" data-sr-action="start" '+(canStart?'':'disabled')+'>▶ Çalışmaya başla</button>'
           +'<small>'+hint+'</small>';
+    const personalKey=personalHtml+'|'+selectedTask;
+    if(personalKey!==lastPersonalKey){
+      lastPersonalKey=personalKey;
+      host.querySelector('[data-sr-personal-actions]').innerHTML=personalHtml;
+    }
     const picker=host.querySelector('[data-sr-task]');
     if(picker){picker.value=selectedTask;if(!picker.value)selectedTask='';}
     let actions='';
@@ -293,7 +300,13 @@
     const ownerArea=host.querySelector('[data-sr-owner-actions]');
     ownerArea.innerHTML=actions;ownerArea.hidden=!actions;
     const roster=members.slice().sort((a,b)=>Number(memberWorking(b,now))-Number(memberWorking(a,now))||a.username.localeCompare(b.username,'tr'));
-    host.querySelector('[data-sr-roster]').innerHTML=roster.map((m,i)=>{
+    // Avoid re-creating animated characters on every 12-second sync.
+    const rosterKey=JSON.stringify({mode:r.mode,phase:r.phase,
+      friends:roster.map(m=>[m.user_id,m.username,
+        memberWorking(m,now),isAtDesk(m,now),m.task_title])});
+    if(rosterKey!==lastRosterKey){
+      lastRosterKey=rosterKey;
+      host.querySelector('[data-sr-roster]').innerHTML=roster.map((m,i)=>{
       // Backgrounded phones can keep a valid focus session while WebKit suspends presence pings.
       const inClass=memberWorking(m,now)||isAtDesk(m,now),atWork=inClass&&memberWorking(m,now);
       const label=!inClass?'Çevrimdışı':atWork?'Odaklanıyor':!free&&r.phase==='break'?'Molada':'Hazır';
@@ -303,7 +316,8 @@
         +'<div class="sr-person-info"><strong>'+E(m.username)+(m.user_id===id()?' <span class="sr-me">sen</span>':'')+'</strong>'
         +'<small>'+(atWork?'🟢 ':inClass?'☕ ':'⚪ ')+label+'</small>'
         +task+'<span data-sr-member-time="'+E(m.user_id)+'">'+duration(liveSeconds(m,now))+'</span></div></article>';
-    }).join('');
+      }).join('');
+    }
     host.querySelector('[data-sr-footer]').innerHTML=r.is_active
       ?owner?'<button type="button" class="sr-link-danger" data-sr-action="close">Odayı kapat</button>'
         :'<button type="button" class="sr-link-danger" data-sr-action="leave">Odadan ayrıl</button>'
