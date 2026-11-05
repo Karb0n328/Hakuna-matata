@@ -22,7 +22,7 @@ function form(day,item){
  return '<form class="gw-form" data-day="'+day+'" data-id="'+esc(item?.id||'')+'"><label>Ders<select name="subject">'+SUBJECTS.map(s=>'<option value="'+esc(s)+'" '+(s===(item?.subject||'Matematik')?'selected':'')+'>'+esc(s)+'</option>').join('')+'</select></label><label>Yapılacak çalışma<input name="title" required minlength="2" maxlength="200" placeholder="Örn. Kesirler testi" value="'+esc(item?.title||'')+'"></label><label>Hedef / süre<input name="target" maxlength="160" placeholder="Örn. 20 soru · 30 dk" value="'+esc(item?.target||'')+'"></label><div class="gw-form-actions"><button class="primary-btn" type="submit">'+(item?'Değişiklikleri kaydet':'Programa ekle')+'</button><button class="secondary-btn" type="button" data-cancel>Vazgeç</button></div><div class="gw-feedback" role="status"></div></form>';
 }
 function itemCard(t,done,mentor){
- return '<article class="gw-item '+(done?'gw-done':'')+'" data-plan-id="'+esc(t.id)+'"><span class="gw-item-emoji">'+(EMOJI[t.subject]||'✨')+'</span><div class="gw-item-info"><strong>'+esc(t.title)+'</strong><small>'+esc(t.subject)+(t.target?' · '+esc(t.target):'')+'</small></div>'+(mentor?'<div class="gw-item-actions"><button type="button" class="gw-drag-handle" data-drag="'+esc(t.id)+'" aria-label="Taşı: '+esc(t.title)+'" title="Tut ve başka güne sürükle; klavyede sağ/sol ok">⠿</button><button type="button" data-copy="'+esc(t.id)+'" aria-label="Aynı güne kopyala" title="Aynı güne kopyala">⧉</button><button type="button" data-edit="'+esc(t.id)+'" aria-label="Düzenle">✎</button><button type="button" data-delete="'+esc(t.id)+'" aria-label="Sil">×</button></div>':'<button type="button" class="gw-check" data-check="'+esc(t.id)+'" aria-label="'+(done?'Tamamlamayı geri al':'Tamamlandı işaretle')+'">'+(done?'✓':'○')+'</button>')+'</article>';
+ return '<article class="gw-item '+(done?'gw-done':'')+'" data-plan-id="'+esc(t.id)+'"'+(mentor?' data-drag="'+esc(t.id)+'" tabindex="0" aria-label="'+esc(t.title)+'; taşımak için 2 saniye basılı tut veya sağ/sol ok kullan"':'')+'><span class="gw-item-emoji">'+(EMOJI[t.subject]||'✨')+'</span><div class="gw-item-info"><strong>'+esc(t.title)+'</strong><small>'+esc(t.subject)+(t.target?' · '+esc(t.target):'')+'</small></div>'+(mentor?'<div class="gw-item-actions"><button type="button" data-copy="'+esc(t.id)+'" aria-label="Aynı güne kopyala" title="Aynı güne kopyala">⧉</button><button type="button" data-edit="'+esc(t.id)+'" aria-label="Düzenle">✎</button><button type="button" data-delete="'+esc(t.id)+'" aria-label="Sil">×</button></div>':'<button type="button" class="gw-check" data-check="'+esc(t.id)+'" aria-label="'+(done?'Tamamlamayı geri al':'Tamamlandı işaretle')+'">'+(done?'✓':'○')+'</button>')+'</article>';
 }
 function statusLine(total,done){return '<div class="gw-progress"><div class="gw-progress-bar"><span style="width:'+(total?Math.round(done/total*100):0)+'%"></span></div><small>'+done+' / '+total+' tamamlandı</small></div>'}
 // Appending uses the highest order, so deleted/moved rows never create collisions.
@@ -65,57 +65,92 @@ function bindPlanner(view,plan,week,onEdit,onDelete){
    if(!rows.some(r=>r.id===id))throw Error('Değişiklik kaydedilemedi.');
    message(DAYS[day]+' gününe taşındı.');
   }catch(e){item.weekday=oldDay;item.sort_order=oldOrder;origin.insertBefore(card,next?.parentElement===origin?next:null);refreshCounts();message('Taşınamadı: '+e.message)}
-  finally{lock(false);card.querySelector('[data-drag]').focus({preventScroll:true})}
+  finally{lock(false);card.focus({preventScroll:true})}
  }
  // Delegate new cards too, without rebuilding the grid or losing scroll position.
  grid.addEventListener('click',e=>{if(busy||drag)return;const b=e.target.closest('button');if(!b)return;if(b.dataset.copy)copy(b.dataset.copy);if(b.dataset.edit){const item=plan.find(p=>p.id===b.dataset.edit);if(item)onEdit(item.weekday,item)}if(b.dataset.delete)onDelete(b.dataset.delete)});
  grid.addEventListener('keydown',e=>{
-  const h=e.target.closest('[data-drag]');if(!h)return;
+  const h=e.target.closest('[data-drag]');if(!h||e.target.closest('button'))return;
   if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();const item=plan.find(p=>p.id===h.dataset.drag);if(item)move(item.id,item.weekday+(e.key==='ArrowRight'?1:-1))}
  });
  function clear(){
-  if(!drag)return;cancelAnimationFrame(frame);drag.ghost?.remove();drag.card.classList.remove('gw-drag-source');
+  if(!drag)return;const old=drag;drag=null;
+  clearTimeout(old.timer);cancelAnimationFrame(frame);old.ghost?.remove();
+  old.card.classList.remove('gw-pressing','gw-drag-source');
   grid.querySelectorAll('.gw-drop-target').forEach(d=>d.classList.remove('gw-drop-target'));
-  document.body.classList.remove('gw-is-dragging');drag.handle.releasePointerCapture?.(drag.pointer);
-  document.removeEventListener('keydown',escape);window.removeEventListener('blur',cancel);drag=null;
+  document.body.classList.remove('gw-is-dragging');
+  if(old.pointer!==null&&old.card.hasPointerCapture?.(old.pointer))old.card.releasePointerCapture(old.pointer);
+  document.removeEventListener('keydown',escape);window.removeEventListener('blur',cancel);
  }
- function cancel(){clear();message('Taşıma iptal edildi.')}
+ function cancel(){const active=drag?.active;clear();if(active)message('Taşıma iptal edildi.')}
  function escape(e){if(e.key==='Escape'){e.preventDefault();cancel()}}
+ function hit(x,y){const day=document.elementFromPoint(x,y)?.closest('.gw-day');return day&&grid.contains(day)?day:null}
  function tick(){
   if(!drag)return;if(!shell.isConnected){clear();return}
   if(drag.active){
    const r=grid.getBoundingClientRect(),edge=45;
-   if(drag.y>=r.top&&drag.y<=r.bottom){if(drag.x<r.left+edge)grid.scrollLeft-=12;else if(drag.x>r.right-edge)grid.scrollLeft+=12}
+   if(drag.y>=r.top&&drag.y<=r.bottom){if(drag.x<r.left+edge)grid.scrollLeft-=10;else if(drag.x>r.right-edge)grid.scrollLeft+=10}
    if(drag.y<65)window.scrollBy(0,-10);else if(drag.y>innerHeight-65)window.scrollBy(0,10);
-   drag.ghost.style.transform='translate3d('+(drag.x-drag.offsetX)+'px,'+(drag.y-drag.offsetY)+'px,0)';
-   const target=document.elementFromPoint(drag.x,drag.y)?.closest('.gw-day');
-   drag.target=target&&grid.contains(target)?target:null;
-   grid.querySelectorAll('.gw-drop-target').forEach(d=>d.classList.toggle('gw-drop-target',d===drag.target));
-   drag.target?.classList.add('gw-drop-target');
+   drag.ghost.style.transform='translate3d('+(drag.x-drag.offsetX)+'px,'+(drag.y-drag.offsetY-8)+'px,0) scale(1.035) rotate(-1deg)';
+   const target=hit(drag.x,drag.y);
+   grid.querySelectorAll('.gw-drop-target').forEach(d=>d.classList.toggle('gw-drop-target',d===target));
+   target?.classList.add('gw-drop-target');
   }
   frame=requestAnimationFrame(tick);
  }
+ function begin(card,x,y,pointer,touchId){
+  if(busy||drag)return;const r=card.getBoundingClientRect();
+  drag={card,pointer,touchId,id:card.dataset.drag,x,y,startX:x,startY:y,offsetX:x-r.left,offsetY:y-r.top,active:false};
+  card.classList.add('gw-pressing');
+  drag.timer=setTimeout(()=>{
+   if(!drag||!shell.isConnected){clear();return}
+   drag.active=true;card.classList.remove('gw-pressing');
+   const ghost=card.cloneNode(true);drag.ghost=ghost;ghost.classList.add('gw-drag-ghost');ghost.removeAttribute('tabindex');ghost.setAttribute('aria-hidden','true');ghost.inert=true;
+   ghost.style.width=card.getBoundingClientRect().width+'px';
+   ghost.style.transform='translate3d('+(drag.x-drag.offsetX)+'px,'+(drag.y-drag.offsetY-8)+'px,0) scale(1.035) rotate(-1deg)';
+   document.body.append(ghost);card.classList.add('gw-drag-source');document.body.classList.add('gw-is-dragging');
+   message('Taşımaya hazır. İstediğin güne bırak.');
+  },2000);
+  if(pointer!==null)card.setPointerCapture(pointer);
+  document.addEventListener('keydown',escape);window.addEventListener('blur',cancel);frame=requestAnimationFrame(tick);
+ }
+ function update(x,y){
+  if(!drag)return;drag.x=x;drag.y=y;
+  // Moving before the hold completes is an ordinary scroll, never a drag.
+  if(!drag.active&&Math.hypot(x-drag.startX,y-drag.startY)>10)clear();
+ }
+ function finish(x,y){
+  if(!drag)return;const target=hit(x,y),id=drag.id,active=drag.active;
+  clear();if(active&&target){const day=Number(target.dataset.weekday);move(id,day)}else if(active)message('Taşıma iptal edildi.');
+ }
+ grid.addEventListener('contextmenu',e=>{if(e.target.closest('[data-drag]')&&!e.target.closest('button'))e.preventDefault()});
  grid.addEventListener('pointerdown',e=>{
-  const h=e.target.closest('[data-drag]');if(!h||busy||drag||e.button!==0)return;
-  const card=h.closest('.gw-item'),r=card.getBoundingClientRect();
-  drag={handle:h,card,pointer:e.pointerId,id:h.dataset.drag,x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY,offsetX:e.clientX-r.left,offsetY:e.clientY-r.top,active:false,target:null};
-  h.setPointerCapture(e.pointerId);document.addEventListener('keydown',escape);window.addEventListener('blur',cancel);frame=requestAnimationFrame(tick);
+  if(e.pointerType==='touch'||e.button!==0||!e.isPrimary||e.target.closest('button,input,select,textarea'))return;
+  const card=e.target.closest('[data-drag]');if(card)begin(card,e.clientX,e.clientY,e.pointerId,null);
  });
- grid.addEventListener('pointermove',e=>{
-  if(!drag||e.pointerId!==drag.pointer)return;drag.x=e.clientX;drag.y=e.clientY;
-  if(!drag.active&&Math.hypot(drag.x-drag.startX,drag.y-drag.startY)>6){
-   drag.active=true;drag.ghost=drag.card.cloneNode(true);drag.ghost.classList.add('gw-drag-ghost');drag.ghost.setAttribute('aria-hidden','true');drag.ghost.inert=true;drag.ghost.style.width=drag.card.getBoundingClientRect().width+'px';document.body.append(drag.ghost);drag.card.classList.add('gw-drag-source');document.body.classList.add('gw-is-dragging');
-  }
-  if(drag.active)e.preventDefault();
- });
- grid.addEventListener('pointerup',e=>{
-  if(!drag||e.pointerId!==drag.pointer)return;
-  const target=document.elementFromPoint(e.clientX,e.clientY)?.closest('.gw-day');
-  const id=drag.id,day=drag.active&&target&&grid.contains(target)?Number(target.dataset.weekday):null;
-  clear();if(day!==null)move(id,day);
- });
- grid.addEventListener('pointercancel',cancel);
- grid.addEventListener('lostpointercapture',()=>{if(drag)clear()});
+ grid.addEventListener('pointermove',e=>{if(drag&&e.pointerId===drag.pointer){update(e.clientX,e.clientY);if(drag?.active)e.preventDefault()}});
+ grid.addEventListener('pointerup',e=>{if(drag&&e.pointerId===drag.pointer)finish(e.clientX,e.clientY)});
+ grid.addEventListener('pointercancel',e=>{if(drag&&e.pointerId===drag.pointer)cancel()});
+ grid.addEventListener('lostpointercapture',e=>{if(drag&&e.pointerId===drag.pointer)clear()});
+ // Touch listeners keep native scrolling before activation and suppress it only
+ // after the hold, including iPad Safari where touch-action cannot change mid-gesture.
+ grid.addEventListener('touchstart',e=>{
+  if(e.touches.length!==1){cancel();return}
+  if(e.target.closest('button,input,select,textarea'))return;
+  const card=e.target.closest('[data-drag]'),t=e.changedTouches[0];if(card)begin(card,t.clientX,t.clientY,null,t.identifier);
+ },{passive:true});
+ grid.addEventListener('touchmove',e=>{
+  if(!drag||drag.touchId==null)return;
+  const t=Array.from(e.touches).find(t=>t.identifier===drag.touchId);if(!t)return;
+  if(drag.active)e.preventDefault();update(t.clientX,t.clientY);
+ },{passive:false});
+ grid.addEventListener('touchend',e=>{
+  if(!drag||drag.touchId==null)return;
+  const t=Array.from(e.changedTouches).find(t=>t.identifier===drag.touchId);if(!t)return;
+  if(drag.active)e.preventDefault();finish(t.clientX,t.clientY);
+ },{passive:false});
+ grid.addEventListener('touchcancel',cancel);
+
 }
 async function render(view,page,adHoc,mentor){
  view.innerHTML='<div class="gd-loading">Haftalık program yükleniyor…</div>';
@@ -128,7 +163,7 @@ async function render(view,page,adHoc,mentor){
  const total=plan.length,completed=plan.filter(x=>done.has(x.id)).length;
  if(mentor){
  const cells=DAYS.map((day,i)=>{const items=plan.filter(p=>p.weekday===i);const finished=items.filter(p=>done.has(p.id)).length;return '<section class="gw-day" data-weekday="'+i+'"><div class="gw-day-head"><div><span>'+day+'</span><small>'+shift(week,i).slice(5).split('-').reverse().join('.')+'</small><small class="gw-day-count">✓ '+finished+' / '+items.length+' tamamlandı</small></div><button type="button" data-add="'+i+'" title="Bu güne çalışma ekle">＋</button></div><div class="gw-day-items">'+(items.map(t=>itemCard(t,done.has(t.id),true)).join('')||'<div class="gw-day-empty">Henüz çalışma yok</div>')+'</div><div class="gw-day-editor"></div></section>'}).join('');
- view.innerHTML='<div class="gw-shell gw-mentor"><div class="gw-top"><div><div class="gd-kicker">REHBERLİK · AYZOS</div><h2>Haftalık çalışma çizelgesi</h2><p>Kutuları kopyala veya ⠿ tutamacından başka güne sürükle.</p></div><div class="gw-week-controls"><button type="button" data-week="-7">‹</button><strong>'+week.split('-').reverse().join('.')+' – '+end.split('-').reverse().join('.')+'</strong><button type="button" data-week="7">›</button><button type="button" data-this-week>Bu hafta</button></div></div>'+statusLine(total,completed)+'<div class="gw-operation-status" role="status" aria-live="polite"></div><div class="gw-grid">'+cells+'</div><section class="gw-extras"><h3>Eklenen bağımsız ödevler</h3><p>Önceden eklediğin ödevler silinmedi. Onları aşağıdan düzenleyebilirsin.</p><div class="gw-adhoc"></div></section></div>';
+ view.innerHTML='<div class="gw-shell gw-mentor"><div class="gw-top"><div><div class="gd-kicker">REHBERLİK · AYZOS</div><h2>Haftalık çalışma çizelgesi</h2><p>Taşımak için kutuya 2 saniye basılı tut, ardından istediğin güne bırak.</p></div><div class="gw-week-controls"><button type="button" data-week="-7">‹</button><strong>'+week.split('-').reverse().join('.')+' – '+end.split('-').reverse().join('.')+'</strong><button type="button" data-week="7">›</button><button type="button" data-this-week>Bu hafta</button></div></div>'+statusLine(total,completed)+'<div class="gw-operation-status" role="status" aria-live="polite"></div><div class="gw-grid">'+cells+'</div><section class="gw-extras"><h3>Eklenen bağımsız ödevler</h3><p>Önceden eklediğin ödevler silinmedi. Onları aşağıdan düzenleyebilirsin.</p><div class="gw-adhoc"></div></section></div>';
  const ad=view.querySelector('.gw-adhoc');ad.innerHTML=adHoc.length?adHoc.map(t=>'<div class="gw-extra-row"><span>'+esc(t.title)+' · '+esc(t.due_date||'Tarihsiz')+' · '+(t.completed?'✓ Tamamlandı':'○ Bekliyor')+'</span><div><button data-old-edit="'+esc(t.id)+'">Düzenle</button><button data-old-delete="'+esc(t.id)+'">Sil</button></div></div>').join(''):'<p>Henüz ek ödev yok.</p>';
  bindPlanner(view,plan,week,openEditor,async id=>{if(!confirm('Bu çalışmayı programdan silmek istiyor musun?'))return;try{await request('guidance_weekly_plan?id=eq.'+id,'DELETE');render(view,page,adHoc,mentor)}catch(e){alert(e.message)}});
  view.querySelectorAll('[data-week]').forEach(b=>b.onclick=()=>{selectedWeek=shift(week,Number(b.dataset.week));render(view,page,adHoc,mentor)});
