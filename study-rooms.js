@@ -5,6 +5,21 @@
   let loading=false,busy=false,epoch=0,skewMs=0,lastUser=null,realtimeDelay=null;
   let heartbeat=null,personalTasks=[],selectedTask='',starting=false,countdownTimeout=null,countdownResolve=null;
   let lastRosterKey='',lastPersonalKey='';
+  let spaceTheme='night',spaceZen=false;
+  const THEMES=new Set(['night','rain','dawn']);
+  function loadPersonalSpace(){
+    try{const choice=localStorage.getItem('hakuna.studyRooms.atmosphere');spaceTheme=THEMES.has(choice)?choice:'night';spaceZen=localStorage.getItem('hakuna.studyRooms.quiet')==='1';}
+    catch{spaceTheme='night';spaceZen=false;}
+  }
+  function applyPersonalSpace(){
+    if(!host||!roomId)return;
+    const room=host.querySelector('.sr-room');if(!room)return;
+    room.setAttribute('data-atmosphere',spaceTheme);
+    room.classList.toggle('sr-zen',spaceZen);
+    room.querySelectorAll('[data-sr-action="atmosphere"]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.theme===spaceTheme)));
+    const button=room.querySelector('[data-sr-action="zen"]');
+    if(button){button.setAttribute('aria-pressed',String(spaceZen));button.textContent=spaceZen?'Ayrıntıları göster':'Sade görünüm';}
+  }
   const E=(value='')=>String(value==null?'':value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const id=()=>window.HakunaAccount?.info?.().id||null;
   const rpc=(name,args={})=>{
@@ -40,6 +55,7 @@
     lastRosterKey='';lastPersonalKey='';
   }
   function leaveView(){
+    document.body.classList.remove('sr-immersed');
     clearLoops();epoch++;host=null;roomId=null;snapshot=null;busy=false;personalTasks=[];selectedTask='';
   }
   function notice(message,isError=false){
@@ -96,6 +112,7 @@
       +'<p data-sr-notice hidden role="status"></p></div>';
   }
   function showLobby(){
+    document.body.classList.remove('sr-immersed');
     clearLoops();roomId=null;snapshot=null;epoch++;personalTasks=[];selectedTask='';
     if(!active())return;
     host.innerHTML=lobbyMarkup();
@@ -126,28 +143,33 @@
     }finally{if(ticket===epoch)loading=false;}
   }
   function roomMarkup(){
-    return '<div class="sr-shell sr-room">'
-      +'<header class="sr-room-header"><button type="button" class="secondary-btn" data-sr-action="back">← Odalarım</button>'
-      +'<div class="sr-room-heading"><span class="sr-kicker" data-sr-room-mode>BİRLİKTE ETÜT</span><h2 data-sr-room-title>Oda açılıyor…</h2>'
+    return '<div class="sr-shell sr-room" data-atmosphere="night">'
+      +'<header class="sr-room-header"><button type="button" class="secondary-btn" data-sr-action="back">← Odalar</button>'
+      +'<div class="sr-room-heading"><span class="sr-kicker" data-sr-room-mode>SESSİZ ODA</span><h2 data-sr-room-title>Oda açılıyor…</h2>'
       +'<div class="sr-room-sub" data-sr-room-meta></div></div>'
-      +'<div class="sr-invite"><span data-sr-invite>••••••••</span><button type="button" data-sr-action="copy" class="secondary-btn">Davet bağlantısını kopyala</button></div></header>'
+      +'<div class="sr-space-tools"><div class="sr-scene-picker" role="group" aria-label="Çalışma ortamı">'
+      +'<button type="button" data-sr-action="atmosphere" data-theme="night" aria-pressed="true">Gece</button>'
+      +'<button type="button" data-sr-action="atmosphere" data-theme="rain" aria-pressed="false">Yağmur</button>'
+      +'<button type="button" data-sr-action="atmosphere" data-theme="dawn" aria-pressed="false">Sabah</button></div>'
+      +'<button type="button" class="sr-zen-toggle" data-sr-action="zen" aria-pressed="false">Sade görünüm</button></div>'
+      +'<details class="sr-invite"><summary>+ Davet</summary><span data-sr-invite>••••••••</span><button type="button" data-sr-action="copy" class="secondary-btn">Bağlantıyı kopyala</button></details></header>'
       +'<div class="sr-room-grid"><section class="sr-session-card">'
-      +'<div class="sr-phase-label" data-sr-phase>Etüt bekleniyor</div>'
-      +'<div class="sr-focus-ring" data-sr-ring><div class="sr-ring-core"><span class="sr-ring-icon" data-sr-ring-icon>🌱</span>'
-      +'<strong data-sr-clock>00:00:00</strong><small data-sr-clock-note>Ortak etüt henüz başlamadı</small></div></div>'
-      +'<div data-sr-own-status class="sr-own-status">Çalışman henüz başlamadı</div>'
+      +'<div class="sr-phase-label" data-sr-phase>Hazırlanıyor</div>'
+      +'<div class="sr-focus-ring" data-sr-ring><div class="sr-ring-core"><span class="sr-ring-icon" data-sr-ring-icon>☾</span>'
+      +'<strong data-sr-clock>00:00:00</strong><small data-sr-clock-note></small></div></div>'
+      +'<div data-sr-own-status class="sr-own-status"></div>'
       +'<div data-sr-personal-actions class="sr-action-area"></div>'
       +'<div data-sr-owner-actions class="sr-owner-area"></div></section>'
-      +'<section class="sr-friends"><div class="sr-section-head"><h3>Çalışma masası <span data-sr-member-count></span></h3>'
-      +'<span class="sr-live-mark">● Canlı</span></div><div class="sr-roster" data-sr-roster><div class="sr-loading">Katılımcılar yükleniyor…</div></div>'
-      +'<p class="sr-friends-tip">📖 Birisi etüde başladığında masasındaki kitap hareketlenir.</p></section></div>'
+      +'<section class="sr-friends"><div class="sr-section-head"><h3>Masalar <span data-sr-member-count></span></h3></div>'
+      +'<div class="sr-roster" data-sr-roster><div class="sr-loading">Yükleniyor…</div></div></section></div>'
       +'<div class="sr-room-footer" data-sr-footer></div>'
-      +'<div class="sr-countdown" data-sr-countdown hidden aria-live="assertive"><div class="sr-countdown-inner"><div>ODAKLANMAYA HAZIRLAN</div><strong data-sr-countdown-num>3</strong><span>Kalemini al, başlıyoruz!</span></div></div>'
+      +'<div class="sr-countdown" data-sr-countdown hidden aria-live="assertive"><div class="sr-countdown-inner"><div>ETÜT BAŞLIYOR</div><strong data-sr-countdown-num>3</strong></div></div>'
       +'<p class="sr-note" data-sr-notice hidden role="status"></p></div>';
   }
   function openRoom(next){
     if(!active())return;
     clearLoops();roomId=next;snapshot=null;epoch++;personalTasks=[];selectedTask='';host.innerHTML=roomMarkup();
+    document.body.classList.add('sr-immersed');applyPersonalSpace();
     void loadRoom();void loadPersonalTasks();void touchRoom();
     heartbeat=setInterval(()=>{if(document.visibilityState==='visible')void touchRoom();},25000);
     unsubscribe=window.HakunaAccount?.roomListen?.(roomId,()=>{
@@ -394,6 +416,18 @@
     }
   }
   async function act(action,button){
+    if(action==='atmosphere'){
+      if(!THEMES.has(button.dataset.theme)||!roomId)return;
+      spaceTheme=button.dataset.theme;
+      try{localStorage.setItem('hakuna.studyRooms.atmosphere',spaceTheme);}catch{}
+      applyPersonalSpace();return;
+    }
+    if(action==='zen'){
+      if(!roomId)return;
+      spaceZen=!spaceZen;
+      try{localStorage.setItem('hakuna.studyRooms.quiet',spaceZen?'1':'0');}catch{}
+      applyPersonalSpace();return;
+    }
     if(busy)return;
     if(action==='back'){showLobby();return;}
     if(action==='refresh'){void loadLobby();return;}
@@ -442,7 +476,7 @@
     finally{busy=false;if(btn?.isConnected)btn.disabled=false;}
   }
   function render(view){
-    leaveView();host=view;host.dataset.studyRooms='1';lastUser=id();
+    leaveView();host=view;host.dataset.studyRooms='1';lastUser=id();loadPersonalSpace();
     host.onclick=e=>{
       const b=e.target.closest('[data-sr-action]');
       if(b&&host.contains(b))void act(b.dataset.srAction,b);
