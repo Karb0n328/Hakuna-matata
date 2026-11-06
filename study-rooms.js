@@ -322,7 +322,8 @@
     }
     const ownerArea=host.querySelector('[data-sr-owner-actions]');
     if(ownerArea.dataset.renderKey!==actions){const wasOpen=ownerArea.querySelector('details')?.open;ownerArea.innerHTML=actions;ownerArea.dataset.renderKey=actions;if(wasOpen&&ownerArea.querySelector('details'))ownerArea.querySelector('details').open=true;}ownerArea.hidden=!actions;
-    const roster=members.slice().sort((a,b)=>Number(memberWorking(b,now))-Number(memberWorking(a,now))||a.username.localeCompare(b.username,'tr'));
+    // Keep each member in their seat when starting work or taking a break.
+    const roster=members.slice();
     // Avoid re-creating animated characters on every 12-second sync.
     const rosterKey=JSON.stringify({mode:r.mode,phase:r.phase,
       friends:roster.map(m=>[m.user_id,m.username,

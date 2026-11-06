@@ -92,6 +92,7 @@ const server=createServer((req,res)=>{
     // Force a fresh server snapshot to check XSS escaping and animated study desks.
     await page.evaluate(()=>window.dispatchEvent(new Event('online')));
     await page.locator('.sr-person').nth(1).waitFor();
+    assert.deepEqual(await page.locator('.sr-person').evaluateAll(nodes=>nodes.map(n=>n.dataset.srUser)),['user-1','user-2'],'members keep the same seat while others study');
     assert.equal(await page.locator('.sr-roster img').count(),0,'username must never inject HTML');
     assert((await page.locator('.sr-roster').textContent()).includes('<img src=x onerror=alert(1)>'));
     await page.evaluate(()=>{window.__state.away=true;window.dispatchEvent(new Event('online'));});

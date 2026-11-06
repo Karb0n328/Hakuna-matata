@@ -36,7 +36,7 @@
   +'<section class="sx-note" data-sx-note hidden><div><span>SONRAKİ OTURUMA</span><button type="button" data-sx="close-note" aria-label="Notu kapat">×</button></div><h3>Buradan devam edeceğim.</h3><label class="sx-note-label" for="sx-next-note">Kendine bir not</label><textarea id="sx-next-note" maxlength="240" rows="3" placeholder="Örn. Organik kimya, 42. sayfadaki sorudan devam.">'+esc(note)+'</textarea><footer><small>Yalnızca sen, bu cihazda.</small><button type="button" data-sx="save-note">Notu sakla</button></footer></section>'
   +'<p class="sx-status" data-sx-status role="status"></p>';
  }
- function clear(){soundStop();if(root&&listen)root.removeEventListener('click',listen);if(root&&change)root.removeEventListener('input',change);root=null;snapshot=null;scope='';listen=null;change=null;desk=false;starKey='';volume=.35;}
+ function clear(){soundStop();if(root&&listen)root.removeEventListener('click',listen);if(root&&change)root.removeEventListener('input',change);root?.querySelector('.sx-experience')?.remove();root?.querySelector('.sr-room')?.classList.remove('sx-my-desk');root=null;snapshot=null;scope='';listen=null;change=null;desk=false;starKey='';volume=.35;}
  function mount(host,data,user){
   const next=user+':'+data.room.id;if(scope===next&&root===host)return;
   clear();root=host;snapshot=data;uid=user;scope=next;note=readNote();
