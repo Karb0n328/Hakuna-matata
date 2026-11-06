@@ -67,8 +67,6 @@ afterFirstPaint(()=>{
       await import('./study-rooms.js?v=5-offline');
       if(document.querySelector('#pageTitle')?.textContent==='Odalar')window.HakunaStudyRooms?.render(document.querySelector('#view'));
     }catch(err){console.warn('Hakuna study rooms load',err);}
-    // Batu pilot — separate module so the existing pages remain unchanged.
-    void import('./ai-teacher.js?v=batu4').catch(err=>console.warn('Hakuna AI teacher load',err));
     await Promise.allSettled([
       import('./account-auth-hotfix.js?v=6'),
       import('./settings-copy-fix.js?v=1'),

@@ -9,4 +9,5 @@ for f in list(root.glob('*.js'))+list(root.glob('*.css')):
 for f in [root/'index.html',*root.glob('*.js')]:
     for ref in re.findall(r'''["'](\./[^"'\s<>]+\.(?:js|css|json)(?:\?[^"'\s<>]+)?)["']''',f.read_text()):
         if (root/ref.split('?')[0]).exists() and not ref.startswith('./sw.js'):assets.add(ref)
+assets={ref for ref in assets if not ref.split('?')[0] in {'./ai-teacher.js','./ai-teacher.css'}}
 p.write_text(s[:a]+'const ASSETS='+json.dumps(sorted(assets),ensure_ascii=False)+s[b:])
