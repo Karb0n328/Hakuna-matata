@@ -102,6 +102,7 @@ const server=createServer((req,res)=>{
     await page.locator('[data-sr-action=start]').waitFor();
     assert(await page.locator('[data-sr-action=start]').isDisabled(),'break must disable study start');
     await page.locator('[data-sr-action=idle]').click();
+    await page.locator('.sx-room-settings summary').click();
     await page.locator('[data-sr-form=settings] [name=focus]').fill('40');
     await page.locator('[data-sr-form=settings] [name=break]').fill('5');
     await page.locator('[data-sr-form=settings] button[type=submit]').click();
@@ -113,6 +114,8 @@ const server=createServer((req,res)=>{
     assert.equal(await page.locator('[data-sx-stars] circle').count(),2);
     await page.locator('[data-sx=desk]').click();
     assert.equal(await page.locator('.sx-my-desk .sx-self').count(),1);
+    fs.mkdirSync('test-results',{recursive:true});
+    await page.screenshot({path:'test-results/desk-'+width+'.png',fullPage:true});
     await page.locator('[data-sx=desk]').click();
     await page.locator('[data-sx=note]').click();
     await page.locator('#sx-next-note').fill('Sayfa 42');
@@ -122,6 +125,7 @@ const server=createServer((req,res)=>{
     await page.locator('[data-sx-sound=rain]').click();
     await page.waitForFunction(()=>document.querySelector('[data-sx-sound=rain]')?.getAttribute('aria-pressed')==='true');
     await page.locator('.sx-sound summary').click();
+    await page.locator('.sx-room-settings summary').click();
     fs.mkdirSync('test-results',{recursive:true});
     await page.screenshot({path:'test-results/room-'+width+'.png',fullPage:true});
     page.once('dialog',dialog=>dialog.accept());

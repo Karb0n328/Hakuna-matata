@@ -302,7 +302,7 @@
       host.querySelector('[data-sr-personal-actions]').innerHTML=personalHtml;
     }
     const picker=host.querySelector('[data-sr-task]');
-    if(picker)picker.value=selectedTask;
+    if(picker)picker.value=personalTasks.includes(selectedTask)?selectedTask:'';
     let actions='';
     if(owner&&r.is_active){
       actions='<div class="sr-owner-title">Oda kontrolleri</div>';
@@ -310,18 +310,18 @@
         +'<button type="button" class="secondary-btn" data-sr-action="focus">📖 Yeni etüt</button>'
         +'<button type="button" class="secondary-btn" data-sr-action="break">☕ Mola ver</button>'
         +'<button type="button" class="secondary-btn" data-sr-action="idle">⏸ Turu durdur</button></div>';
-      if(r.phase==='idle')actions+='<form data-sr-form="settings" class="sr-settings">'
+      if(r.phase==='idle')actions+='<details class="sx-room-settings"><summary>Oda ayarları</summary><form data-sr-form="settings" class="sr-settings">'
         +'<label>Etüt (dk)<input name="focus" type="number" min="5" max="180" value="'+Number(r.focus_minutes)+'" required></label>'
         +'<label>Mola (dk)<input name="break" type="number" min="1" max="60" value="'+Number(r.break_minutes)+'" required></label>'
         +'<label class="sr-settings-mode">Çalışma biçimi<select name="mode" class="sr-mode-select">'
         +'<option value="shared" '+(free?'':'selected')+'>⏳ Ortak etüt</option>'
         +'<option value="free" '+(free?'selected':'')+'>🌿 Serbest çalışma</option>'
         +'</select></label>'
-        +'<button type="submit" class="secondary-btn">Ayarları kaydet</button></form>';
+        +'<button type="submit" class="secondary-btn">Ayarları kaydet</button></form></details>';
       
     }
     const ownerArea=host.querySelector('[data-sr-owner-actions]');
-    ownerArea.innerHTML=actions;ownerArea.hidden=!actions;
+    if(ownerArea.dataset.renderKey!==actions){const wasOpen=ownerArea.querySelector('details')?.open;ownerArea.innerHTML=actions;ownerArea.dataset.renderKey=actions;if(wasOpen&&ownerArea.querySelector('details'))ownerArea.querySelector('details').open=true;}ownerArea.hidden=!actions;
     const roster=members.slice().sort((a,b)=>Number(memberWorking(b,now))-Number(memberWorking(a,now))||a.username.localeCompare(b.username,'tr'));
     // Avoid re-creating animated characters on every 12-second sync.
     const rosterKey=JSON.stringify({mode:r.mode,phase:r.phase,
