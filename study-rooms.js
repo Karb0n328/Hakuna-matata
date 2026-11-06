@@ -47,6 +47,7 @@
   }
   function active(){return !!host&&host.isConnected&&host.dataset.studyRooms==='1';}
   function clearLoops(){
+    window.HakunaRoomExperience?.clear();
     if(unsubscribe){unsubscribe();unsubscribe=null;}
     clearInterval(poll);clearInterval(clock);clearTimeout(realtimeDelay);
     clearInterval(heartbeat);clearTimeout(countdownTimeout);
@@ -278,7 +279,7 @@
     host.querySelector('[data-sr-invite]').textContent=r.invite_code;
     host.querySelector('[data-sr-member-count]').textContent='('+members.length+'/30)';
     const taskOptions=personalTasks.map(t=>'<option value="'+E(t)+'">'+E(t)+'</option>').join('');
-    const taskPicker='<label class="sr-task-pick">Çalışacağın görev (isteğe bağlı)'
+    const taskPicker='<label class="sr-task-pick">Bu oturumda tek hedefim<input class="sx-intent" data-sx-intent maxlength="90" placeholder="Örn. Dinamikten iki test" value="'+E(selectedTask)+'"></label><label class="sr-task-pick sx-task-select">Planımdan seç'
       +'<select data-sr-task><option value="">Görev seçmeden çalış</option>'+taskOptions+'</select>'
       +'</label>';
     const hint=free
@@ -295,13 +296,13 @@
         :taskPicker
           +'<button class="primary-btn sr-cta" type="button" data-sr-action="start" '+(canStart?'':'disabled')+'>▶ Çalışmaya başla</button>'
           +'<small class="sr-action-hint">'+hint+'</small>';
-    const personalKey=personalHtml+'|'+selectedTask;
+    const personalKey=JSON.stringify([working,canStart,r.is_active,r.mode,r.phase,personalTasks]);
     if(personalKey!==lastPersonalKey){
       lastPersonalKey=personalKey;
       host.querySelector('[data-sr-personal-actions]').innerHTML=personalHtml;
     }
     const picker=host.querySelector('[data-sr-task]');
-    if(picker){picker.value=selectedTask;if(!picker.value)selectedTask='';}
+    if(picker)picker.value=selectedTask;
     let actions='';
     if(owner&&r.is_active){
       actions='<div class="sr-owner-title">Oda kontrolleri</div>';
@@ -333,7 +334,7 @@
       const inClass=memberWorking(m,now)||isAtDesk(m,now),atWork=inClass&&memberWorking(m,now);
       const label=!inClass?'Uzakta':atWork?'Etütte':!free&&r.phase==='break'?'Molada':'Masada';
       const task=atWork&&m.task_title?'<small class="sr-person-task">✎ '+E(m.task_title)+'</small>':'';
-      return '<article class="sr-person '+(atWork?'sr-person-working ':'')+(inClass?'':'sr-person-away')+'">'
+      return '<article data-sr-user="'+E(m.user_id)+'" class="sr-person '+(atWork?'sr-person-working ':'')+(inClass?'':'sr-person-away')+'">'
         +deskMarkup(m,i,atWork,inClass)
         +'<div class="sr-person-info"><strong>'+E(m.username)+(m.user_id===id()?' <span class="sr-me">sen</span>':'')+'</strong>'
         +'<small>'+label+'</small>'
@@ -344,6 +345,8 @@
       ?owner?'<button type="button" class="sr-link-danger" data-sr-action="close">Odayı kapat</button>'
         :'<button type="button" class="sr-link-danger" data-sr-action="leave">Odadan ayrıl</button>'
       :'<span class="sr-muted">Oda kapatıldı.</span>';
+    window.HakunaRoomExperience?.mount(host,snapshot,id());
+    window.HakunaRoomExperience?.update(snapshot,now);
     tick();
   }
   function tick(){
@@ -381,6 +384,7 @@
       countdownNode.hidden=!countdown;
       if(countdown){const num=countdownNode.querySelector('[data-sr-countdown-num]');if(num)num.textContent=Math.max(1,Math.ceil((startAt-now)/1000));}
     }
+    window.HakunaRoomExperience?.update(snapshot,now);
     host.classList.toggle('sr-timer-ended',!free&&r.phase!=='idle'&&left===0);
   }
 
@@ -451,7 +455,7 @@
     try{
       await rpc(name,args);
       if(action==='leave'||action==='close')showLobby();
-      else await loadRoom();
+      else {await loadRoom();if(action==='stop')window.HakunaRoomExperience?.finish();}
     }catch(error){notice(error?.message||'İşlem tamamlanamadı.',true);}
     finally{busy=false;if(button.isConnected)button.disabled=false;}
   }
@@ -481,8 +485,9 @@
       const b=e.target.closest('[data-sr-action]');
       if(b&&host.contains(b))void act(b.dataset.srAction,b);
     };
+    host.oninput=e=>{if(e.target?.matches?.('[data-sx-intent]'))selectedTask=String(e.target.value||'').slice(0,90);};
     host.onchange=e=>{
-      if(e.target?.matches?.('[data-sr-task]'))selectedTask=String(e.target.value||'');
+      if(e.target?.matches?.('[data-sr-task]')){selectedTask=String(e.target.value||'');const input=host.querySelector('[data-sx-intent]');if(input)input.value=selectedTask;}
     };
     host.onsubmit=e=>{
       const form=e.target.closest('[data-sr-form]');

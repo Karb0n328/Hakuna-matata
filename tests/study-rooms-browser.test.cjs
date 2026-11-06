@@ -3,10 +3,10 @@ const {createServer}=require('node:http');
 const fs=require('node:fs');
 const {chromium,webkit}=require('playwright');
 const files={};
-for(const name of ['styles.css','study-rooms.css','study-rooms-immersive.css','study-rooms.js'])files[name]=fs.readFileSync(require('node:path').join(__dirname,'..',name),'utf8');
+for(const name of ['styles.css','study-rooms.css','study-rooms-immersive.css','room-experience.css','room-experience.js','study-rooms.js'])files[name]=fs.readFileSync(require('node:path').join(__dirname,'..',name),'utf8');
 const fixture=[
   '<!doctype html><html lang="tr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
-  '<link href="/styles.css" rel="stylesheet"><link href="/study-rooms.css" rel="stylesheet"><link href="/study-rooms-immersive.css" rel="stylesheet">',
+  '<link href="/styles.css" rel="stylesheet"><link href="/study-rooms.css" rel="stylesheet"><link href="/study-rooms-immersive.css" rel="stylesheet"><link href="/room-experience.css" rel="stylesheet">',
   '<main class="main-area"><h1 id="pageTitle">Odalar</h1><section class="ataturk-corner" aria-label="Atatürk Köşesi">Atatürk Köşesi</section><section class="republic-hero">Cumhuriyet</section><section id="view"></section></main>',
   '<script>',
   'window.__uid="user-1";',
@@ -30,7 +30,7 @@ const fixture=[
   ' if(name==="study_room_leave"){s.room=null;return true;}',
   ' throw Error("Unknown RPC "+name);',
   '}};',
-  '</script><script src="/study-rooms.js"></script>',
+  '</script><script src="/room-experience.js"></script><script src="/study-rooms.js"></script>',
   '<script>window.HakunaStudyRooms.render(document.querySelector("#view"));</script></html>'
 ].join('');
 const server=createServer((req,res)=>{
@@ -80,10 +80,11 @@ const server=createServer((req,res)=>{
     assert(await page.locator('[data-sr-action=start]').isDisabled(),'Start must be disabled before the synchronized countdown ends');
     await page.locator('[data-sr-countdown]').waitFor({state:'hidden',timeout:9000});
     await page.locator('[data-sr-task]').selectOption('Organik Kimya Testi');
+    await page.locator('[data-sx-intent]').fill('Bugün organik kimyayı bitireceğim');
     await page.locator('[data-sr-action=start]').click();
     await page.locator('.sr-person-working').waitFor();
     assert((await page.locator('[data-sr-own-status]').textContent()).includes('sayılıyor'));
-    assert((await page.locator('.sr-person-task').textContent()).includes('Organik Kimya Testi'));
+    assert((await page.locator('.sr-person-task').textContent()).includes('Bugün organik kimyayı bitireceğim'));
     await page.evaluate(()=>window.__state.other=true);
     await page.locator('[data-sr-action=idle]').click();
     await page.locator('[data-sr-action=focus]').click();
@@ -107,6 +108,22 @@ const server=createServer((req,res)=>{
     await page.waitForFunction(()=>document.querySelector('[data-sr-room-meta]')?.textContent.includes('40 dk'));
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2);
     assert.equal(overflow,false,'study room must not overflow viewport at '+width);
+    await page.evaluate(()=>{window.__state.seconds=3600;window.dispatchEvent(new Event('online'));});
+    await page.waitForFunction(()=>document.querySelector('[data-sx-light-label]')?.textContent.includes('2 ışık'));
+    assert.equal(await page.locator('[data-sx-stars] circle').count(),2);
+    await page.locator('[data-sx=desk]').click();
+    assert.equal(await page.locator('.sx-my-desk .sx-self').count(),1);
+    await page.locator('[data-sx=desk]').click();
+    await page.locator('[data-sx=note]').click();
+    await page.locator('#sx-next-note').fill('Sayfa 42');
+    await page.locator('[data-sx=save-note]').click();
+    assert.equal(await page.evaluate(()=>localStorage.getItem('hakuna.roomNote.v1.user-1.room-1')),'Sayfa 42');
+    await page.locator('.sx-sound summary').click();
+    await page.locator('[data-sx-sound=rain]').click();
+    await page.waitForFunction(()=>document.querySelector('[data-sx-sound=rain]')?.getAttribute('aria-pressed')==='true');
+    await page.locator('.sx-sound summary').click();
+    fs.mkdirSync('test-results',{recursive:true});
+    await page.screenshot({path:'test-results/room-'+width+'.png',fullPage:true});
     page.once('dialog',dialog=>dialog.accept());
     await page.locator('[data-sr-action=close]').click();
     // browser dialog may race the click above, so wait for room list after it resolves.
@@ -118,6 +135,9 @@ const server=createServer((req,res)=>{
     await page.locator('[data-sr-form=create] [name=mode]').selectOption('free');
     await page.locator('[data-sr-form=create] button[type=submit]').click();
     await page.locator('[data-sr-room-mode]').getByText('SERBEST ÇALIŞMA').waitFor();
+    assert.equal(await page.locator('[data-sx-stars] circle').count(),2,'same room sky must render after remount');
+    assert.equal(await page.locator('[data-sx-audio-state]').textContent(),'Ses kapalı');
+    assert.equal(await page.locator('#sx-next-note').inputValue(),'Sayfa 42');
     assert(await page.locator('body').evaluate(el=>el.classList.contains('sr-immersed')),'room should enter isolated screen');
     await page.locator('[data-theme=rain]').click();
     assert.equal(await page.locator('.sr-room').getAttribute('data-atmosphere'),'rain','user should be able to choose an atmosphere');
@@ -130,6 +150,8 @@ const server=createServer((req,res)=>{
     assert((await page.locator('[data-sr-room-mode]').textContent()).includes('SERBEST'));
     await page.locator('[data-sr-action=stop]').click();
     await page.locator('[data-sr-action=start]').waitFor();
+    assert.equal(await page.locator('[data-sx-note]').isVisible(),true);
+    await page.screenshot({path:'test-results/rain-'+width+'.png',fullPage:true});
     page.once('dialog',dialog=>dialog.accept());
     await page.locator('[data-sr-action=close]').click();
     await page.locator('[data-sr-form=create]').waitFor();

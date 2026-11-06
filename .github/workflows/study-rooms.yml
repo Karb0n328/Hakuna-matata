@@ -9,6 +9,9 @@ on:
       - account-sync-v2.js
       - study-rooms.js
       - study-rooms.css
+      - study-rooms-immersive.css
+      - room-experience.js
+      - room-experience.css
       - tests/study-rooms-unit.test.cjs
       - tests/study-rooms-browser.test.cjs
       - supabase/migrations/20261105_study_rooms.sql
@@ -22,6 +25,9 @@ on:
       - account-sync-v2.js
       - study-rooms.js
       - study-rooms.css
+      - study-rooms-immersive.css
+      - room-experience.js
+      - room-experience.css
       - tests/study-rooms-unit.test.cjs
       - tests/study-rooms-browser.test.cjs
       - supabase/migrations/20261105_study_rooms.sql
@@ -44,6 +50,7 @@ jobs:
           node --check main.js
           node --check sw.js
           node --check study-rooms.js
+          node --check room-experience.js
           node --check account-sync-v2.js
           node --check tests/study-rooms-unit.test.cjs
           node --check tests/study-rooms-browser.test.cjs
@@ -54,3 +61,9 @@ jobs:
         run: npx playwright install --with-deps chromium webkit
       - name: Run desktop, iPhone and iPad room flows
         run: node tests/study-rooms-browser.test.cjs
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: room-experience-screenshots
+          path: test-results/
