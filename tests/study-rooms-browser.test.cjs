@@ -7,7 +7,7 @@ for(const name of ['styles.css','study-rooms.css','study-rooms-immersive.css','s
 const fixture=[
   '<!doctype html><html lang="tr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
   '<link href="/styles.css" rel="stylesheet"><link href="/study-rooms.css" rel="stylesheet"><link href="/study-rooms-immersive.css" rel="stylesheet">',
-  '<main class="main-area"><h1 id="pageTitle">Odalar</h1><section id="view"></section></main>',
+  '<main class="main-area"><h1 id="pageTitle">Odalar</h1><section class="ataturk-corner" aria-label="Atatürk Köşesi">Atatürk Köşesi</section><section class="republic-hero">Cumhuriyet</section><section id="view"></section></main>',
   '<script>',
   'window.__uid="user-1";',
   'window.__state={room:null,selfStudying:false,seconds:0,other:false};',
@@ -70,6 +70,9 @@ const server=createServer((req,res)=>{
     await page.locator('[data-sr-form=create] button[type=submit]').click();
     await page.locator('[data-sr-room-title]').getByText('Kütüphane Ekibi').waitFor();
     assert.equal(await page.locator('[data-sr-invite]').textContent(),'ABCDEF123456789012');
+    assert.equal(await page.locator('.ataturk-corner').isVisible(),false,'Atatürk Köşesi must not appear in immersive room');
+    assert.equal(await page.locator('.republic-hero').isVisible(),false,'holiday banners must not appear in immersive room');
+    assert.equal(await page.locator('#pageTitle').isVisible(),false,'only room view should remain on screen');
     assert.equal(await page.locator('.sr-person').count(),1);
     await page.locator('[data-sr-action=focus]').click();
     await page.locator('[data-sr-countdown]').waitFor({state:'visible'});
@@ -108,6 +111,8 @@ const server=createServer((req,res)=>{
     await page.locator('[data-sr-action=close]').click();
     // browser dialog may race the click above, so wait for room list after it resolves.
     await page.locator('[data-sr-form=create]').waitFor({timeout:10000});
+    assert.equal(await page.locator('.ataturk-corner').isVisible(),true,'Atatürk Köşesi should be visible again in lobby');
+    assert.equal(await page.locator('.republic-hero').isVisible(),true,'holiday banner should be restored outside room');
     await page.evaluate(()=>{window.__state.other=false;window.__state.away=false;});
     await page.locator('[data-sr-form=create] [name=name]').fill('Serbest Test');
     await page.locator('[data-sr-form=create] [name=mode]').selectOption('free');
