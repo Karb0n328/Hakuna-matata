@@ -162,6 +162,20 @@ const server=createServer((req,res)=>{
     await page.locator('[data-sr-action=start]').waitFor();
     assert.equal(await page.locator('[data-sx-note]').isVisible(),true);
     await page.screenshot({path:'test-results/rain-'+width+'.png',fullPage:true});
+    await page.locator('[data-sx=close-note]').click();
+    await page.evaluate(()=>{window.__weatherOriginal=window.HakunaRoomWeather;window.HakunaRoomWeather={...window.HakunaRoomWeather,update:()=>{}};});
+    for(const [phase,hour,code,weather] of [['dawn',7,0,'clear'],['day',12,63,'rain'],['sunset',17,75,'snow'],['night',23,45,'fog']]){
+      await page.evaluate(({hour,code})=>{
+        const env=window.__weatherOriginal,day=Date.parse('2026-11-06T00:00:00+03:00'),now=day+hour*3600000;
+        env.clear();localStorage.setItem('hakuna.elazigWeather.v1',JSON.stringify({fetched:Date.now(),data:{current:{time:now/1000,temperature_2m:10,weather_code:code},daily:{time:[day/1000],sunrise:[(day+7*3600000)/1000],sunset:[(day+17*3600000)/1000]}}}));
+        env.mount(document.querySelector('#view'));env.update(now);
+      },{hour,code});
+      assert.equal(await page.locator('.sr-room').getAttribute('data-dayphase'),phase);
+      assert.equal(await page.locator('.sr-room').getAttribute('data-weather'),weather);
+      await page.screenshot({path:'test-results/'+phase+'-'+width+'.png',fullPage:true});
+    }
+    await page.evaluate(()=>{window.HakunaRoomWeather=window.__weatherOriginal;});
+
     page.once('dialog',dialog=>dialog.accept());
     await page.locator('[data-sr-action=close]').click();
     await page.locator('[data-sr-form=create]').waitFor();

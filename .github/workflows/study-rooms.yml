@@ -40,6 +40,7 @@ permissions:
 jobs:
   rooms:
     runs-on: ubuntu-latest
+    container: mcr.microsoft.com/playwright:v1.56.1-noble
     timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
@@ -60,8 +61,6 @@ jobs:
           node tests/study-rooms-unit.test.cjs
       - name: Install browser test runner
         run: npm install --no-save --ignore-scripts playwright@1.56.1
-      - name: Install Chromium and Safari/WebKit
-        run: npx playwright install --with-deps chromium webkit
       - name: Run desktop, iPhone and iPad room flows
         run: node tests/study-rooms-browser.test.cjs
 
