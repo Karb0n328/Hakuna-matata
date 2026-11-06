@@ -151,7 +151,7 @@
   }
   function openRoom(next){
     if(!active())return;
-    clearLoops();roomId=next;snapshot=null;epoch++;personalTasks=[];selectedTask='';host.innerHTML=roomMarkup();
+    clearLoops();roomId=next;snapshot=null;epoch++;personalTasks=[];selectedTask='';host.innerHTML=roomMarkup();window.scrollTo(0,0);
     document.body.classList.add('sr-immersed');window.HakunaRoomWeather?.update(Date.now()+skewMs);
     void loadRoom();void loadPersonalTasks();void touchRoom();
     heartbeat=setInterval(()=>{if(document.visibilityState==='visible')void touchRoom();},25000);

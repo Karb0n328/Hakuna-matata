@@ -19,6 +19,7 @@ try{
  });
  await context.setOffline(true);await page.close();page=await context.newPage();
  await page.goto(base);await page.waitForSelector('[data-nav=plan]');
+ assert(await page.evaluate(async()=>{const r=await fetch('./yks-programs.json?v=2026-3');return r.ok&&!!(await r.json())}),'local ranking data should be cached');
  await page.locator('#sidebarNav [data-nav=plan]').click();await page.locator('[data-plan-block=b1]').waitFor();
  await page.locator('#sidebarNav [data-nav=questions]').click();await page.getByText('Çevrimdışı soru',{exact:false}).first().waitFor();
  await page.locator('#sidebarNav [data-nav=books]').click();

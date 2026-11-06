@@ -28,6 +28,7 @@
   }
 
   async function getJson(url,options={}){
+    if(navigator.onLine===false)throw new Error('Güncel kontenjanlar için internet bağlantısı gerekiyor.');
     const controller=new AbortController();
     const timer=setTimeout(()=>controller.abort(),12000);
     try{
