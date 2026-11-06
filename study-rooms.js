@@ -51,7 +51,7 @@
     n.classList.toggle('sr-error',!!isError);
     n.hidden=!message;
   }
-  async function copy(value){
+  async function copy(value,label='Bağlantı'){
     try{
       if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(value);
       else{
@@ -61,7 +61,7 @@
         if(!document.execCommand('copy'))throw new Error('Kopyalanamadı');
         input.remove();
       }
-      notice('Bağlantı kopyalandı ✓');
+      notice(label+' kopyalandı ✓');
     }catch{notice('Kopyalanamadı. Davet kodunu elle paylaşabilirsin.',true);}
   }
   function inviteUrl(code){
@@ -84,7 +84,7 @@
       +'<button type="submit" class="primary-btn sr-cta">Odayı oluştur</button></form>'
       +'<form class="sr-panel" data-sr-form="join"><div class="sr-panel-title">🔑 Arkadaşının odasına katıl</div>'
       +'<p>Davet bağlantısı veya koduyla özel odaya gir.</p>'
-      +'<label>Davet kodu<input name="code" type="text" maxlength="18" placeholder="18 haneli davet kodu" autocapitalize="characters" autocomplete="off" spellcheck="false" required></label>'
+      +'<label>Davet kodu<input name="code" type="text" maxlength="32" placeholder="K7MP-4X9R" autocapitalize="characters" autocomplete="off" spellcheck="false" required></label>'
       +'<button type="submit" class="secondary-btn sr-cta">Odaya katıl</button></form></div>'
       +'<div class="sr-section-head"><h3>Odalarım</h3><button type="button" class="secondary-btn" data-sr-action="refresh">Yenile</button></div>'
       +'<div class="sr-room-list" data-sr-list><div class="sr-loading">Odalar yükleniyor…</div></div>'
@@ -102,8 +102,8 @@
     clearLoops();roomId=null;snapshot=null;epoch++;personalTasks=[];selectedTask='';
     if(!active())return;
     host.innerHTML=lobbyMarkup();
-    const code=new URLSearchParams(location.search).get('room');
-    if(code&&/^[A-Fa-f0-9]{18}$/.test(code)){
+    const code=(new URLSearchParams(location.search).get('room')||'').replace(/[\s-]/g,'').toUpperCase();
+    if(code&&/^(?:[A-F0-9]{18}|[2-9A-HJ-NP-Z]{8})$/.test(code)){
       const inp=host.querySelector('[name=code]');if(inp)inp.value=code.toUpperCase();
     }
     void loadLobby();
@@ -135,7 +135,7 @@
       +'<div class="sr-room-sub" data-sr-room-meta></div></div>'
       +'<div class="sr-space-tools"><span class="sx-weather" data-sx-weather>Elazığ · Hava yükleniyor</span>'
       +'</div>'
-      +'<details class="sr-invite"><summary>+ Davet</summary><span data-sr-invite>••••••••</span><button type="button" data-sr-action="copy" class="secondary-btn">Bağlantıyı kopyala</button></details></header>'
+      +'<details class="sr-invite"><summary>+ Davet</summary><span data-sr-invite>••••••••</span><button type="button" data-sr-action="copy-code" class="secondary-btn">Kodu kopyala</button><button type="button" data-sr-action="copy" class="secondary-btn">Bağlantıyı kopyala</button></details></header>'
       +'<div class="sr-room-grid"><section class="sr-session-card">'
       +'<div class="sr-phase-label" data-sr-phase>Hazırlanıyor</div>'
       +'<div class="sr-focus-ring" data-sr-ring><div class="sr-ring-core"><span class="sr-ring-icon" data-sr-ring-icon>☾</span>'
@@ -258,7 +258,7 @@
     host.querySelector('[data-sr-room-meta]').textContent=(free?'Serbest odak':'Ortak etüt')
       +' · '+members.length+' kişi · '+r.focus_minutes+' dk / '+r.break_minutes+' dk'
       +' · '+duration(total)+' toplam';
-    host.querySelector('[data-sr-invite]').textContent=r.invite_code;
+    host.querySelector('[data-sr-invite]').textContent=r.invite_code.length===8?r.invite_code.slice(0,4)+'-'+r.invite_code.slice(4):r.invite_code;
     host.querySelector('[data-sr-member-count]').textContent='('+members.length+'/30)';
     const taskOptions=personalTasks.map(t=>'<option value="'+E(t)+'">'+E(t)+'</option>').join('');
     const taskPicker='<label class="sr-task-pick">Bu oturumda tek hedefim<input class="sx-intent" data-sx-intent maxlength="90" placeholder="Örn. Dinamikten iki test" value="'+E(selectedTask)+'"></label><label class="sr-task-pick sx-task-select">Planımdan seç'
@@ -415,6 +415,7 @@
       finally{busy=false;if(button.isConnected)button.disabled=false;}return;
     }
     if(action==='open'){openRoom(button.dataset.id);return;}
+    if(action==='copy-code'){if(snapshot)void copy(snapshot.room.invite_code,'Kod');return;}
     if(action==='copy'){if(snapshot)void copy(inviteUrl(snapshot.room.invite_code));return;}
     if(!roomId)return;
     if(action==='start'){void startWithCountdown(button);return;}
@@ -445,7 +446,7 @@
       name='study_room_create_v2';
       args={p_name:String(fd.get('name')||'').trim(),p_focus_minutes:Number(fd.get('focus')),p_break_minutes:Number(fd.get('break')),p_mode:String(fd.get('mode')||'shared')};
     }else if(type==='join'){
-      name='study_room_join';args={p_invite_code:String(fd.get('code')||'').trim().toUpperCase()};
+      name='study_room_join';args={p_invite_code:String(fd.get('code')||'').replace(/[\s-]/g,'').toUpperCase()};
     }else if(type==='settings'&&roomId){
       name='study_room_configure';args={p_room_id:roomId,p_focus_minutes:Number(fd.get('focus')),p_break_minutes:Number(fd.get('break')),p_mode:String(fd.get('mode')||'shared')};
     }else return;

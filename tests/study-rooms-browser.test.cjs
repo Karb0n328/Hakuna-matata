@@ -18,7 +18,7 @@ const fixture=[
   ' const s=window.__state,uid=window.__uid;',
   ' if(!uid)throw Error("Giriş gerekli");',
   ' if(name==="study_room_overview")return {rooms:s.room?.is_active?[{...s.room,member_count:s.other?2:1}]:[],total_seconds:s.seconds,today_seconds:s.seconds};',
-  ' if(name==="study_room_create_v2"){s.room={id:"room-1",owner_id:"user-1",name:args.p_name,invite_code:"ABCDEF123456789012",focus_minutes:args.p_focus_minutes,break_minutes:args.p_break_minutes,mode:args.p_mode||"shared",phase:"idle",phase_started_at:null,is_active:true};return s.room.id;}',
+  ' if(name==="study_room_create_v2"){s.room={id:"room-1",owner_id:"user-1",name:args.p_name,invite_code:"K7MP4X9R",focus_minutes:args.p_focus_minutes,break_minutes:args.p_break_minutes,mode:args.p_mode||"shared",phase:"idle",phase_started_at:null,is_active:true};return s.room.id;}',
   ' if(name==="study_room_join"){if(args.p_invite_code!==s.room?.invite_code)throw Error("Geçersiz kod");return s.room.id;}',
   ' if(name==="study_room_touch")return true;',
   ' if(name==="study_room_snapshot"){if(!s.room)throw Error("Oda yok");return {room:{...s.room},members:[{user_id:"user-1",username:"Batu",seconds:s.seconds,today_seconds:s.seconds,studying:s.selfStudying,last_seen_at:new Date().toISOString(),active_end_at:s.selfStudying?new Date(Date.now()+300000).toISOString():null,task_title:s.task||null},...(s.other?[{user_id:"user-2",username:"<img src=x onerror=alert(1)>",seconds:1200,today_seconds:1200,studying:!s.away,last_seen_at:new Date(Date.now()-(s.away?120000:0)).toISOString(),active_end_at:new Date(Date.now()+300000).toISOString()}]:[])],server_now:new Date().toISOString()};}',
@@ -58,8 +58,9 @@ const server=createServer((req,res)=>{
       const now=Date.now(),day=Math.floor((now+10800000)/86400000)*86400000-10800000;
       return route.fulfill({json:{current:{time:Math.floor(now/1000),temperature_2m:10,weather_code:63},daily:{time:[day/1000],sunrise:[(day+7*3600000)/1000],sunset:[(day+17*3600000)/1000]}}});
     });
-    await page.goto(base);
+    await page.goto(base+'?room=k7mp-4x9r');
     await page.locator('[data-sr-form=create]').waitFor();
+    assert.equal(await page.locator('[name=code]').inputValue(),'K7MP4X9R');
     await page.evaluate(()=>new Promise((resolve,reject)=>{
       const req=indexedDB.open('hakuna-matata-db',1);
       req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('app'))req.result.createObjectStore('app');};
@@ -73,7 +74,15 @@ const server=createServer((req,res)=>{
     await page.locator('[data-sr-form=create] [name=name]').fill('Kütüphane Ekibi');
     await page.locator('[data-sr-form=create] button[type=submit]').click();
     await page.locator('[data-sr-room-title]').getByText('Kütüphane Ekibi').waitFor();
-    assert.equal(await page.locator('[data-sr-invite]').textContent(),'ABCDEF123456789012');
+    assert.equal(await page.locator('[data-sr-invite]').textContent(),'K7MP-4X9R');
+    await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>{window.__copied=value}}}));
+    await page.locator('.sr-invite summary').click();
+    await page.locator('[data-sr-action=copy-code]').click();
+    assert.equal(await page.evaluate(()=>window.__copied),'K7MP4X9R');
+    await page.locator('[data-sr-action=copy]').click();
+    assert.equal(new URL(await page.evaluate(()=>window.__copied)).searchParams.get('room'),'K7MP4X9R');
+    await page.locator('.sr-invite summary').click();
+
     assert.equal(await page.locator('.ataturk-corner').isVisible(),false,'Atatürk Köşesi must not appear in immersive room');
     assert.equal(await page.locator('.republic-hero').isVisible(),false,'holiday banners must not appear in immersive room');
     assert.equal(await page.locator('#pageTitle').isVisible(),false,'only room view should remain on screen');
