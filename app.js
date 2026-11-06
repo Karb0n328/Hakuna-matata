@@ -135,6 +135,11 @@
     return map[currentPage]||map.today;
   }
 
+  function onlineRequired(view){
+    window.HakunaStudyRooms?.leaveView?.();
+    view.innerHTML='<section class="card" data-online-required><div class="card-body" style="padding:24px"><h2>İnternet bağlantısı gerekiyor</h2><p>Bu bölüm için internete bağlanmalısın. Cihazındaki sorular, plan ve görevler kullanılabilir.</p><button type="button" class="primary-btn" data-connection-retry>Yeniden dene</button></div></section>';
+    view.querySelector('[data-connection-retry]').onclick=()=>render();
+  }
   function render() {
     const activeRole=window.HakunaGuidance?.role();
     if(activeRole==='student'&&!['today','plan','tasks','rooms','settings'].includes(currentPage))currentPage='today';
@@ -143,6 +148,7 @@
     renderNavigation();
     const [eye,title]=pageMeta(); $('#pageEyebrow').textContent=eye; $('#pageTitle').textContent=title;
     const view=$('#view'); const actions=$('#topbarActions'); actions.innerHTML='';
+    if(navigator.onLine===false&&['rooms','suggestions','guidance'].includes(currentPage)){onlineRequired(view);return;}
     const guidanceRole=window.HakunaGuidance?.role();
     if(guidanceRole==='student'&&!['today','plan','tasks','rooms','settings'].includes(currentPage))currentPage='today';
     if(currentPage==='guidance'&&guidanceRole!=='mentor')currentPage='today';
@@ -788,6 +794,8 @@
     }
   },true);
 
+  window.addEventListener('offline',()=>{if(['rooms','suggestions','guidance'].includes(currentPage))render();});
+  window.addEventListener('online',()=>{if(document.querySelector('[data-online-required]'))render();});
   document.addEventListener('keydown',e=>{
     const del=e.target.closest?.('[data-q-swipe-delete]');
     if(del&&(e.key==='Enter'||e.key===' ')){
@@ -1042,6 +1050,8 @@ YANIT KURALI
     },700);
   }
 
+  window.addEventListener('offline',()=>{if(['rooms','suggestions','guidance'].includes(currentPage))render();});
+  window.addEventListener('online',()=>{if(document.querySelector('[data-online-required]'))render();});
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
   init();
 })();

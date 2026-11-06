@@ -5,19 +5,6 @@
   let loading=false,busy=false,epoch=0,skewMs=0,lastUser=null,realtimeDelay=null;
   let heartbeat=null,personalTasks=[],selectedTask='',starting=false,countdownTimeout=null,countdownResolve=null;
   let lastRosterKey='',lastPersonalKey='';
-  let spaceZen=false;
-  function loadPersonalSpace(){
-    try{spaceZen=localStorage.getItem('hakuna.studyRooms.quiet')==='1';}
-    catch{spaceZen=false;}
-  }
-  function applyPersonalSpace(){
-    if(!host||!roomId)return;
-    const room=host.querySelector('.sr-room');if(!room)return;
-    room.classList.toggle('sr-zen',spaceZen);
-    window.HakunaRoomWeather?.update(Date.now()+skewMs);
-    const button=room.querySelector('[data-sr-action="zen"]');
-    if(button){button.setAttribute('aria-pressed',String(spaceZen));button.textContent=spaceZen?'Ayrıntıları göster':'Sade görünüm';}
-  }
   const E=(value='')=>String(value==null?'':value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const id=()=>window.HakunaAccount?.info?.().id||null;
   const rpc=(name,args={})=>{
@@ -131,10 +118,10 @@
       host.querySelector('[data-sr-total]').textContent=duration(data.total_seconds);
       const items=Array.isArray(data.rooms)?data.rooms:[];
       host.querySelector('[data-sr-list]').innerHTML=items.length?items.map(r=>
-        '<button class="sr-room-item" type="button" data-sr-action="open" data-id="'+E(r.id)+'">'
+        '<div class="sr-room-list-row"><button class="sr-room-item" type="button" data-sr-action="open" data-id="'+E(r.id)+'">'
         +'<span class="sr-room-bubble">📚</span><span class="sr-room-info"><strong>'+E(r.name)+'</strong>'
         +'<small>'+(r.mode==='free'?'🌿 Serbest':'⏳ Ortak')+' · '+Number(r.member_count)+' üye · '+Number(r.focus_minutes)+'/'+Number(r.break_minutes)+' dk</small></span>'
-        +'<span class="sr-room-go">Giriş →</span></button>'
+        +'<span class="sr-room-go">Giriş →</span></button>'+(r.owner_id===id()?'<button type="button" class="sr-link-danger" data-sr-action="delete-room" data-id="'+E(r.id)+'">Odayı sil</button>':'')+'</div>'
       ).join(''):'<div class="sr-empty">Henüz odan yok. Bir oda kur veya arkadaşının davet kodunu gir. 🌱</div>';
       notice('');
     }catch(error){
@@ -147,7 +134,7 @@
       +'<div class="sr-room-heading"><span class="sr-kicker" data-sr-room-mode>SESSİZ ODA</span><h2 data-sr-room-title>Oda açılıyor…</h2>'
       +'<div class="sr-room-sub" data-sr-room-meta></div></div>'
       +'<div class="sr-space-tools"><span class="sx-weather" data-sx-weather>Elazığ · Hava yükleniyor</span>'
-      +'<button type="button" class="sr-zen-toggle" data-sr-action="zen" aria-pressed="false">Sade görünüm</button></div>'
+      +'</div>'
       +'<details class="sr-invite"><summary>+ Davet</summary><span data-sr-invite>••••••••</span><button type="button" data-sr-action="copy" class="secondary-btn">Bağlantıyı kopyala</button></details></header>'
       +'<div class="sr-room-grid"><section class="sr-session-card">'
       +'<div class="sr-phase-label" data-sr-phase>Hazırlanıyor</div>'
@@ -165,7 +152,7 @@
   function openRoom(next){
     if(!active())return;
     clearLoops();roomId=next;snapshot=null;epoch++;personalTasks=[];selectedTask='';host.innerHTML=roomMarkup();
-    document.body.classList.add('sr-immersed');applyPersonalSpace();
+    document.body.classList.add('sr-immersed');window.HakunaRoomWeather?.update(Date.now()+skewMs);
     void loadRoom();void loadPersonalTasks();void touchRoom();
     heartbeat=setInterval(()=>{if(document.visibilityState==='visible')void touchRoom();},25000);
     unsubscribe=window.HakunaAccount?.roomListen?.(roomId,()=>{
@@ -338,7 +325,7 @@
       }).join('');
     }
     host.querySelector('[data-sr-footer]').innerHTML=r.is_active
-      ?owner?'<button type="button" class="sr-link-danger" data-sr-action="close">Odayı kapat</button>'
+      ?owner?'<button type="button" class="sr-link-danger" data-sr-action="close">Odayı sil</button>'
         :'<button type="button" class="sr-link-danger" data-sr-action="leave">Odadan ayrıl</button>'
       :'<span class="sr-muted">Oda kapatıldı.</span>';
     window.HakunaRoomExperience?.mount(host,snapshot,id());
@@ -416,16 +403,17 @@
     }
   }
   async function act(action,button){
-    if(action==='zen'){
-      if(!roomId)return;
-      spaceZen=!spaceZen;
-      try{localStorage.setItem('hakuna.studyRooms.quiet',spaceZen?'1':'0');}catch{}
-      applyPersonalSpace();return;
-    }
     if(busy)return;
     if(action==='back'){showLobby();return;}
     if(action==='refresh'){void loadLobby();return;}
     if(action==='login'){window.HakunaAccount?.open?.('login');return;}
+    if(action==='delete-room'){
+      if(!confirm('Oda herkes için kapatılıp listeden kaldırılacak. Devam eden etütler bitecek; geçmiş çalışma süreleri korunacak. Odayı silmek istiyor musun?'))return;
+      busy=true;button.disabled=true;
+      try{await rpc('study_room_close',{p_room_id:button.dataset.id});await loadLobby();}
+      catch(error){notice(error?.message||'Oda silinemedi.',true);}
+      finally{busy=false;if(button.isConnected)button.disabled=false;}return;
+    }
     if(action==='open'){openRoom(button.dataset.id);return;}
     if(action==='copy'){if(snapshot)void copy(inviteUrl(snapshot.room.invite_code));return;}
     if(!roomId)return;
@@ -470,7 +458,7 @@
     finally{busy=false;if(btn?.isConnected)btn.disabled=false;}
   }
   function render(view){
-    leaveView();host=view;host.dataset.studyRooms='1';lastUser=id();loadPersonalSpace();
+    leaveView();host=view;host.dataset.studyRooms='1';if(navigator.onLine===false){host.innerHTML='<section class="card" data-online-required><div class="card-body"><h2>İnternet bağlantısı gerekiyor</h2><p>Ortak odaları kullanmak için internete bağlan.</p></div></section>';return;}lastUser=id();
     host.onclick=e=>{
       const b=e.target.closest('[data-sr-action]');
       if(b&&host.contains(b))void act(b.dataset.srAction,b);
@@ -489,7 +477,8 @@
   window.addEventListener('hakuna-account-changed',()=>{
     if(active()&&lastUser!==id())render(host);
   });
-  window.addEventListener('online',()=>{if(active()){if(roomId)void loadRoom();else void loadLobby();}});
+  window.addEventListener('online',()=>{if(active()){if(host.querySelector('[data-online-required]'))render(host);else if(roomId)void loadRoom();else void loadLobby();}});
+  window.addEventListener('offline',()=>{if(active())render(host);});
   document.addEventListener('visibilitychange',()=>{
     if(document.visibilityState==='visible'&&active()){if(roomId){void touchRoom();void loadRoom();}else void loadLobby();tick();}
   });

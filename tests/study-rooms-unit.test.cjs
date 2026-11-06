@@ -36,8 +36,9 @@ assert.ok(app.includes("currentPage==='rooms'"),'router should render study room
 assert.ok(app.includes("window.HakunaStudyRooms?.leaveView?.()"),'page navigation should stop room listeners');
 assert.ok(html.includes('study-rooms.css'),'page should load room CSS');
 assert.ok(html.includes('study-rooms-immersive.css'),'page should load isolated room CSS');
-assert.ok(sw.includes("'./study-rooms.js','./study-rooms.css'"),'service worker should cache new feature');
-assert.ok(sw.includes("'./study-rooms-immersive.css'"),'service worker should cache private focus space visual layer');
+const assets=JSON.parse(sw.match(/const ASSETS=(.*);/)[1]);
+assert.equal(new Set(assets).size,assets.length,'precache cannot contain duplicate URLs');
+for(const file of ['./study-rooms.js','./study-rooms.css','./study-rooms-immersive.css','./offline-support.js'])assert(assets.includes(file));
 console.log('PASS study-room clock math, navigation wiring and PWA assets');
 
 vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname,'..','room-experience.js'),'utf8'),{window:win,document:doc});

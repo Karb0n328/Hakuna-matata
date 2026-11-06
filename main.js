@@ -12,7 +12,7 @@ function showBootError(error){
 // cloud sync and enhancements are maintenance work and must never keep the PWA
 // on a blank screen during startup.
 try{
-  await import('./app.js?v=study-rooms-v1');
+  await import('./app.js?v=offline-v2');
 }catch(error){
   showBootError(error);
 }
@@ -58,11 +58,13 @@ afterFirstPaint(()=>{
   void refreshServiceWorkerLater();
 
   void (async()=>{
-    try{await importAccountSyncOptimized();}catch(err){console.warn('Hakuna cloud sync load',err);}
+    const connect=()=>importAccountSyncOptimized().catch(err=>console.warn('Hakuna cloud sync load',err));
+    if(navigator.onLine)void connect();
+    window.addEventListener('online',()=>{void connect();},{once:true});
     try{
       await import('./room-weather.js?v=1');
-      await import('./room-experience.js?v=2');
-      await import('./study-rooms.js?v=4-elazig');
+      await import('./room-experience.js?v=3-simple');
+      await import('./study-rooms.js?v=5-offline');
       if(document.querySelector('#pageTitle')?.textContent==='Odalar')window.HakunaStudyRooms?.render(document.querySelector('#view'));
     }catch(err){console.warn('Hakuna study rooms load',err);}
     // Batu pilot — separate module so the existing pages remain unchanged.

@@ -2,6 +2,11 @@ name: Hakuna study rooms verification
 on:
   push:
     paths:
+      - offline-support.js
+      - guidance-v1.js
+      - guidance-weekly.js
+      - question-books.js
+      - tests/offline-browser.test.cjs
       - app.js
       - main.js
       - index.html
@@ -19,6 +24,11 @@ on:
       - .github/workflows/study-rooms.yml
   pull_request:
     paths:
+      - offline-support.js
+      - guidance-v1.js
+      - guidance-weekly.js
+      - question-books.js
+      - tests/offline-browser.test.cjs
       - app.js
       - main.js
       - index.html
@@ -61,6 +71,8 @@ jobs:
           node tests/study-rooms-unit.test.cjs
       - name: Install browser test runner
         run: npm install --no-save --ignore-scripts playwright@1.56.1
+      - name: Verify real offline app launch and persisted work
+        run: node tests/offline-browser.test.cjs
       - name: Run desktop, iPhone and iPad room flows
         run: node tests/study-rooms-browser.test.cjs
 

@@ -73,7 +73,7 @@
   async function getPhoto(id){
     const local=await lookup(id).catch(()=>null);
     if(local)return local;
-    if(!accountId()||!account()?.photoDownload)return null;
+    if(navigator.onLine===false||!accountId()||!account()?.photoDownload)return null;
     if(loading.has(id))return loading.get(id);
     const job=(async()=>{
       const blob=await account().photoDownload(id);
@@ -506,7 +506,7 @@
   }
   async function showPhoto(img,id){
     const blob=await getPhoto(id);
-    if(!blob||!img.isConnected)return;
+    if(!img.isConnected)return;if(!blob){img.alt=navigator.onLine===false?'Bu fotoğraf cihazda kayıtlı değil. İndirmek için internet bağlantısı gerekiyor.':'Fotoğraf yüklenemedi.';return;}
     const url=URL.createObjectURL(blob);
     previewUrls.add(url);img.src=url;
     img.onload=()=>{if(img.isConnected)return;URL.revokeObjectURL(url);previewUrls.delete(url);};

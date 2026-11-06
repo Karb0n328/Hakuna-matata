@@ -180,3 +180,5 @@
 html[data-hakuna-palette="dark"] .sr-desk-scene,html[data-batu-theme="dark"] .sr-desk-scene{filter:brightness(.8) saturate(.75)}
 html[data-hakuna-palette="republic"] .sr-desk-scene{filter:hue-rotate(323deg) saturate(.85)}
 @media(prefers-reduced-motion:reduce){.sr-desk-scene *,.sr-countdown *,.sr-working-pulse{animation:none!important;transition:none!important}}
+
+.sr-room-list-row{display:flex;align-items:center;gap:12px}.sr-room-list-row .sr-room-item{flex:1;min-width:0}.sr-room-list-row>.sr-link-danger{flex:0 0 auto;padding:12px;font-size:12px}

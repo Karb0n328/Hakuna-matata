@@ -11,12 +11,17 @@ const session=()=>{try{const s=JSON.parse(localStorage.getItem(STORE)||'null');r
 const role=()=>{const id=session()?.user?.id;return id===BATU?'mentor':id===AYZOS?'student':null};
 const headers=()=>{const s=session();if(!s)throw Error('Önce hesabına giriş yap.');return {'apikey':KEY,'Authorization':'Bearer '+s.access_token,'Content-Type':'application/json'}};
 async function api(path,method='GET',body){
+ if(method==='GET'&&window.HakunaOffline)return window.HakunaOffline.read(path,()=>apiOnline(path,method,body));
+ window.HakunaOffline?.requireOnline();return apiOnline(path,method,body);
+}
+async function apiOnline(path,method='GET',body){
  const r=await fetch(URL+'/rest/v1/'+path,{method,headers:{...headers(),...(method==='POST'?{'Prefer':'return=representation'}:{})},...(body===undefined?{}:{body:JSON.stringify(body)})});
  if(!r.ok){let m='İşlem başarısız';try{const e=await r.json();m=e.message||e.error||m}catch{}throw Error(m)}
  if(r.status===204||r.status===205)return [];
  const raw=await r.text();return raw?JSON.parse(raw):[];
 }
 async function rpc(id,completed){
+ window.HakunaOffline?.requireOnline();
  const r=await fetch(URL+'/rest/v1/rpc/guidance_set_completion',{method:'POST',headers:headers(),body:JSON.stringify({p_id:id,p_completed:completed})});
  if(!r.ok)throw Error('Tamamlama kaydedilemedi.');if(!await r.json())throw Error('Ödev bulunamadı.');
 }
@@ -45,7 +50,7 @@ async function draw(view,page){
  const r=role();if(!r)return;const mentor=r==='mentor';document.body.classList.toggle('ayzos-kid-mode',!mentor);view.innerHTML='<div class="gd-loading">Ödevler yükleniyor…</div>';
  try{
  const items=await fetchAll();
- if(window.HakunaWeekly){await window.HakunaWeekly.render(view,page,items,mentor);return;}
+ if(window.HakunaWeekly){await window.HakunaWeekly.render(view,page,items,mentor);if(navigator.onLine===false){const note=document.createElement('p');note.textContent='Cihaza kaydedilmiş program · Değişiklik için internet bağlantısı gerekiyor.';view.prepend(note);}return;}
  const today=date(),todays=items.filter(x=>!x.due_date||x.due_date<=today);
  const list=page==='today'?todays:page==='plan'?items:items;
  const title=mentor?'Ayzos · Rehberlik':page==='today'?'Bugünkü maceram 🌈':page==='plan'?'Görev haritam 🗺️':'Görevlerim 🚀';
