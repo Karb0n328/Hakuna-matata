@@ -43,7 +43,7 @@ async function importAccountSyncOptimized(){
     return nativeSetInterval.call(window,fn,next,...args);
   };
   try{
-    await import('./account-sync-v2.js?v=password-recovery-v1');
+    await import('./account-sync-v2.js?v=room-rename-v1');
   }finally{
     window.setInterval=nativeSetInterval;
   }
@@ -64,7 +64,7 @@ afterFirstPaint(()=>{
     try{
       await import('./room-weather.js?v=1');
       await import('./room-experience.js?v=4-plant');
-      await import('./study-rooms.js?v=6-short-invites');
+      await import('./study-rooms.js?v=7-rename');
       if(document.querySelector('#pageTitle')?.textContent==='Odalar')window.HakunaStudyRooms?.render(document.querySelector('#view'));
     }catch(err){console.warn('Hakuna study rooms load',err);}
     await Promise.allSettled([

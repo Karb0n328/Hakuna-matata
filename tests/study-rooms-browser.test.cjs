@@ -22,6 +22,7 @@ const fixture=[
   ' if(name==="study_room_join"){if(args.p_invite_code!==s.room?.invite_code)throw Error("Geçersiz kod");return s.room.id;}',
   ' if(name==="study_room_touch")return true;',
   ' if(name==="study_room_snapshot"){if(!s.room)throw Error("Oda yok");return {room:{...s.room},members:[{user_id:"user-1",username:"Batu",seconds:s.seconds,today_seconds:s.seconds,studying:s.selfStudying,last_seen_at:new Date().toISOString(),active_end_at:s.selfStudying?new Date(Date.now()+300000).toISOString():null,task_title:s.task||null},...(s.other?[{user_id:"user-2",username:"<img src=x onerror=alert(1)>",seconds:1200,today_seconds:1200,studying:!s.away,last_seen_at:new Date(Date.now()-(s.away?120000:0)).toISOString(),active_end_at:new Date(Date.now()+300000).toISOString()}]:[])],server_now:new Date().toISOString()};}',
+  ' if(name==="study_room_rename"){if(uid!==s.room.owner_id)throw Error("Not owner");s.room.name=args.p_name;return true;}',
   ' if(name==="study_room_configure"){s.room.focus_minutes=args.p_focus_minutes;s.room.break_minutes=args.p_break_minutes;s.room.mode=args.p_mode;return true;}',
   ' if(name==="study_room_set_phase"){s.room.phase=args.p_phase;s.room.phase_started_at=args.p_phase==="idle"?null:new Date(Date.now()+(args.p_phase==="focus"?3100:0)).toISOString();if(args.p_phase!=="focus")s.selfStudying=false;return true;}',
   ' if(name==="study_room_start"){if(s.room.mode!=="free"&&s.room.phase!=="focus")throw Error("Mola sayılmaz");s.selfStudying=true;s.task=args.p_task_title||null;return {server_now:new Date().toISOString()};}',
@@ -87,6 +88,13 @@ const server=createServer((req,res)=>{
     assert.equal(await page.locator('.republic-hero').isVisible(),false,'holiday banners must not appear in immersive room');
     assert.equal(await page.locator('#pageTitle').isVisible(),false,'only room view should remain on screen');
     assert.equal(await page.locator('.sr-person').count(),1);
+    await page.locator('.sx-room-settings summary').click();
+    await page.locator('[data-sr-form=rename] [name=name]').fill('Yeni oda adı');
+    await page.locator('[data-sr-form=rename] button[type=submit]').click();
+    await page.locator('[data-sr-room-title]').getByText('Yeni oda adı',{exact:true}).waitFor();
+    assert.equal(await page.locator('[data-sr-invite]').textContent(),'K7MP-4X9R','rename keeps invitation');
+    await page.locator('.sx-room-settings summary').click();
+
     await page.locator('[data-sr-action=focus]').click();
     await page.locator('[data-sr-countdown]').waitFor({state:'visible'});
     await page.locator('[data-sr-action=start]').waitFor({state:'visible'});

@@ -292,14 +292,16 @@
         +'<button type="button" class="secondary-btn" data-sr-action="focus">📖 Yeni etüt</button>'
         +'<button type="button" class="secondary-btn" data-sr-action="break">☕ Mola ver</button>'
         +'<button type="button" class="secondary-btn" data-sr-action="idle">⏸ Turu durdur</button></div>';
-      if(r.phase==='idle')actions+='<details class="sx-room-settings"><summary>Oda ayarları</summary><form data-sr-form="settings" class="sr-settings">'
+      actions+='<details class="sx-room-settings"><summary>Oda ayarları</summary><form data-sr-form="rename" class="sr-settings"><label class="sr-settings-mode">Oda adı<input name="name" minlength="3" maxlength="60" value="'+esc(r.name)+'" required></label><button type="submit" class="secondary-btn">Adı kaydet</button></form>';
+      if(r.phase==='idle')actions+='<form data-sr-form="settings" class="sr-settings">'
         +'<label>Etüt (dk)<input name="focus" type="number" min="5" max="180" value="'+Number(r.focus_minutes)+'" required></label>'
         +'<label>Mola (dk)<input name="break" type="number" min="1" max="60" value="'+Number(r.break_minutes)+'" required></label>'
         +'<label class="sr-settings-mode">Çalışma biçimi<select name="mode" class="sr-mode-select">'
         +'<option value="shared" '+(free?'':'selected')+'>⏳ Ortak etüt</option>'
         +'<option value="free" '+(free?'selected':'')+'>🌿 Serbest çalışma</option>'
         +'</select></label>'
-        +'<button type="submit" class="secondary-btn">Ayarları kaydet</button></form></details>';
+        +'<button type="submit" class="secondary-btn">Ayarları kaydet</button></form>';
+      actions+='</details>';
       
     }
     const ownerArea=host.querySelector('[data-sr-owner-actions]');
@@ -447,13 +449,15 @@
       args={p_name:String(fd.get('name')||'').trim(),p_focus_minutes:Number(fd.get('focus')),p_break_minutes:Number(fd.get('break')),p_mode:String(fd.get('mode')||'shared')};
     }else if(type==='join'){
       name='study_room_join';args={p_invite_code:String(fd.get('code')||'').replace(/[\s-]/g,'').toUpperCase()};
+    }else if(type==='rename'&&roomId){
+      name='study_room_rename';args={p_room_id:roomId,p_name:String(fd.get('name')||'').trim()};
     }else if(type==='settings'&&roomId){
       name='study_room_configure';args={p_room_id:roomId,p_focus_minutes:Number(fd.get('focus')),p_break_minutes:Number(fd.get('break')),p_mode:String(fd.get('mode')||'shared')};
     }else return;
     const btn=form.querySelector('[type=submit]');busy=true;if(btn)btn.disabled=true;notice('Kaydediliyor…');
     try{
       const result=await rpc(name,args);
-      if(type==='settings')await loadRoom();
+      if(type==='settings'||type==='rename')await loadRoom();
       else openRoom(result);
     }catch(error){notice(error?.message||'Kaydetme işlemi başarısız.',true);}
     finally{busy=false;if(btn?.isConnected)btn.disabled=false;}
