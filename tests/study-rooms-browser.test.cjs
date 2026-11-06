@@ -174,7 +174,7 @@ const server=createServer((req,res)=>{
     assert(await page.locator('.sr-room').evaluate(el=>parseFloat(getComputedStyle(el).paddingTop)>=48),'tablet controls clear the top safe area');
     await page.locator('[data-sr-action=start]').click();
     await page.locator('[data-sr-action=stop]').waitFor({timeout:10000});
-    assert((await page.locator('[data-sr-room-mode]').textContent()).includes('SERBEST'));
+    assert((await page.locator('[data-sr-room-mode]').textContent()).includes('ÇALIŞMA ODASI'));
     await page.locator('[data-sr-action=stop]').click();
     await page.locator('[data-sr-action=start]').waitFor();
     assert.equal(await page.locator('[data-sx-note]').isVisible(),false);
