@@ -5,6 +5,16 @@ body.sr-immersed .app-shell{display:block!important;min-height:100dvh;grid-templ
 body.sr-immersed .sidebar,body.sr-immersed .topbar,body.sr-immersed .bottom-nav{display:none!important}
 body.sr-immersed .main-area{display:block!important;grid-column:1/-1!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important}
 body.sr-immersed #view{min-height:100dvh;margin:0!important;padding:0!important;overflow:visible}
+/* Only the in-room #view may occupy the main area.
+   Atatürk corner, Republic banner and other globally inserted content are
+   siblings of #view; exclude them only while inside a study room. */
+body.sr-immersed .main-area > :not(#view){display:none!important}
+body.sr-immersed .ataturk-corner,
+body.sr-immersed .republic-hero{display:none!important}
+/* Holiday palette can override the document background with !important.
+   Keep the separate library surface uninterrupted, including safe areas. */
+html.republic-day-2026 body.sr-immersed{background:#101822!important}
+
 body.sr-immersed #toastRoot{z-index:1400}
 .sr-room{
  --sr-accent:#d6b487;--ink:#f1eadd;--muted:#a6a7ae;--line:rgba(221,211,190,.14);
