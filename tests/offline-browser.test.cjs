@@ -2,10 +2,10 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 const {chromium}=require('playwright');
 const root=path.resolve(__dirname,'..');
 const server=http.createServer((req,res)=>{const p=decodeURIComponent(req.url.split('?')[0]);const f=path.join(root,p==='/'?'index.html':p);if(!f.startsWith(root+path.sep)){res.writeHead(403).end();return;}try{const body=fs.readFileSync(f);res.writeHead(200,{'Content-Type':f.endsWith('.js')?'text/javascript':f.endsWith('.css')?'text/css':f.endsWith('.html')?'text/html':'application/octet-stream','Cache-Control':'no-cache'});res.end(body);}catch{res.writeHead(404).end();}});
-(async()=>{await new Promise(r=>server.listen(0,'127.0.0.1',r));const browser=await chromium.launch();const context=await browser.newContext();
+(async()=>{await new Promise(r=>server.listen(0,'127.0.0.1',r));const browser=await chromium.launch();const context=await browser.newContext();let page;
 try{
  await context.route('https://**/*',r=>r.abort());
- let page=await context.newPage();const base='http://127.0.0.1:'+server.address().port;
+ page=await context.newPage();const base='http://127.0.0.1:'+server.address().port;
  await page.goto(base);await page.waitForSelector('[data-nav=plan]');
  await page.evaluate(async()=>{await navigator.serviceWorker.ready;});
  await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
@@ -19,7 +19,7 @@ try{
  });
  await context.setOffline(true);await page.close();page=await context.newPage();
  await page.goto(base);await page.waitForSelector('[data-nav=plan]');
- await page.locator('#sidebarNav [data-nav=plan]').click();await page.getByText('Çevrimdışı program',{exact:true}).first().waitFor();
+ await page.locator('#sidebarNav [data-nav=plan]').click();await page.locator('[data-plan-block=b1]').waitFor();
  await page.locator('#sidebarNav [data-nav=questions]').click();await page.getByText('Çevrimdışı soru',{exact:false}).first().waitFor();
  await page.locator('#sidebarNav [data-nav=books]').click();
  await page.waitForFunction(()=>{const img=document.querySelector('[data-book-preview=q1]');return img?.complete&&img.naturalWidth===50});
@@ -31,5 +31,5 @@ try{
  await page.evaluate(async()=>{localStorage.setItem('sb-zyrbbkbwrijnnykbgjvc-auth-token',JSON.stringify({access_token:'test',user:{id:'test-student'}}));const k='hakuna.offline.read.v1.test-student.plan';localStorage.setItem(k,JSON.stringify({data:[{title:'Kayıtlı program'}]}));const data=await window.HakunaOffline.read('plan',()=>{throw Error('must not fetch')});if(data[0].title!=='Kayıtlı program')throw Error('missing offline plan');localStorage.setItem('sb-zyrbbkbwrijnnykbgjvc-auth-token',JSON.stringify({access_token:'test',user:{id:'another'}}));let blocked=false;try{await window.HakunaOffline.read('plan',()=>{})}catch{blocked=true}if(!blocked)throw Error('cache leaked across accounts');localStorage.removeItem('sb-zyrbbkbwrijnnykbgjvc-auth-token');});
  await context.setOffline(false);await page.reload();await page.locator('#sidebarNav [data-nav=tasks]').click();await page.getByText('İnternetsiz ekledim',{exact:false}).first().waitFor();
  console.log('PASS real service worker installation, cold offline launch, unversioned core fallback, local photo, plan, task persistence, online-only tabs, account-scoped snapshots and reconnect');
-}finally{await context.close();await browser.close();await new Promise(r=>server.close(r));}
+}catch(e){fs.mkdirSync('test-results',{recursive:true});if(page&&!page.isClosed()){console.log('OFFLINE FAILURE VIEW',await page.locator('body').innerText());await page.screenshot({path:'test-results/offline-failure.png',fullPage:true});}throw e;}finally{await context.close();await browser.close();await new Promise(r=>server.close(r));}
 })().catch(e=>{console.error(e);process.exitCode=1});
