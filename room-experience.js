@@ -57,6 +57,7 @@
   const members=data.members||[],total=members.reduce((n,m)=>n+Math.max(0,Number(m.seconds)||0),0),stage=growth(total);
   const plant=root.querySelector('[data-sx-plant]');
   plant.dataset.stage=String(stage);
+  plant.querySelector('.sx-stem').setAttribute('d','M90 164Q86 130 91 '+(152-stage*18));
   plant.style.setProperty('--growth',String(.55+stage*.075));
   plant.querySelectorAll('[data-leaf]').forEach(leaf=>leaf.classList.toggle('is-grown',Number(leaf.dataset.leaf)<=stage));
   root.querySelector('[data-sx-total]').textContent=total>=3600?Math.floor(total/3600)+' saat '+Math.floor(total%3600/60)+' dk':Math.floor(total/60)+' dakika';
