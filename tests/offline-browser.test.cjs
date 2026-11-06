@@ -23,7 +23,7 @@ try{
  await page.locator('#sidebarNav [data-nav=questions]').click();await page.getByText('Çevrimdışı soru',{exact:false}).first().waitFor();
  await page.locator('#sidebarNav [data-nav=books]').click();
  await page.waitForFunction(()=>{const img=document.querySelector('[data-book-preview=q1]');return img?.complete&&img.naturalWidth===50});
- await page.locator('#sidebarNav [data-nav=tasks]').click();await page.locator('[data-add-task]').click();await page.locator('#taskForm [name=title]').fill('İnternetsiz ekledim');await page.locator('#taskForm [type=submit]').click();
+ await page.locator('#sidebarNav [data-nav=tasks]').click();await page.locator('[data-add-task]').click();await page.locator('#taskForm [name=title]').fill('İnternetsiz ekledim');await page.locator('#taskForm .primary-btn').click();
  await page.getByText('İnternetsiz ekledim',{exact:false}).first().waitFor();
  for(const tab of ['rooms','suggestions']){await page.locator('#sidebarNav [data-nav='+tab+']').click();await page.getByText('İnternet bağlantısı gerekiyor',{exact:true}).waitFor();}
  await page.reload();await page.locator('#sidebarNav [data-nav=tasks]').click();await page.getByText('İnternetsiz ekledim',{exact:false}).first().waitFor();

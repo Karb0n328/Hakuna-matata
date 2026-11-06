@@ -794,7 +794,7 @@
     }
   },true);
 
-  window.addEventListener('offline',()=>{if(['rooms','suggestions','guidance'].includes(currentPage))render();});
+  window.addEventListener('offline',()=>{if(currentPage==='rooms')render();});
   window.addEventListener('online',()=>{if(document.querySelector('[data-online-required]'))render();});
   document.addEventListener('keydown',e=>{
     const del=e.target.closest?.('[data-q-swipe-delete]');
@@ -839,6 +839,7 @@
       const button=document.getElementById('geesSuggestionSend'),status=document.getElementById('geesSuggestionStatus');
       button.disabled=true;status.textContent='Gönderiliyor…';
       try{
+        if(navigator.onLine===false)throw Error('İnternet bağlantısı gerekiyor');
         const keys=Object.keys(localStorage).filter(k=>k.startsWith('sb-')&&k.endsWith('-auth-token'));
         const session=keys.map(k=>{try{return JSON.parse(localStorage.getItem(k))}catch{return null}}).find(x=>x?.access_token&&x?.user?.id);
         if(!session)throw new Error('Öneri göndermek için hesabına giriş yap.');
@@ -1050,7 +1051,7 @@ YANIT KURALI
     },700);
   }
 
-  window.addEventListener('offline',()=>{if(['rooms','suggestions','guidance'].includes(currentPage))render();});
+  window.addEventListener('offline',()=>{if(currentPage==='rooms')render();});
   window.addEventListener('online',()=>{if(document.querySelector('[data-online-required]'))render();});
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
   init();

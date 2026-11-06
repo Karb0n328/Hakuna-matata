@@ -158,9 +158,8 @@ const server=createServer((req,res)=>{
     assert((await page.locator('[data-sr-room-mode]').textContent()).includes('SERBEST'));
     await page.locator('[data-sr-action=stop]').click();
     await page.locator('[data-sr-action=start]').waitFor();
-    assert.equal(await page.locator('[data-sx-note]').isVisible(),true);
+    assert.equal(await page.locator('[data-sx-note]').isVisible(),false);
     await page.screenshot({path:'test-results/rain-'+width+'.png',fullPage:true});
-    await page.locator('[data-sx=close-note]').click();
     await page.evaluate(()=>{window.__weatherOriginal=window.HakunaRoomWeather;window.HakunaRoomWeather={...window.HakunaRoomWeather,update:()=>{}};});
     for(const [phase,hour,code,weather] of [['dawn',7,0,'clear'],['day',12,63,'rain'],['sunset',17,75,'snow'],['night',23,45,'fog']]){
       await page.evaluate(({hour,code})=>{

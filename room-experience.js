@@ -65,7 +65,7 @@
   root.querySelector('[data-sx-together]').textContent=working.length?working.length+' kişi çalışıyor':'';
   root.querySelectorAll('.sr-person[data-sr-user]').forEach(p=>p.classList.toggle('sx-self',p.dataset.srUser===uid));
  }
- function finish(){if(!root?.isConnected)return;const panel=root.querySelector('[data-sx-note]');panel.hidden=false;message('Çalışman kaydedildi. Sonraki adımını masanda bırakabilirsin.');}
+ function finish(){if(!root?.isConnected)return;message('Çalışman kaydedildi.');}
  document.addEventListener('visibilitychange',()=>{if(document.hidden){if(audio)void audio.suspend().catch(()=>{})}else if(audio&&sound){void audio.resume().catch(()=>{})}});
  window.HakunaRoomExperience=Object.freeze({mount,update,finish,clear,utils:{journal}});
 })();
