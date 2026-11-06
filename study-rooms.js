@@ -78,7 +78,6 @@
       +'<div class="sr-forms"><form class="sr-panel" data-sr-form="create">'
       +'<div class="sr-panel-title">✨ Yeni oda oluştur</div>'
       +'<label>Odanın adı<input name="name" type="text" maxlength="60" minlength="3" placeholder="Örn. Kütüphane Ekibi" autocomplete="off" required></label>'
-      +'<label>Oda düzeni<select name="mode" class="sr-mode-select"><option value="shared">⏳ Ortak etüt · birlikte başla</option><option value="free">🌿 Serbest etüt · herkes kendi hızında</option></select></label>'
       +'<div class="sr-form-row"><label>Etüt (dk)<input name="focus" type="number" min="5" max="180" value="50" required></label>'
       +'<label>Mola (dk)<input name="break" type="number" min="1" max="60" value="10" required></label></div>'
       +'<button type="submit" class="primary-btn sr-cta">Odayı oluştur</button></form>'
@@ -120,7 +119,7 @@
       host.querySelector('[data-sr-list]').innerHTML=items.length?items.map(r=>
         '<div class="sr-room-list-row"><button class="sr-room-item" type="button" data-sr-action="open" data-id="'+E(r.id)+'">'
         +'<span class="sr-room-bubble">📚</span><span class="sr-room-info"><strong>'+E(r.name)+'</strong>'
-        +'<small>'+(r.mode==='free'?'🌿 Serbest':'⏳ Ortak')+' · '+Number(r.member_count)+' üye · '+Number(r.focus_minutes)+'/'+Number(r.break_minutes)+' dk</small></span>'
+        +'<small>'+Number(r.member_count)+' üye · '+Number(r.focus_minutes)+'/'+Number(r.break_minutes)+' dk</small></span>'
         +'<span class="sr-room-go">Giriş →</span></button>'+(r.owner_id===id()?'<button type="button" class="sr-link-danger" data-sr-action="delete-room" data-id="'+E(r.id)+'">Odayı sil</button>':'')+'</div>'
       ).join(''):'<div class="sr-empty">Henüz odan yok. Bir oda kur veya arkadaşının davet kodunu gir. 🌱</div>';
       notice('');
@@ -141,6 +140,7 @@
       +'<div class="sr-focus-ring" data-sr-ring><div class="sr-ring-core"><span class="sr-ring-icon" data-sr-ring-icon>☾</span>'
       +'<strong data-sr-clock>00:00:00</strong><small data-sr-clock-note></small></div></div>'
       +'<div data-sr-own-status class="sr-own-status"></div>'
+      +'<div class="sr-shared-timer" data-sr-shared hidden><span data-sr-shared-label>Ortak etüt</span><strong data-sr-shared-clock></strong></div>'
       +'<div data-sr-personal-actions class="sr-action-area"></div>'
       +'<div data-sr-owner-actions class="sr-owner-area"></div></section>'
       +'<section class="sr-friends"><div class="sr-section-head"><h3>Masalar <span data-sr-member-count></span></h3></div>'
@@ -247,15 +247,14 @@
   function drawSnapshot(){
     if(!snapshot||!active()||!roomId)return;
     const r=snapshot.room,members=Array.isArray(snapshot.members)?snapshot.members:[];
-    const free=(r.mode||'shared')==='free',owner=r.owner_id===id();
+    const owner=r.owner_id===id();
     const self=members.find(m=>m.user_id===id()),now=Date.now()+skewMs;
     const working=!!self&&memberWorking(self,now);
-    const started=free||(r.phase==='focus'&&Date.parse(r.phase_started_at||'')<=now);
-    const canStart=!!r.is_active&&!working&&(free||(started&&r.phase==='focus'&&phaseLeft(r,now)>0));
+    const canStart=!!r.is_active&&!working;
     host.querySelector('[data-sr-room-title]').textContent=r.name;
-    host.querySelector('[data-sr-room-mode]').textContent=free?'🌿 SERBEST ÇALIŞMA':'⏳ ORTAK ETÜT';
+    host.querySelector('[data-sr-room-mode]').textContent='ÇALIŞMA ODASI';
     const total=members.reduce((sum,m)=>sum+seconds(m.seconds),0);
-    host.querySelector('[data-sr-room-meta]').textContent=(free?'Serbest odak':'Ortak etüt')
+    host.querySelector('[data-sr-room-meta]').textContent='Ortak etüt'
       +' · '+members.length+' kişi · '+r.focus_minutes+' dk / '+r.break_minutes+' dk'
       +' · '+duration(total)+' toplam';
     host.querySelector('[data-sr-invite]').textContent=r.invite_code.length===8?r.invite_code.slice(0,4)+'-'+r.invite_code.slice(4):r.invite_code;
@@ -264,20 +263,13 @@
     const taskPicker='<label class="sr-task-pick">Bu oturumda tek hedefim<input class="sx-intent" data-sx-intent maxlength="90" placeholder="Örn. Dinamikten iki test" value="'+E(selectedTask)+'"></label><label class="sr-task-pick sx-task-select">Planımdan seç'
       +'<select data-sr-task><option value="">Görev seçmeden çalış</option>'+taskOptions+'</select>'
       +'</label>';
-    const hint=free
-      ?'Kendi '+r.focus_minutes+' dakikalık etüdünü istediğin zaman başlat.'
-      :r.phase==='break'?'Moladasınız · süre sayılmaz'
-      :r.phase==='idle'?'Oda sahibinin etüdü başlatmasını bekle'
-      :!started?'Ortak etüt için geri sayım başladı'
-      :phaseLeft(r,now)===0?'Ortak etüt süresi tamamlandı.':'Kendi etüdünü başlat; süre kaldığı yerden sayılır.';
     const personalHtml=!r.is_active
       ?'<div class="sr-muted">Bu oda kapatıldı. Önceki sürelerin kayıtlı.</div>'
       :working
-        ?'<div class="sr-working-chip">✦ Etütte</div>'
-          +'<button class="sr-button-stop" type="button" data-sr-action="stop">⏹ Etüdü bitir</button>'
+        ?'<button class="sr-button-stop" type="button" data-sr-action="stop">⏹ Çalışmayı bitir</button>'
         :taskPicker
           +'<button class="primary-btn sr-cta" type="button" data-sr-action="start" '+(canStart?'':'disabled')+'>▶ Çalışmaya başla</button>'
-          +'<small class="sr-action-hint">'+hint+'</small>';
+          ;
     const personalKey=JSON.stringify([working,canStart,r.is_active,r.mode,r.phase,personalTasks]);
     if(personalKey!==lastPersonalKey){
       lastPersonalKey=personalKey;
@@ -288,18 +280,14 @@
     let actions='';
     if(owner&&r.is_active){
       actions='<div class="sr-owner-title">Oda kontrolleri</div>';
-      if(!free)actions+='<div class="sr-owner-buttons">'
+      actions+='<div class="sr-owner-buttons">'
         +'<button type="button" class="secondary-btn" data-sr-action="focus">📖 Yeni etüt</button>'
         +'<button type="button" class="secondary-btn" data-sr-action="break">☕ Mola ver</button>'
         +'<button type="button" class="secondary-btn" data-sr-action="idle">⏸ Turu durdur</button></div>';
-      actions+='<details class="sx-room-settings"><summary>Oda ayarları</summary><form data-sr-form="rename" class="sr-settings"><label class="sr-settings-mode">Oda adı<input name="name" minlength="3" maxlength="60" value="'+esc(r.name)+'" required></label><button type="submit" class="secondary-btn">Adı kaydet</button></form>';
+      actions+='<details class="sx-room-settings"><summary>Oda ayarları</summary><form data-sr-form="rename" class="sr-settings"><label class="sr-settings-mode">Oda adı<input name="name" minlength="3" maxlength="60" value="'+E(r.name)+'" required></label><button type="submit" class="secondary-btn">Adı kaydet</button></form>';
       if(r.phase==='idle')actions+='<form data-sr-form="settings" class="sr-settings">'
         +'<label>Etüt (dk)<input name="focus" type="number" min="5" max="180" value="'+Number(r.focus_minutes)+'" required></label>'
         +'<label>Mola (dk)<input name="break" type="number" min="1" max="60" value="'+Number(r.break_minutes)+'" required></label>'
-        +'<label class="sr-settings-mode">Çalışma biçimi<select name="mode" class="sr-mode-select">'
-        +'<option value="shared" '+(free?'':'selected')+'>⏳ Ortak etüt</option>'
-        +'<option value="free" '+(free?'selected':'')+'>🌿 Serbest çalışma</option>'
-        +'</select></label>'
         +'<button type="submit" class="secondary-btn">Ayarları kaydet</button></form>';
       actions+='</details>';
       
@@ -317,7 +305,7 @@
       host.querySelector('[data-sr-roster]').innerHTML=roster.map((m,i)=>{
       // Backgrounded phones can keep a valid focus session while WebKit suspends presence pings.
       const inClass=memberWorking(m,now)||isAtDesk(m,now),atWork=inClass&&memberWorking(m,now);
-      const label=!inClass?'Uzakta':atWork?'Etütte':!free&&r.phase==='break'?'Molada':'Masada';
+      const label=!inClass?'Uzakta':atWork?'Etütte':'Masada';
       const task=atWork&&m.task_title?'<small class="sr-person-task">✎ '+E(m.task_title)+'</small>':'';
       return '<article data-sr-user="'+E(m.user_id)+'" class="sr-person '+(atWork?'sr-person-working ':'')+(inClass?'':'sr-person-away')+'">'
         +deskMarkup(m,i,atWork,inClass)
@@ -336,27 +324,19 @@
   }
   function tick(){
     if(!snapshot||!active()||!roomId)return;
-    const r=snapshot.room,now=Date.now()+skewMs,free=(r.mode||'shared')==='free';
+    const r=snapshot.room,now=Date.now()+skewMs;
     const self=snapshot.members?.find(m=>m.user_id===id()),working=!!self&&memberWorking(self,now);
-    const end=Date.parse(self?.active_end_at||'');
-    const left=free
-      ?working&&Number.isFinite(end)?Math.max(0,Math.ceil((end-now)/1000)):Number(r.focus_minutes)*60
-      :phaseLeft(r,now);
-    const full=seconds(r.focus_minutes*60);
-    const phaseTotal=free?full:seconds((r.phase==='break'?r.break_minutes:r.focus_minutes)*60);
-    const pct=free&&!working?0:free?100*(1-left/Math.max(1,full)):
-      r.phase==='idle'?0:100*(1-left/Math.max(1,phaseTotal));
+    const began=Date.parse(self?.active_started_at||'');
+    const elapsed=working?(Number.isFinite(began)?Math.max(0,Math.floor((now-began)/1000)):liveSeconds(self,now)):0;
+    const left=phaseLeft(r,now),startAt=Date.parse(r.phase_started_at||'');
+    const countdown=r.phase==='focus'&&Number.isFinite(startAt)&&now<startAt;
     const ring=host.querySelector('[data-sr-ring]');
-    if(ring)ring.style.setProperty('--sr-degrees',Math.max(0,Math.min(360,pct*3.6))+'deg');
-    const label=host.querySelector('[data-sr-phase]'),timer=host.querySelector('[data-sr-clock]');
-    const note=host.querySelector('[data-sr-clock-note]'),icon=host.querySelector('[data-sr-ring-icon]');
-    const startAt=Date.parse(r.phase_started_at||'');
-    const countdown=!free&&r.phase==='focus'&&Number.isFinite(startAt)&&now<startAt;
-    if(label)label.textContent=!r.is_active?'Oda kapalı':free?working?'Odak':'Hazır':countdown?'Başlıyor':r.phase==='idle'?'Hazır':left===0?'Tamamlandı':r.phase==='focus'?'Odak':'Mola';
-    if(timer)timer.textContent=displayClock(left);
-    if(note)note.textContent=free?'Kendi ritminde':r.phase==='idle'?'Tur bekleniyor':countdown?'3 · 2 · 1':left===0?'Tur tamamlandı':r.phase==='focus'?'Sessizce devam':'Dinlen';
-    if(icon)icon.textContent=(free?working:r.phase==='focus'&&left>0)?'✎':r.phase==='break'&&!free?'☕':'☾';
-    if(ring)ring.classList.toggle('sr-ring-active',free?working:r.phase==='focus'&&left>0);
+    if(ring){ring.style.setProperty('--sr-degrees',(working?360:0)+'deg');ring.classList.toggle('sr-ring-active',working);}
+    const timer=host.querySelector('[data-sr-clock]'),icon=host.querySelector('[data-sr-ring-icon]');
+    if(timer)timer.textContent=displayClock(elapsed);
+    if(icon)icon.textContent=working?'✎':'☾';
+    const shared=host.querySelector('[data-sr-shared]');
+    if(shared){shared.hidden=r.phase==='idle';host.querySelector('[data-sr-shared-label]').textContent=r.phase==='break'?'Ortak mola':'Ortak etüt';host.querySelector('[data-sr-shared-clock]').textContent=countdown?'Başlıyor…':left?displayClock(left):'Tamamlandı';}
     const own=host.querySelector('[data-sr-own-status]');
     if(own)own.textContent=(working?'Süren sayılıyor · ':'Çalışman · ')
       +duration(self?liveSeconds(self,now):0);
@@ -370,7 +350,7 @@
       if(countdown){const num=countdownNode.querySelector('[data-sr-countdown-num]');if(num)num.textContent=Math.max(1,Math.ceil((startAt-now)/1000));}
     }
     window.HakunaRoomExperience?.update(snapshot,now);
-    host.classList.toggle('sr-timer-ended',!free&&r.phase!=='idle'&&left===0);
+    host.classList.remove('sr-timer-ended');
   }
 
   async function startWithCountdown(button){
@@ -380,15 +360,6 @@
     const panel=host.querySelector('[data-sr-countdown]');
     if(panel)panel.hidden=false;
     try{
-      for(let n=3;n>=1;n--){
-        if(ticket!==epoch||!active()||room!==roomId)return;
-        const number=panel?.querySelector('[data-sr-countdown-num]');
-        if(number){number.textContent=String(n);number.classList.remove('sr-countdown-beat');void number.offsetWidth;number.classList.add('sr-countdown-beat');}
-        await new Promise(resolve=>{
-          countdownResolve=resolve;
-          countdownTimeout=setTimeout(()=>{countdownResolve=null;resolve();},880);
-        });
-      }
       if(ticket!==epoch||room!==roomId||!active())return;
       if(panel)panel.hidden=true;
       notice('Etüdün başlatılıyor…');

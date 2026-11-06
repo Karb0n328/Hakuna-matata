@@ -21,12 +21,12 @@ const fixture=[
   ' if(name==="study_room_create_v2"){s.room={id:"room-1",owner_id:"user-1",name:args.p_name,invite_code:"K7MP4X9R",focus_minutes:args.p_focus_minutes,break_minutes:args.p_break_minutes,mode:args.p_mode||"shared",phase:"idle",phase_started_at:null,is_active:true};return s.room.id;}',
   ' if(name==="study_room_join"){if(args.p_invite_code!==s.room?.invite_code)throw Error("Geçersiz kod");return s.room.id;}',
   ' if(name==="study_room_touch")return true;',
-  ' if(name==="study_room_snapshot"){if(!s.room)throw Error("Oda yok");return {room:{...s.room},members:[{user_id:"user-1",username:"Batu",seconds:s.seconds,today_seconds:s.seconds,studying:s.selfStudying,last_seen_at:new Date().toISOString(),active_end_at:s.selfStudying?new Date(Date.now()+300000).toISOString():null,task_title:s.task||null},...(s.other?[{user_id:"user-2",username:"<img src=x onerror=alert(1)>",seconds:1200,today_seconds:1200,studying:!s.away,last_seen_at:new Date(Date.now()-(s.away?120000:0)).toISOString(),active_end_at:new Date(Date.now()+300000).toISOString()}]:[])],server_now:new Date().toISOString()};}',
+  ' if(name==="study_room_snapshot"){if(!s.room)throw Error("Oda yok");return {room:{...s.room},members:[{user_id:"user-1",username:"Batu",seconds:s.seconds,today_seconds:s.seconds,studying:s.selfStudying,last_seen_at:new Date().toISOString(),active_started_at:s.startedAt||null,active_end_at:null,task_title:s.task||null},...(s.other?[{user_id:"user-2",username:"<img src=x onerror=alert(1)>",seconds:1200,today_seconds:1200,studying:!s.away,last_seen_at:new Date(Date.now()-(s.away?120000:0)).toISOString(),active_end_at:new Date(Date.now()+300000).toISOString()}]:[])],server_now:new Date().toISOString()};}',
   ' if(name==="study_room_rename"){if(uid!==s.room.owner_id)throw Error("Not owner");s.room.name=args.p_name;return true;}',
   ' if(name==="study_room_configure"){s.room.focus_minutes=args.p_focus_minutes;s.room.break_minutes=args.p_break_minutes;s.room.mode=args.p_mode;return true;}',
-  ' if(name==="study_room_set_phase"){s.room.phase=args.p_phase;s.room.phase_started_at=args.p_phase==="idle"?null:new Date(Date.now()+(args.p_phase==="focus"?3100:0)).toISOString();if(args.p_phase!=="focus")s.selfStudying=false;return true;}',
-  ' if(name==="study_room_start"){if(s.room.mode!=="free"&&s.room.phase!=="focus")throw Error("Mola sayılmaz");s.selfStudying=true;s.task=args.p_task_title||null;return {server_now:new Date().toISOString()};}',
-  ' if(name==="study_room_stop"){s.selfStudying=false;s.seconds+=12;return 12;}',
+  ' if(name==="study_room_set_phase"){s.room.phase=args.p_phase;s.room.phase_started_at=args.p_phase==="idle"?null:new Date(Date.now()+(args.p_phase==="focus"?3100:0)).toISOString();return true;}',
+  ' if(name==="study_room_start"){s.selfStudying=true;s.startedAt=s.startedAt||new Date().toISOString();s.task=args.p_task_title||null;return {server_now:new Date().toISOString()};}',
+  ' if(name==="study_room_stop"){s.selfStudying=false;s.startedAt=null;s.seconds+=12;return 12;}',
   ' if(name==="study_room_close"){s.room.is_active=false;s.selfStudying=false;return true;}',
   ' if(name==="study_room_leave"){s.room=null;return true;}',
   ' throw Error("Unknown RPC "+name);',
@@ -95,17 +95,17 @@ const server=createServer((req,res)=>{
     assert.equal(await page.locator('[data-sr-invite]').textContent(),'K7MP-4X9R','rename keeps invitation');
     await page.locator('.sx-room-settings summary').click();
 
-    await page.locator('[data-sr-action=focus]').click();
-    await page.locator('[data-sr-countdown]').waitFor({state:'visible'});
-    await page.locator('[data-sr-action=start]').waitFor({state:'visible'});
-    assert(await page.locator('[data-sr-action=start]').isDisabled(),'Start must be disabled before the synchronized countdown ends');
-    await page.locator('[data-sr-countdown]').waitFor({state:'hidden',timeout:9000});
+    assert(await page.locator('[data-sr-action=start]').isEnabled(),'personal work starts without a shared session');
     await page.locator('[data-sr-task]').selectOption('Organik Kimya Testi');
     await page.locator('[data-sx-intent]').fill('Bugün organik kimyayı bitireceğim');
     await page.locator('[data-sr-action=start]').click();
     await page.locator('.sr-person-working').waitFor();
     assert((await page.locator('[data-sr-own-status]').textContent()).includes('sayılıyor'));
     assert((await page.locator('.sr-person-task').textContent()).includes('Bugün organik kimyayı bitireceğim'));
+    const personalStart=await page.evaluate(()=>window.__state.startedAt);
+    await page.locator('[data-sr-action=focus]').click();
+    await page.locator('[data-sr-countdown]').waitFor({state:'hidden',timeout:9000});
+    assert.equal(await page.evaluate(()=>window.__state.startedAt),personalStart,'shared start does not reset personal work');
     await page.evaluate(()=>window.__state.other=true);
     await page.locator('[data-sr-action=idle]').click();
     await page.locator('[data-sr-action=focus]').click();
@@ -121,8 +121,10 @@ const server=createServer((req,res)=>{
     assert(await page.locator('.sr-person-away .sr-vacant').count()===1,'Offline member should have an empty desk');
     await page.evaluate(()=>window.__state.away=false);
     await page.locator('[data-sr-action=break]').click();
-    await page.locator('[data-sr-action=start]').waitFor();
-    assert(await page.locator('[data-sr-action=start]').isDisabled(),'break must disable study start');
+    await page.locator('[data-sr-action=stop]').waitFor();
+    assert.equal(await page.evaluate(()=>window.__state.startedAt),personalStart,'shared break preserves personal work');
+    await page.locator('[data-sr-action=stop]').click();
+    assert(await page.locator('[data-sr-action=start]').isEnabled(),'personal work is available during shared breaks');
     await page.locator('[data-sr-action=idle]').click();
     await page.locator('.sx-room-settings summary').click();
     await page.locator('[data-sr-form=settings] [name=focus]').fill('40');
@@ -158,9 +160,8 @@ const server=createServer((req,res)=>{
     assert.equal(await page.locator('.republic-hero').isVisible(),true,'holiday banner should be restored outside room');
     await page.evaluate(()=>{window.__state.other=false;window.__state.away=false;});
     await page.locator('[data-sr-form=create] [name=name]').fill('Serbest Test');
-    await page.locator('[data-sr-form=create] [name=mode]').selectOption('free');
     await page.locator('[data-sr-form=create] button[type=submit]').click();
-    await page.locator('[data-sr-room-mode]').getByText('SERBEST ÇALIŞMA').waitFor();
+    await page.locator('[data-sr-room-mode]').getByText('ÇALIŞMA ODASI').waitFor();
     assert.equal(await page.locator('.sx-leaf.is-grown').count(),1,'plant must render after remount');
     assert.equal(await page.locator('[data-sx-audio-state]').textContent(),'Ses kapalı');
     assert.equal(await page.locator('#sx-next-note').inputValue(),'Sayfa 42');
