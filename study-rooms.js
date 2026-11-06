@@ -5,18 +5,16 @@
   let loading=false,busy=false,epoch=0,skewMs=0,lastUser=null,realtimeDelay=null;
   let heartbeat=null,personalTasks=[],selectedTask='',starting=false,countdownTimeout=null,countdownResolve=null;
   let lastRosterKey='',lastPersonalKey='';
-  let spaceTheme='night',spaceZen=false;
-  const THEMES=new Set(['night','rain','dawn']);
+  let spaceZen=false;
   function loadPersonalSpace(){
-    try{const choice=localStorage.getItem('hakuna.studyRooms.atmosphere');spaceTheme=THEMES.has(choice)?choice:'night';spaceZen=localStorage.getItem('hakuna.studyRooms.quiet')==='1';}
-    catch{spaceTheme='night';spaceZen=false;}
+    try{spaceZen=localStorage.getItem('hakuna.studyRooms.quiet')==='1';}
+    catch{spaceZen=false;}
   }
   function applyPersonalSpace(){
     if(!host||!roomId)return;
     const room=host.querySelector('.sr-room');if(!room)return;
-    room.setAttribute('data-atmosphere',spaceTheme);
     room.classList.toggle('sr-zen',spaceZen);
-    room.querySelectorAll('[data-sr-action="atmosphere"]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.theme===spaceTheme)));
+    window.HakunaRoomWeather?.update(Date.now()+skewMs);
     const button=room.querySelector('[data-sr-action="zen"]');
     if(button){button.setAttribute('aria-pressed',String(spaceZen));button.textContent=spaceZen?'Ayrıntıları göster':'Sade görünüm';}
   }
@@ -148,10 +146,7 @@
       +'<header class="sr-room-header"><button type="button" class="secondary-btn" data-sr-action="back">← Odalar</button>'
       +'<div class="sr-room-heading"><span class="sr-kicker" data-sr-room-mode>SESSİZ ODA</span><h2 data-sr-room-title>Oda açılıyor…</h2>'
       +'<div class="sr-room-sub" data-sr-room-meta></div></div>'
-      +'<div class="sr-space-tools"><div class="sr-scene-picker" role="group" aria-label="Çalışma ortamı">'
-      +'<button type="button" data-sr-action="atmosphere" data-theme="night" aria-pressed="true">Gece</button>'
-      +'<button type="button" data-sr-action="atmosphere" data-theme="rain" aria-pressed="false">Yağmur</button>'
-      +'<button type="button" data-sr-action="atmosphere" data-theme="dawn" aria-pressed="false">Sabah</button></div>'
+      +'<div class="sr-space-tools"><span class="sx-weather" data-sx-weather>Elazığ · Hava yükleniyor</span>'
       +'<button type="button" class="sr-zen-toggle" data-sr-action="zen" aria-pressed="false">Sade görünüm</button></div>'
       +'<details class="sr-invite"><summary>+ Davet</summary><span data-sr-invite>••••••••</span><button type="button" data-sr-action="copy" class="secondary-btn">Bağlantıyı kopyala</button></details></header>'
       +'<div class="sr-room-grid"><section class="sr-session-card">'
@@ -421,12 +416,6 @@
     }
   }
   async function act(action,button){
-    if(action==='atmosphere'){
-      if(!THEMES.has(button.dataset.theme)||!roomId)return;
-      spaceTheme=button.dataset.theme;
-      try{localStorage.setItem('hakuna.studyRooms.atmosphere',spaceTheme);}catch{}
-      applyPersonalSpace();return;
-    }
     if(action==='zen'){
       if(!roomId)return;
       spaceZen=!spaceZen;

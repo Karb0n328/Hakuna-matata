@@ -11,6 +11,7 @@ on:
       - study-rooms.css
       - study-rooms-immersive.css
       - room-experience.js
+      - room-weather.js
       - room-experience.css
       - tests/study-rooms-unit.test.cjs
       - tests/study-rooms-browser.test.cjs
@@ -27,6 +28,7 @@ on:
       - study-rooms.css
       - study-rooms-immersive.css
       - room-experience.js
+      - room-weather.js
       - room-experience.css
       - tests/study-rooms-unit.test.cjs
       - tests/study-rooms-browser.test.cjs
@@ -51,6 +53,7 @@ jobs:
           node --check sw.js
           node --check study-rooms.js
           node --check room-experience.js
+          node --check room-weather.js
           node --check account-sync-v2.js
           node --check tests/study-rooms-unit.test.cjs
           node --check tests/study-rooms-browser.test.cjs

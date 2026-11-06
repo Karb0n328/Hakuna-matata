@@ -60,8 +60,9 @@ afterFirstPaint(()=>{
   void (async()=>{
     try{await importAccountSyncOptimized();}catch(err){console.warn('Hakuna cloud sync load',err);}
     try{
-      await import('./room-experience.js?v=1');
-      await import('./study-rooms.js?v=3-room-experience');
+      await import('./room-weather.js?v=1');
+      await import('./room-experience.js?v=2');
+      await import('./study-rooms.js?v=4-elazig');
       if(document.querySelector('#pageTitle')?.textContent==='Odalar')window.HakunaStudyRooms?.render(document.querySelector('#view'));
     }catch(err){console.warn('Hakuna study rooms load',err);}
     // Batu pilot — separate module so the existing pages remain unchanged.

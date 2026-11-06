@@ -3,7 +3,7 @@ const {createServer}=require('node:http');
 const fs=require('node:fs');
 const {chromium,webkit}=require('playwright');
 const files={};
-for(const name of ['styles.css','study-rooms.css','study-rooms-immersive.css','room-experience.css','room-experience.js','study-rooms.js'])files[name]=fs.readFileSync(require('node:path').join(__dirname,'..',name),'utf8');
+for(const name of ['styles.css','study-rooms.css','study-rooms-immersive.css','room-experience.css','room-experience.js','room-weather.js','study-rooms.js'])files[name]=fs.readFileSync(require('node:path').join(__dirname,'..',name),'utf8');
 const fixture=[
   '<!doctype html><html lang="tr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
   '<link href="/styles.css" rel="stylesheet"><link href="/study-rooms.css" rel="stylesheet"><link href="/study-rooms-immersive.css" rel="stylesheet"><link href="/room-experience.css" rel="stylesheet">',
@@ -30,7 +30,7 @@ const fixture=[
   ' if(name==="study_room_leave"){s.room=null;return true;}',
   ' throw Error("Unknown RPC "+name);',
   '}};',
-  '</script><script src="/room-experience.js"></script><script src="/study-rooms.js"></script>',
+  '</script><script src="/room-weather.js"></script><script src="/room-experience.js"></script><script src="/study-rooms.js"></script>',
   '<script>window.HakunaStudyRooms.render(document.querySelector("#view"));</script></html>'
 ].join('');
 const server=createServer((req,res)=>{
@@ -54,6 +54,10 @@ const server=createServer((req,res)=>{
   const page=await context.newPage(),errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   try{
+    await page.route('https://api.open-meteo.com/**',route=>{
+      const now=Date.now(),day=Math.floor((now+10800000)/86400000)*86400000-10800000;
+      return route.fulfill({json:{current:{time:Math.floor(now/1000),temperature_2m:10,weather_code:63},daily:{time:[day/1000],sunrise:[(day+7*3600000)/1000],sunset:[(day+17*3600000)/1000]}}});
+    });
     await page.goto(base);
     await page.locator('[data-sr-form=create]').waitFor();
     await page.evaluate(()=>new Promise((resolve,reject)=>{
@@ -111,8 +115,8 @@ const server=createServer((req,res)=>{
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2);
     assert.equal(overflow,false,'study room must not overflow viewport at '+width);
     await page.evaluate(()=>{window.__state.seconds=3600;window.dispatchEvent(new Event('online'));});
-    await page.waitForFunction(()=>document.querySelector('[data-sx-light-label]')?.textContent.includes('2 ışık'));
-    assert.equal(await page.locator('[data-sx-stars] circle').count(),2);
+    await page.waitForFunction(()=>document.querySelector('[data-sx-pages]')?.textContent.includes('1 sayfa'));
+    assert.equal(await page.locator('[data-sx-book] i').count(),2);
     await page.locator('[data-sx=desk]').click();
     assert.equal(await page.locator('.sx-my-desk .sx-self').count(),1);
     fs.mkdirSync('test-results',{recursive:true});
@@ -140,15 +144,16 @@ const server=createServer((req,res)=>{
     await page.locator('[data-sr-form=create] [name=mode]').selectOption('free');
     await page.locator('[data-sr-form=create] button[type=submit]').click();
     await page.locator('[data-sr-room-mode]').getByText('SERBEST ÇALIŞMA').waitFor();
-    assert.equal(await page.locator('[data-sx-stars] circle').count(),2,'same room sky must render after remount');
+    assert.equal(await page.locator('[data-sx-book] i').count(),2,'journal must render after remount');
     assert.equal(await page.locator('[data-sx-audio-state]').textContent(),'Ses kapalı');
     assert.equal(await page.locator('#sx-next-note').inputValue(),'Sayfa 42');
     assert(await page.locator('body').evaluate(el=>el.classList.contains('sr-immersed')),'room should enter isolated screen');
-    await page.locator('[data-theme=rain]').click();
-    assert.equal(await page.locator('.sr-room').getAttribute('data-atmosphere'),'rain','user should be able to choose an atmosphere');
+    await page.waitForFunction(()=>document.querySelector('.sr-room')?.dataset.weather==='rain');
+    assert((await page.locator('[data-sx-weather]').textContent()).includes('Elazığ'));
+    assert.equal(await page.locator('[data-theme]').count(),0,'everyone follows Elazig instead of personal themes');
     await page.locator('[data-sr-action=zen]').click();
     assert.equal(await page.locator('.sr-room').getAttribute('class').then(x=>x.includes('sr-zen')),true,'quiet view should be active');
-    assert.equal(await page.evaluate(()=>localStorage.getItem('hakuna.studyRooms.atmosphere')),'rain','atmosphere should persist locally');
+    assert.equal(await page.locator('.sr-room').getAttribute('data-weather'),'rain','quiet mode preserves actual weather');
     await page.locator('[data-sr-action=zen]').click();
     await page.locator('[data-sr-action=start]').click();
     await page.locator('[data-sr-action=stop]').waitFor({timeout:10000});
@@ -161,6 +166,15 @@ const server=createServer((req,res)=>{
     await page.locator('[data-sr-action=close]').click();
     await page.locator('[data-sr-form=create]').waitFor();
     assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('sr-immersed')),false,'lobby should restore regular shell');
+    await page.evaluate(()=>localStorage.removeItem('hakuna.elazigWeather.v1'));
+    await page.unroute('https://api.open-meteo.com/**');
+    await page.route('https://api.open-meteo.com/**',route=>route.abort());
+    await page.reload();
+    await page.locator('[data-sr-form=create] [name=name]').fill('Çevrimdışı hava');
+    await page.locator('[data-sr-form=create] button[type=submit]').click();
+    await page.waitForFunction(()=>document.querySelector('.sr-room')?.dataset.weather==='unknown');
+    assert(['dawn','day','sunset','night'].includes(await page.locator('.sr-room').getAttribute('data-dayphase')));
+    assert((await page.locator('[data-sx-weather]').textContent()).includes('alınamıyor'));
     assert.equal(errors.length,0,'Page errors: '+errors.join(', '));
     console.log('PASS '+label+': room creation, shared clock, timer, roster security, presets, close, responsive layout');
   }finally{await context.close();await browser.close();}
