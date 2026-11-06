@@ -42,13 +42,15 @@ for(const file of ['./study-rooms.js','./study-rooms.css','./study-rooms-immersi
 console.log('PASS study-room clock math, navigation wiring and PWA assets');
 
 vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname,'..','room-experience.js'),'utf8'),{window:win,document:doc});
-const journal=win.HakunaRoomExperience.utils.journal;
-assert.equal(journal(0).pages,0);
-assert.equal(journal(-20).pages,0);
-assert.equal(journal(3599).pages,0);
-assert.equal(journal(3600).pages,1);
-assert.equal(journal(7200).pages,2);
-assert.equal(journal(5400).progress,.5);
+const growth=win.HakunaRoomExperience.utils.growth;
+assert.equal(growth(0),0);
+assert.equal(growth(-20),0);
+assert.equal(growth(Infinity),0);
+assert.equal(growth(3599),0);
+assert.equal(growth(3600),1);
+assert.equal(growth(14400),2);
+assert.equal(growth(129600),6);
+assert.equal(growth(999999),6);
 assert.ok(fs.readFileSync(require('node:path').join(__dirname,'..','main.js'),'utf8').includes("import('./room-weather.js?v=1')"));
 vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname,'..','room-weather.js'),'utf8'),{window:win,document:doc});
 const env=win.HakunaRoomWeather.utils;
@@ -62,4 +64,4 @@ assert.equal(env.weather(63),'rain');assert.equal(env.weather(75),'snow');assert
 assert.equal(env.dateKey(Date.parse('2026-11-06T21:05:00Z')),'2026-11-07');
 const summer=Date.parse('2026-06-21T09:00:00Z'),winter=Date.parse('2026-12-21T09:00:00Z');
 assert(env.solar(summer,false)-env.solar(summer,true)>env.solar(winter,false)-env.solar(winter,true));
-console.log('PASS shared journal, Istanbul day boundaries, solar phases and weather codes');
+console.log('PASS shared plant, Istanbul day boundaries, solar phases and weather codes');

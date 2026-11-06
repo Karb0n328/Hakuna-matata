@@ -115,8 +115,8 @@ const server=createServer((req,res)=>{
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2);
     assert.equal(overflow,false,'study room must not overflow viewport at '+width);
     await page.evaluate(()=>{window.__state.seconds=3600;window.dispatchEvent(new Event('online'));});
-    await page.waitForFunction(()=>document.querySelector('[data-sx-pages]')?.textContent.includes('1 sayfa'));
-    assert.equal(await page.locator('[data-sx-book] i').count(),2);
+    await page.waitForFunction(()=>document.querySelector('[data-sx-plant]')?.dataset.stage==='1');
+    assert.equal(await page.locator('.sx-leaf.is-grown').count(),1);
     await page.locator('[data-sx=desk]').click();
     assert.equal(await page.locator('.sx-my-desk .sx-self').count(),1);
     fs.mkdirSync('test-results',{recursive:true});
@@ -144,7 +144,7 @@ const server=createServer((req,res)=>{
     await page.locator('[data-sr-form=create] [name=mode]').selectOption('free');
     await page.locator('[data-sr-form=create] button[type=submit]').click();
     await page.locator('[data-sr-room-mode]').getByText('SERBEST ÇALIŞMA').waitFor();
-    assert.equal(await page.locator('[data-sx-book] i').count(),2,'journal must render after remount');
+    assert.equal(await page.locator('.sx-leaf.is-grown').count(),1,'plant must render after remount');
     assert.equal(await page.locator('[data-sx-audio-state]').textContent(),'Ses kapalı');
     assert.equal(await page.locator('#sx-next-note').inputValue(),'Sayfa 42');
     assert(await page.locator('body').evaluate(el=>el.classList.contains('sr-immersed')),'room should enter isolated screen');

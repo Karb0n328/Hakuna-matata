@@ -63,7 +63,7 @@ afterFirstPaint(()=>{
     window.addEventListener('online',()=>{void connect();},{once:true});
     try{
       await import('./room-weather.js?v=1');
-      await import('./room-experience.js?v=3-simple');
+      await import('./room-experience.js?v=4-plant');
       await import('./study-rooms.js?v=5-offline');
       if(document.querySelector('#pageTitle')?.textContent==='Odalar')window.HakunaStudyRooms?.render(document.querySelector('#view'));
     }catch(err){console.warn('Hakuna study rooms load',err);}
