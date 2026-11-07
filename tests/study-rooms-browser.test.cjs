@@ -102,14 +102,8 @@ const server=createServer((req,res)=>{
     await page.locator('.sr-person-working').waitFor();
     assert((await page.locator('[data-sr-own-status]').textContent()).includes('sayılıyor'));
     assert((await page.locator('.sr-person-task').textContent()).includes('Bugün organik kimyayı bitireceğim'));
-    const personalStart=await page.evaluate(()=>window.__state.startedAt);
-    await page.locator('[data-sr-action=focus]').click();
-    await page.locator('[data-sr-countdown]').waitFor({state:'hidden',timeout:9000});
-    assert.equal(await page.evaluate(()=>window.__state.startedAt),personalStart,'shared start does not reset personal work');
+    assert.equal(await page.locator('[data-sr-action=focus],[data-sr-action=break],[data-sr-action=idle],[data-sr-shared]').count(),0);
     await page.evaluate(()=>window.__state.other=true);
-    await page.locator('[data-sr-action=idle]').click();
-    await page.locator('[data-sr-action=focus]').click();
-    await page.locator('.sr-person').first().waitFor();
     // Force a fresh server snapshot to check XSS escaping and animated study desks.
     await page.evaluate(()=>window.dispatchEvent(new Event('online')));
     await page.locator('.sr-person').nth(1).waitFor();
@@ -120,17 +114,8 @@ const server=createServer((req,res)=>{
     await page.locator('.sr-person-away').waitFor();
     assert(await page.locator('.sr-person-away .sr-vacant').count()===1,'Offline member should have an empty desk');
     await page.evaluate(()=>window.__state.away=false);
-    await page.locator('[data-sr-action=break]').click();
-    await page.locator('[data-sr-action=stop]').waitFor();
-    assert.equal(await page.evaluate(()=>window.__state.startedAt),personalStart,'shared break preserves personal work');
     await page.locator('[data-sr-action=stop]').click();
-    assert(await page.locator('[data-sr-action=start]').isEnabled(),'personal work is available during shared breaks');
-    await page.locator('[data-sr-action=idle]').click();
-    await page.locator('.sx-room-settings summary').click();
-    await page.locator('[data-sr-form=settings] [name=focus]').fill('40');
-    await page.locator('[data-sr-form=settings] [name=break]').fill('5');
-    await page.locator('[data-sr-form=settings] button[type=submit]').click();
-    await page.waitForFunction(()=>document.querySelector('[data-sr-room-meta]')?.textContent.includes('40 dk'));
+    assert(await page.locator('[data-sr-action=start]').isEnabled(),'resume after a personal break');
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2);
     assert.equal(overflow,false,'study room must not overflow viewport at '+width);
     await page.evaluate(()=>{window.__state.seconds=3600;window.dispatchEvent(new Event('online'));});
@@ -149,7 +134,6 @@ const server=createServer((req,res)=>{
     await page.locator('[data-sx-sound=rain]').click();
     await page.waitForFunction(()=>document.querySelector('[data-sx-sound=rain]')?.getAttribute('aria-pressed')==='true');
     await page.locator('.sx-sound summary').click();
-    await page.locator('.sx-room-settings summary').click();
     fs.mkdirSync('test-results',{recursive:true});
     await page.screenshot({path:'test-results/room-'+width+'.png',fullPage:true});
     page.once('dialog',dialog=>dialog.accept());
