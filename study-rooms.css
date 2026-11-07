@@ -157,7 +157,6 @@
 .sr-desk-resting .sr-avatar-head i,.sr-desk-resting .sr-avatar-head b{height:1px;border-radius:0}
 .sr-desk-resting .sr-scene-coffee span{opacity:1;animation:sr-steam 2.4s infinite ease-in-out}
 .sr-desk-away{background:linear-gradient(180deg,#edf2f7,#d9e4ea);filter:saturate(.7)}
-.sr-vacant{position:absolute;left:46px;bottom:35px;font-size:32px;opacity:.47;filter:grayscale(.5);z-index:4}
 .sr-desk-away .sr-scene-notebook{opacity:.4}
 .sr-desk-away .sr-scene-coffee{opacity:.4}
 .sr-scene-window{z-index:1}
@@ -217,6 +216,11 @@ html[data-hakuna-palette="republic"] .sr-desk-scene{filter:hue-rotate(323deg) sa
   border-radius:13px 13px 4px 4px;
 }
 .sr-avatar[data-hair="braids"] .sr-avatar-hair::after { height:19px; box-shadow:24px 0 var(--sr-hair); }
+.sr-avatar[data-hair="bob"] .sr-avatar-hair { transform:none;height:17px;border-radius:15px 15px 5px 5px; }
+.sr-avatar[data-hair="bob"] .sr-avatar-hair::after { left:0;top:11px;height:25px;width:7px;box-shadow:29px 0 var(--sr-hair); }
+.sr-avatar[data-hair="buns"] .sr-avatar-hair { transform:none;height:16px;border-radius:13px 13px 5px 5px; }
+.sr-avatar[data-hair="buns"] .sr-avatar-hair::after { left:0;top:-5px;height:11px;width:11px;border-radius:50%;box-shadow:25px 0 var(--sr-hair); }
+
 
 .sr-wardrobe {
   width:min(420px,calc(100% - 24px)); max-height:calc(100dvh - 32px); box-sizing:border-box;

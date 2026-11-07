@@ -12,7 +12,13 @@
         adidas: 'Üç çizgili eşofman',
         fubu: '05 forması',
         wu: 'Sarı desenli sweatshirt',
-        kani: 'Bol denim ceket'
+        kani: 'Bol denim ceket',
+        velour: 'Pembe kadife ceket',
+        crop: 'Kısa yarış ceketi',
+        patchwork: 'Desenli kısa hoodie',
+        varsity: 'Kolej ceketi',
+        nylon: 'Renk bloklu rüzgârlık',
+        utility: 'Cepli kargo yelek'
       }
     },
     head: {
@@ -22,6 +28,7 @@
         bandana: 'Bağlı bandana',
         bucket: 'Kırmızı bucket şapka',
         fedora: 'Siyah fötr',
+        durag: 'Saten durag',
         headphones: 'Stüdyo kulaklığı'
       }
     },
@@ -30,7 +37,9 @@
       items: {
         patch: 'Taşlı göz bandı',
         shades: 'Koyu gözlük',
-        aviators: 'Kehribar pilot gözlüğü'
+        aviators: 'Kehribar pilot gözlüğü',
+        hoops: 'Altın halka küpeler',
+        rimless: 'Pembe camlı gözlük'
       }
     },
     neck: {
@@ -42,13 +51,15 @@
       }
     },
     hand: {label: 'El', items: {glove: 'Taşlı eldiven', watch: 'Metal saat'}},
-    hair: {label: 'Saç', items: {fade:'Kısa', curls:'Kıvırcık', braids:'Örgülü'}},
+    hair: {label: 'Saç', items: {fade:'Kısa', curls:'Kıvırcık', braids:'Örgülü', bob:'Küt', buns:'Çift topuz'}},
     skin: {label: 'Ten tonu', items: {light:'Açık', medium:'Orta', deep:'Koyu'}}
   };
 
   const tops = {
     palm: '#21232b', les: '#773644', coogi: '#575483', adidas: '#18191d',
-    fubu: '#a52231', wu: '#222022', kani: '#537b9d'
+    fubu: '#a52231', wu: '#222022', kani: '#537b9d',
+    velour: '#b64c83', crop: '#202337', patchwork: '#693e56',
+    varsity: '#37634e', nylon: '#445c88', utility: '#62604b'
   };
   const skins = {light:'#e8b28c', medium:'#b97954', deep:'#784a38'};
   const shirtArt = {
@@ -58,6 +69,12 @@
     adidas: '<path d="m2 29 4-20m0 20 4-21m0 21 4-21m26 21-4-20m0 20-4-21m0 21-4-21" stroke="#eee" stroke-width="1"/><path d="M21 6v30" stroke="#85878c"/><path d="m27 16 1-3 2 3 2-2v3h-6z" fill="#eee"/>',
     fubu: '<path d="M8 4 3 31M34 4l5 27M14 4q7 12 14 0" fill="none" stroke="#ead4a7" stroke-width="2"/><text x="21" y="27" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="900" fill="#ffebbc">05</text>',
     wu: '<path d="M8 12q4 13 13 11 9 2 13-11l-7 4-6-4-6 4z" fill="#f5ce4d"/><path d="m14 18 4 4 3-4 3 4 4-4" fill="none" stroke="#222" stroke-width="1.4"/>',
+    velour: '<path d="M6 5 3 30m33-25 3 25" stroke="#ffb2cf" stroke-width="2"/><path d="M10 5q11 15 22 0" fill="#84365f"/><path d="M21 9v26m-6-22-2 5m13-5 2 5" stroke="#f3c4a8"/><path d="m8 27 7-2m12 0 7 2" stroke="#842e5a" stroke-width="1.5"/>',
+    crop: '<path d="M0 7h42v8H0z" fill="#eeb2cc"/><path d="M0 16h42m0 9H0" stroke="#f3eee9" stroke-width="2"/><path d="M0 30h42v6H0z" fill="#202337"/><path d="M21 6v24" stroke="#a4a9bf"/><path d="m27 19 6 0-3 4z" fill="#edcc8b"/>',
+    patchwork: '<path d="M9 4q12 16 24 0l-5 13H14z" fill="#472739"/><path d="M0 21h42m-42 8h42" stroke="#d99d83" stroke-width="2"/><path d="m7 24 4-4 4 4-4 4zm10 0 4-4 4 4-4 4zm10 0 4-4 4 4-4 4z" fill="#a7bea5"/><path d="M13 10v7m16-7v7" stroke="#ead9bf"/>',
+    varsity: '<path d="M0 5h8l3 31H0zM42 5h-8l-3 31h11z" fill="#e6d1a9"/><path d="M0 31h42v5H0z" fill="#294c3c"/><path d="M0 33h42m-21-26v24" stroke="#e3d2aa"/><path d="m26 14 3-4 4 4-4 5z" fill="#e4bb76"/><path d="M17 15h1m-1 7h1m-1 6h1" stroke="#ead9bf"/>',
+    nylon: '<path d="M0 8 18 19 0 28zm42 0L24 19l18 9z" fill="#a1d3c8"/><path d="M0 26 18 19l24 8v9H0z" fill="#645183"/><path d="M21 5v31m5-15 7 4m-17-4-7 4" stroke="#dfd4ea"/><path d="m11 6 10 8 10-8" fill="none" stroke="#253b63" stroke-width="3"/>',
+    utility: '<path d="m9 5 6 7-2 24H3L1 18zm24 0-6 7 2 24h10l2-18z" fill="#393a36"/><path d="M10 17h8v8h-8zm14 0h8v8h-8z" fill="#969173" stroke="#434236"/><path d="M21 7v29M10 20h8m6 0h8" stroke="#ccc6a7"/>',
     kani: '<path d="m12 5 9 9 9-9M21 14v22M5 18h11v7H5zm21 0h11v7H26z" fill="none" stroke="#a5c2d1" stroke-width="1"/><path d="M22 19h1m-1 6h1m-1 6h1" stroke="#f2d0a1" stroke-width="2"/>'
   };
   const headArt = {
@@ -65,9 +82,12 @@
     crown: '<path d="M3 15 2 6l7 5 4-8 7 7 8-8 4 8 8-5-2 10Q20 20 3 15Z" fill="#b9bcc8" stroke="#545c76" stroke-width="1"/><path d="m7 12 2-2 2 2-2 2zm9 1 2-2 2 2-2 2zm9 0 2-2 2 2-2 2zm8-1 2-2 2 2-2 2z" fill="#fff"/><path d="M14 3v5m-2-2h4m15-3v4m-2-2h4" stroke="#fff" stroke-width="1"/>',
     bandana: '<path d="M4 12q17-4 34 0v8q-16-3-33 1z" fill="#9c303e"/><path d="m17 13-6-8q0-5 9 4l3 2q8-8 10-5l-7 9z" fill="#af3f51"/><path d="m7 16 3 1m5-2 3 1m6-1 3 1m6-1 3 1" stroke="#fff1df" stroke-width="1"/>',
     bucket: '<path d="M9 5q12-5 25 0l3 13q-15 6-32 0z" fill="#ad233c"/><path d="m5 15-4 6q20 5 40-1l-5-6z" fill="#c32b44"/><path d="M16 11q5-4 10 0l-2 2h-7z" fill="#f6e6d5"/>',
+    durag: '<path d="M4 15Q6 3 21 3t17 12l-3 4Q22 14 5 20z" fill="#685080" stroke="#352942"/><path d="M7 13q13-7 26-2" fill="none" stroke="#c4a7d8"/><path d="m35 15 5 8-5-2-2 5-1-9z" fill="#8c6ca0"/>',
     fedora: '<path d="m10 15 2-11 9 2 10-2 3 12z" fill="#252630"/><path d="M10 12h24l1 4H9z" fill="#4d4246"/><ellipse cx="21" cy="17" rx="21" ry="4" fill="#23232c"/>'
   };
   const faceArt = {
+    hoops: '<g fill="none" stroke="#f6ce79" stroke-width="1.6"><ellipse cx="7" cy="33" rx="3" ry="4.5"/><ellipse cx="35" cy="33" rx="3" ry="4.5"/></g><path d="M5 33v2m28-2v2" stroke="#fff2be"/>',
+    rimless: '<path d="M8 23h26m-14 3h3" fill="none" stroke="#f3d6b2"/><rect x="10" y="23" width="10" height="6" rx="2" fill="#ec85b5" fill-opacity=".76" stroke="#ffd9ee"/><rect x="23" y="23" width="10" height="6" rx="2" fill="#ec85b5" fill-opacity=".76" stroke="#ffd9ee"/>',
     aviators: '<path d="M7 23h28m-16 1q2-3 5 0M10 23h11v3q-1 5-6 5t-5-5zm12 0h11v3q0 5-5 5t-6-5z" fill="#ad7939" fill-opacity=".85" stroke="#efd79e" stroke-width="1"/>',
     patch: '<path d="m7 25 28-7" stroke="#24222d" stroke-width="2"/><path d="M11 23h12v5q-6 7-12 0z" fill="#252630" stroke="#e8d79e"/><circle cx="17" cy="26" r="1.3" fill="#fff"/>',
     shades: '<path d="M9 23h25v3H9z" fill="#22242d"/><rect x="10" y="23" width="10" height="7" rx="2" fill="#10131c" stroke="#706674"/><rect x="23" y="23" width="10" height="7" rx="2" fill="#10131c" stroke="#706674"/><path d="m12 26 4-2m9 2 4-2" stroke="#9ca7ba"/>'

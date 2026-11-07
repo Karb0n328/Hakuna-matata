@@ -21,7 +21,7 @@ const fixture=[
   ' if(name==="study_room_create_v2"){s.room={id:"room-1",owner_id:"user-1",name:args.p_name,invite_code:"K7MP4X9R",focus_minutes:args.p_focus_minutes,break_minutes:args.p_break_minutes,mode:args.p_mode||"shared",phase:"idle",phase_started_at:null,is_active:true};return s.room.id;}',
   ' if(name==="study_room_join"){if(args.p_invite_code!==s.room?.invite_code)throw Error("Geçersiz kod");return s.room.id;}',
   ' if(name==="study_room_touch")return true;',
-  ' if(name==="study_room_snapshot"){if(!s.room)throw Error("Oda yok");return {room:{...s.room},members:[{user_id:"user-1",username:"Batu",look:s.look,seconds:s.seconds,today_seconds:s.seconds,studying:s.selfStudying,last_seen_at:new Date().toISOString(),active_started_at:s.startedAt||null,active_end_at:null,task_title:s.task||null},...(s.other?[{user_id:"user-2",username:"<img src=x onerror=alert(1)>",look:{top:"coogi",head:"headphones",face:"aviators",neck:"pendant",hand:"watch"},seconds:1200,today_seconds:1200,studying:!s.away,last_seen_at:new Date(Date.now()-120000).toISOString(),active_end_at:new Date(Date.now()+300000).toISOString()}]:[])],room_total_seconds:s.roomTotal,server_now:new Date().toISOString()};}',
+  ' if(name==="study_room_snapshot"){if(!s.room)throw Error("Oda yok");return {room:{...s.room},members:[{user_id:"user-1",username:"Batu",look:s.look,seconds:s.seconds,today_seconds:s.seconds,studying:s.selfStudying,last_seen_at:new Date().toISOString(),active_started_at:s.startedAt||null,active_end_at:null,task_title:s.task||null},...(s.other?[{user_id:"user-2",username:"<img src=x onerror=alert(1)>",look:{top:"coogi",head:"headphones",face:"aviators",neck:"pendant",hand:"watch"},seconds:1200,today_seconds:1200,studying:!s.away,last_seen_at:new Date(Date.now()-120000).toISOString(),active_end_at:new Date(Date.now()+300000).toISOString()}]:[])],room_total_seconds:s.roomTotal,bloom_started_at:s.bloomStartedAt,server_now:new Date().toISOString()};}',
   ' if(name==="study_room_rename"){if(uid!==s.room.owner_id)throw Error("Not owner");s.room.name=args.p_name;return true;}',
   ' if(name==="study_room_configure"){s.room.focus_minutes=args.p_focus_minutes;s.room.break_minutes=args.p_break_minutes;s.room.mode=args.p_mode;return true;}',
   ' if(name==="study_room_set_phase"){s.room.phase=args.p_phase;s.room.phase_started_at=args.p_phase==="idle"?null:new Date(Date.now()+(args.p_phase==="focus"?3100:0)).toISOString();return true;}',
@@ -67,19 +67,19 @@ const server=createServer((req,res)=>{
     await page.locator('[data-sr-action=wardrobe]').click();
     const wardrobe=page.locator('.sr-wardrobe');
     await wardrobe.waitFor();
-    await wardrobe.locator('[name=top]').selectOption('les');
+    await wardrobe.locator('[name=top]').selectOption('velour');
     await wardrobe.getByRole('button',{name:'Aksesuar'}).click();
     await wardrobe.locator('[name=head]').selectOption('headphones');
     await wardrobe.locator('[name=hand]').selectOption('watch');
-    await wardrobe.locator('[name=face]').selectOption('aviators');
+    await wardrobe.locator('[name=face]').selectOption('hoops');
     await wardrobe.locator('[name=neck]').selectOption('pendant');
     await wardrobe.getByRole('button',{name:'Karakter'}).click();
-    await wardrobe.locator('[name=hair]').selectOption('braids');
+    await wardrobe.locator('[name=hair]').selectOption('buns');
     await wardrobe.locator('[name=skin]').selectOption('deep');
     const preview=wardrobe.locator('.sr-wardrobe-preview');
-    const accessories=['headphones','aviators','pendant','watch'];
+    const accessories=['headphones','hoops','pendant','watch'];
     for(const name of accessories)assert.equal(await preview.locator('[data-accessory='+name+']').count(),1);
-    assert.equal(await preview.locator('.sr-avatar[data-hair=braids] .sr-accessory-art').count(),1);
+    assert.equal(await preview.locator('.sr-avatar[data-hair=buns] .sr-accessory-art').count(),1);
     fs.mkdirSync('test-results',{recursive:true});
     await wardrobe.screenshot({path:'test-results/wardrobe-'+width+'.png'});
     await wardrobe.getByRole('button',{name:'Kaydet'}).click();
@@ -104,16 +104,23 @@ const server=createServer((req,res)=>{
     await page.evaluate(()=>{window.__state.seconds=320*3600;window.dispatchEvent(new Event('online'));});
     await page.waitForFunction(()=>document.querySelector('[data-sr-user="user-1"] [data-chair-level]')?.dataset.chairLevel==='11');
     await page.locator('[data-sr-user="user-1"] .sr-desk-scene').screenshot({path:'test-results/imperial-'+width+'.png'});
-    await page.evaluate(()=>{window.__state.roomTotal=900*3600;window.dispatchEvent(new Event('online'));});
-    await page.locator('[data-sx-egg][data-stage="3"]:visible').waitFor();
-    assert.equal(await page.locator('[data-sx-plant]').isVisible(),false);
-    await page.locator('.sx-horizon').screenshot({path:'test-results/egg-'+width+'.png'});
-    await page.evaluate(()=>{window.__state.roomTotal=1000*3600;window.dispatchEvent(new Event('online'));});
-    await page.locator('[data-sx-dragon][data-stage="0"]:visible').waitFor();
-    assert.equal(await page.locator('[data-sx-egg]').isVisible(),false);
+    await page.evaluate(()=>{window.__state.roomTotal=400*3600;window.__state.bloomStartedAt=new Date().toISOString();window.dispatchEvent(new Event('online'));});
+    const bloomTimer=page.locator('[data-sx-bloom-timer]');
+    await bloomTimer.waitFor();
+    assert.match(await bloomTimer.textContent(),/^(24:00:00|23:59:[0-5][0-9])$/);
+    const fits=await page.locator('.sx-horizon').evaluate(panel=>{
+      const outer=panel.getBoundingClientRect();
+      const flower=panel.querySelector('.sx-flower').getBoundingClientRect();
+      const timer=panel.querySelector('[data-sx-bloom-timer]').getBoundingClientRect();
+      return timer.top>=outer.top&&timer.bottom<=flower.top&&flower.right<=outer.right;
+    });
+    assert(fits,'flower and countdown fit without overlapping');
+    await page.locator('.sx-horizon').screenshot({path:'test-results/bloom-'+width+'.png'});
+    await page.evaluate(()=>{window.__state.bloomStartedAt=new Date(Date.now()-86401000).toISOString();window.dispatchEvent(new Event('online'));});
+    await page.locator('[data-sx-dragon]').waitFor();
+    await bloomTimer.waitFor({state:'hidden'});
     await page.locator('.sx-horizon').screenshot({path:'test-results/dragon-'+width+'.png'});
-
-    await page.evaluate(()=>{window.__state.seconds=12;delete window.__state.roomTotal;window.dispatchEvent(new Event('online'));});
+    await page.evaluate(()=>{window.__state.seconds=12;delete window.__state.roomTotal;delete window.__state.bloomStartedAt;window.dispatchEvent(new Event('online'));});
     await page.waitForFunction(()=>document.querySelector('[data-sr-user="user-1"] [data-chair-level]')?.dataset.chairLevel==='0');
 
     await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>{window.__copied=value}}}));
@@ -153,7 +160,8 @@ const server=createServer((req,res)=>{
     for(const name of accessories)assert.equal(await friend.locator('.sr-desk-working [data-accessory='+name+']').count(),1);
     await page.evaluate(()=>{window.__state.away=true;window.dispatchEvent(new Event('online'));});
     await page.locator('.sr-person-away').waitFor();
-    assert.equal(await friend.locator('.sr-desk-away .sr-vacant').count(),1,'away peer has an empty desk');
+    assert.equal(await friend.locator('.sr-desk-away .sr-scene-chair').count(),1,'away peer keeps their chair');
+    assert.equal(await friend.locator('.sr-desk-away .sr-vacant').count(),0,'no second chair icon');
     assert.equal(await friend.locator('.sr-avatar').count(),0);
     await page.evaluate(()=>window.__state.away=false);
     await page.locator('[data-sr-action=stop]').click();
@@ -186,7 +194,7 @@ const server=createServer((req,res)=>{
     await page.locator('[data-sr-form=create] [name=name]').fill('Serbest Test');
     await page.locator('[data-sr-form=create] button[type=submit]').click();
     await page.locator('[data-sr-room-mode]').getByText('ÇALIŞMA ODASI').waitFor();
-    assert.equal(await page.locator('.sr-roster .sr-avatar[data-hair=braids]').count(),1,'saved look persists on room re-entry');
+    assert.equal(await page.locator('.sr-roster .sr-avatar[data-hair=buns]').count(),1,'saved look persists on room re-entry');
     assert.equal(await page.locator('.sx-leaf.is-grown').count(),1,'plant must render after remount');
     assert.equal(await page.locator('[data-sx-audio-state]').textContent(),'Ses kapalı');
     assert(await page.locator('body').evaluate(el=>el.classList.contains('sr-immersed')),'room should enter isolated screen');

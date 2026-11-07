@@ -64,9 +64,9 @@ afterFirstPaint(()=>{
     try{
       await import('./room-notifications.js?v=6-android');
       await import('./room-weather.js?v=2');
-      await import('./room-experience.js?v=6-dragon');
-      await import('./room-wardrobe.js?v=3');
-      await import('./study-rooms.js?v=18-android');
+      await import('./room-experience.js?v=7-bloom');
+      await import('./room-wardrobe.js?v=4');
+      await import('./study-rooms.js?v=19-bloom');
       if(document.querySelector('#pageTitle')?.textContent==='Odalar')window.HakunaStudyRooms?.render(document.querySelector('#view'));
     }catch(err){console.warn('Hakuna study rooms load',err);}
     await Promise.allSettled([

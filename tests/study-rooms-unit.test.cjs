@@ -46,17 +46,18 @@ const growth=win.HakunaRoomExperience.utils.growth;
 assert.equal(growth(0),0);
 assert.equal(growth(-20),0);
 assert.equal(growth(Infinity),0);
-for(const [index,hour] of [12,40,90,160,250,360].entries()){
+for(const [index,hour] of [12,48,95,150,215,290].entries()){
   assert.equal(growth(hour*3600-1),index);
   assert.equal(growth(hour*3600),index+1);
 }
 const pet=win.HakunaRoomExperience.utils.petStage;
-assert.equal(pet(400*3600-1).kind,'plant');
-assert.equal(pet(400*3600).kind,'egg');
-assert.equal(pet(900*3600).stage,3);
-assert.equal(pet(1000*3600-1).kind,'egg');
-assert.equal(pet(1000*3600).kind,'dragon');
-assert.equal(pet(1900*3600).stage,2);
+const bloom=new Date('2026-11-07T12:00:00Z');
+const day=24*3600*1000;
+assert.equal(pet(400*3600-1,null,+bloom).kind,'plant');
+assert.equal(pet(400*3600,bloom.toISOString(),+bloom).secondsLeft,86400);
+assert.equal(pet(400*3600,bloom.toISOString(),+bloom+day-1).secondsLeft,1);
+assert.equal(pet(400*3600,bloom.toISOString(),+bloom+day).kind,'dragon');
+assert.equal(pet(1900*3600,bloom.toISOString(),+bloom+day).stage,2);
 for(const [index,hour] of [10,20,30,40,50,65,85,110,150,220,320].entries()){
   assert.equal(util.chairLevel(hour*3600-1),index);
   assert.equal(util.chairLevel(hour*3600),index+1);
