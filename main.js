@@ -62,10 +62,10 @@ afterFirstPaint(()=>{
     if(navigator.onLine)void connect();
     window.addEventListener('online',()=>{void connect();},{once:true});
     try{
-      await import('./room-notifications.js?v=1');
+      await import('./room-notifications.js?v=2');
       await import('./room-weather.js?v=2');
       await import('./room-experience.js?v=4-plant');
-      await import('./study-rooms.js?v=10-push');
+      await import('./study-rooms.js?v=11-permission');
       if(document.querySelector('#pageTitle')?.textContent==='Odalar')window.HakunaStudyRooms?.render(document.querySelector('#view'));
     }catch(err){console.warn('Hakuna study rooms load',err);}
     await Promise.allSettled([

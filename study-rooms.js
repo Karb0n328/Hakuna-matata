@@ -133,7 +133,7 @@
       +'<div class="sr-room-heading"><span class="sr-kicker" data-sr-room-mode>SESSİZ ODA</span><h2 data-sr-room-title>Oda açılıyor…</h2>'
       +'<div class="sr-room-sub" data-sr-room-meta></div></div>'
       +'<div class="sr-space-tools"><span class="sx-weather" data-sx-weather>Elazığ · Hava yükleniyor</span>'
-      +'<button type="button" class="secondary-btn" data-sr-action="notifications" aria-label="Çalışma bildirimlerini aç veya kapat">♧ Bildirim</button></div>'
+      +'</div>'
       +'<details class="sr-invite"><summary>+ Davet</summary><span data-sr-invite>••••••••</span><button type="button" data-sr-action="copy-code" class="secondary-btn">Kodu kopyala</button><button type="button" data-sr-action="copy" class="secondary-btn">Bağlantıyı kopyala</button></details></header>'
       +'<div class="sr-room-grid"><section class="sr-session-card">'
       +'<div class="sr-phase-label" data-sr-phase>Hazırlanıyor</div>'
@@ -359,7 +359,6 @@
   }
   async function act(action,button){
     if(busy)return;
-    if(action==='notifications'){try{const on=await window.HakunaRoomNotifications.toggle();button.textContent=on?'Bildirim açık':'Bildirim kapalı';notice(on?'Bildirimler açık.':'Bildirimler kapalı.');}catch(e){notice(e.message,true);}return;}
     if(action==='back'){showLobby();return;}
     if(action==='refresh'){void loadLobby();return;}
     if(action==='login'){window.HakunaAccount?.open?.('login');return;}
