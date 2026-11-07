@@ -80,7 +80,7 @@
       +'<button type="submit" class="primary-btn">Katıl</button></form>'
       +'<div class="sr-section-head"><h3>Odalarım</h3><button type="button" class="secondary-btn" data-sr-action="refresh">Yenile</button></div>'
       +'<div class="sr-room-list" data-sr-list><div class="sr-loading">Odalar yükleniyor…</div></div>'
-      +'<div class="sr-stats"><div><small>Bugün</small><strong data-sr-today>—</strong></div><div><small>Toplam</small><strong data-sr-total>—</strong></div></div>'
+      +'<div class="sr-stats" data-sr-stats hidden><div><small>Bugün</small><strong data-sr-today>—</strong></div><div><small>Toplam</small><strong data-sr-total>—</strong></div></div>'
       +'<p class="sr-note" data-sr-notice hidden role="status"></p>'
       +'</div>';
   }
@@ -116,6 +116,7 @@
       host.querySelector('[data-sr-today]').textContent=duration(data.today_seconds);
       host.querySelector('[data-sr-total]').textContent=duration(data.total_seconds);
       const items=Array.isArray(data.rooms)?data.rooms:[];
+      host.querySelector('[data-sr-stats]').hidden=items.length===0;
       host.querySelector('[data-sr-list]').innerHTML=items.length?items.map(r=>
         '<div class="sr-room-list-row"><button class="sr-room-item" type="button" data-sr-action="open" data-id="'+E(r.id)+'">'
         +'<span class="sr-room-bubble">📚</span><span class="sr-room-info"><strong>'+E(r.name)+'</strong>'
@@ -334,8 +335,8 @@
     }
     const ownerArea=host.querySelector('[data-sr-owner-actions]');
     if(ownerArea.dataset.renderKey!==actions){const wasOpen=ownerArea.querySelector('details')?.open;ownerArea.innerHTML=actions;ownerArea.dataset.renderKey=actions;if(wasOpen&&ownerArea.querySelector('details'))ownerArea.querySelector('details').open=true;}ownerArea.hidden=!actions;
-    // Keep each member in their seat when starting work or taking a break.
-    const roster=members.slice();
+    // Rank by the same room total shown on each desk. Ties keep join order.
+    const roster=members.slice().sort((a,b)=>liveSeconds(b,now)-liveSeconds(a,now));
     // Avoid re-creating animated characters on every 12-second sync.
     const rosterKey=JSON.stringify({mode:r.mode,phase:r.phase,
       friends:roster.map(m=>[m.user_id,m.username,

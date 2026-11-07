@@ -10,7 +10,7 @@ const fixture=[
   '<main class="main-area"><h1 id="pageTitle">Odalar</h1><section class="ataturk-corner" aria-label="Atatürk Köşesi">Atatürk Köşesi</section><section class="republic-hero">Cumhuriyet</section><section id="view"></section></main>',
   '<script>',
   'window.__uid="user-1";',
-  'window.__state={room:null,selfStudying:false,seconds:0,other:false};',
+  'window.__state={room:null,selfStudying:false,seconds:12,other:false};',
   'window.HakunaAccount={',
   'info:()=>({id:window.__uid}),open:()=>{window.__loginOpened=true},',
   'roomListen:()=>()=>{},roomSaveLook:async look=>{window.__state.look=look},',
@@ -62,6 +62,8 @@ const server=createServer((req,res)=>{
     await page.goto(base+'?room=k7mp-4x9r');
     await page.locator('[data-sr-action=entry-create]').waitFor();
     assert.equal(await page.locator('[name=code]').inputValue(),'K7MP4X9R');
+    await page.locator('.sr-empty').waitFor();
+    assert.equal(await page.locator('[data-sr-stats]').isVisible(),false,'past study does not show stats in an empty lobby');
     await page.evaluate(()=>new Promise((resolve,reject)=>{
       const req=indexedDB.open('hakuna-matata-db',1);
       req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('app'))req.result.createObjectStore('app');};
@@ -126,7 +128,7 @@ const server=createServer((req,res)=>{
     // Force a fresh server snapshot to check XSS escaping and animated study desks.
     await page.evaluate(()=>window.dispatchEvent(new Event('online')));
     await page.locator('.sr-person').nth(1).waitFor();
-    assert.deepEqual(await page.locator('.sr-person').evaluateAll(nodes=>nodes.map(n=>n.dataset.srUser)),['user-1','user-2'],'members keep the same seat while others study');
+    assert.deepEqual(await page.locator('.sr-person').evaluateAll(nodes=>nodes.map(n=>n.dataset.srUser)),['user-2','user-1'],'the highest room study total comes first');
     assert.equal(await page.locator('.sr-roster img').count(),0,'username must never inject HTML');
     assert((await page.locator('.sr-roster').textContent()).includes('<img src=x onerror=alert(1)>'));
     await page.evaluate(()=>{window.__state.away=true;window.dispatchEvent(new Event('online'));});
@@ -140,6 +142,7 @@ const server=createServer((req,res)=>{
     await page.evaluate(()=>{window.__state.seconds=3600;window.dispatchEvent(new Event('online'));});
     await page.waitForFunction(()=>document.querySelector('[data-sx-plant]')?.dataset.stage==='1');
     assert.equal(await page.locator('.sx-leaf.is-grown').count(),1);
+    assert.equal(await page.locator('.sr-person').first().getAttribute('data-sr-user'),'user-1','ranks update when a member takes the lead');
     await page.locator('[data-sx=desk]').click();
     assert.equal(await page.locator('.sx-my-desk .sx-self').count(),1);
     fs.mkdirSync('test-results',{recursive:true});
@@ -207,6 +210,7 @@ const server=createServer((req,res)=>{
     await page.locator('[data-sr-form=create] button[type=submit]').click();
     await page.locator('[data-sr-action=back]').click();
     await page.locator('[data-sr-action=delete-room]').waitFor();
+    assert(await page.locator('[data-sr-stats]').isVisible(),'stats are visible with an active room');
     page.once('dialog',d=>d.dismiss());await page.locator('[data-sr-action=delete-room]').click();
     assert.equal(await page.locator('[data-sr-action=delete-room]').count(),1);
     const before=await page.evaluate(()=>window.__state.seconds);
