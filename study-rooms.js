@@ -117,10 +117,12 @@
       host.querySelector('[data-sr-list]').innerHTML=items.length?items.map(r=>
         '<div class="sr-room-list-row"><button class="sr-room-item" type="button" data-sr-action="open" data-id="'+E(r.id)+'">'
         +'<span class="sr-room-bubble">📚</span><span class="sr-room-info"><strong>'+E(r.name)+'</strong>'
-        +'<small>'+Number(r.member_count)+' üye · '+Number(r.focus_minutes)+'/'+Number(r.break_minutes)+' dk</small></span>'
+        +'<small>'+Number(r.member_count)+' üye</small></span>'
         +'<span class="sr-room-go">Giriş →</span></button>'+(r.owner_id===id()?'<button type="button" class="sr-link-danger" data-sr-action="delete-room" data-id="'+E(r.id)+'">Odayı sil</button>':'')+'</div>'
       ).join(''):'<div class="sr-empty">Henüz odan yok. Bir oda kur veya arkadaşının davet kodunu gir. 🌱</div>';
       notice('');
+      const url=new URL(location.href),target=items.find(r=>r.invite_code===url.searchParams.get('room'));
+      if(target){url.searchParams.delete('room');history.replaceState(null,'',url);openRoom(target.id);}
     }catch(error){
       if(ticket===epoch&&active()){const list=host.querySelector('[data-sr-list]');if(list)list.textContent='Odalar alınamadı.';notice(error?.message||'Bağlantı hatası',true);}
     }finally{if(ticket===epoch)loading=false;}
@@ -131,7 +133,7 @@
       +'<div class="sr-room-heading"><span class="sr-kicker" data-sr-room-mode>SESSİZ ODA</span><h2 data-sr-room-title>Oda açılıyor…</h2>'
       +'<div class="sr-room-sub" data-sr-room-meta></div></div>'
       +'<div class="sr-space-tools"><span class="sx-weather" data-sx-weather>Elazığ · Hava yükleniyor</span>'
-      +'</div>'
+      +'<button type="button" class="secondary-btn" data-sr-action="notifications" aria-label="Çalışma bildirimlerini aç veya kapat">♧ Bildirim</button></div>'
       +'<details class="sr-invite"><summary>+ Davet</summary><span data-sr-invite>••••••••</span><button type="button" data-sr-action="copy-code" class="secondary-btn">Kodu kopyala</button><button type="button" data-sr-action="copy" class="secondary-btn">Bağlantıyı kopyala</button></details></header>'
       +'<div class="sr-room-grid"><section class="sr-session-card">'
       +'<div class="sr-phase-label" data-sr-phase>Hazırlanıyor</div>'
@@ -315,7 +317,7 @@
     const r=snapshot.room,now=Date.now()+skewMs;
     const self=snapshot.members?.find(m=>m.user_id===id()),working=!!self&&memberWorking(self,now);
     const began=Date.parse(self?.active_started_at||'');
-    const elapsed=working?(Number.isFinite(began)?Math.max(0,Math.floor((now-began)/1000)):liveSeconds(self,now)):0;
+    const elapsed=self?liveSeconds(self,now):0;
     const left=phaseLeft(r,now),startAt=Date.parse(r.phase_started_at||'');
     const countdown=r.phase==='focus'&&Number.isFinite(startAt)&&now<startAt;
     const ring=host.querySelector('[data-sr-ring]');
@@ -324,8 +326,7 @@
     if(timer)timer.textContent=displayClock(elapsed);
     if(icon)icon.textContent=working?'✎':'☾';
     const own=host.querySelector('[data-sr-own-status]');
-    if(own)own.textContent=(working?'Süren sayılıyor · ':'Çalışman · ')
-      +duration(self?liveSeconds(self,now):0);
+    if(own)own.textContent=working?'Çalışılıyor · Süren sayılıyor':'Molada';
     for(const m of snapshot.members||[]){
       const node=host.querySelector('[data-sr-member-time="'+m.user_id+'"]');
       if(node)node.textContent=duration(liveSeconds(m,now));
@@ -358,6 +359,7 @@
   }
   async function act(action,button){
     if(busy)return;
+    if(action==='notifications'){try{const on=await window.HakunaRoomNotifications.toggle();button.textContent=on?'Bildirim açık':'Bildirim kapalı';notice(on?'Bildirimler açık.':'Bildirimler kapalı.');}catch(e){notice(e.message,true);}return;}
     if(action==='back'){showLobby();return;}
     if(action==='refresh'){void loadLobby();return;}
     if(action==='login'){window.HakunaAccount?.open?.('login');return;}
@@ -439,6 +441,7 @@
   document.addEventListener('visibilitychange',()=>{
     if(document.visibilityState==='visible'&&active()){if(roomId){void touchRoom();void loadRoom();}else void loadLobby();tick();}
   });
+  window.navigator?.serviceWorker?.addEventListener('message',e=>{if(e.data?.type==='hakuna-study-paused'&&roomId)void loadRoom();});
   window.HakunaStudyRooms=Object.freeze({render,leaveView,
     utils:Object.freeze({duration,displayClock,phaseLeft,phaseEnd})});
 })();

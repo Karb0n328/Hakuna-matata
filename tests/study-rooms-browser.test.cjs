@@ -164,7 +164,7 @@ const server=createServer((req,res)=>{
     assert.equal(await page.locator('[data-sx-note]').isVisible(),false);
     await page.screenshot({path:'test-results/rain-'+width+'.png',fullPage:true});
     await page.evaluate(()=>{window.__weatherOriginal=window.HakunaRoomWeather;window.HakunaRoomWeather={...window.HakunaRoomWeather,update:()=>{}};});
-    for(const [phase,hour,code,weather] of [['dawn',7,0,'clear'],['day',12,63,'rain'],['sunset',17,75,'snow'],['night',23,45,'fog']]){
+    for(const [phase,hour,code,weather] of [['dawn',7,0,'clear'],['day',12,63,'rain'],['day',12,3,'cloudy'],['sunset',17,75,'snow'],['night',23,45,'fog']]){
       await page.evaluate(({hour,code})=>{
         const env=window.__weatherOriginal,day=Date.parse('2026-11-06T00:00:00+03:00'),now=day+hour*3600000;
         env.clear();localStorage.setItem('hakuna.elazigWeather.v1',JSON.stringify({fetched:Date.now(),data:{current:{time:now/1000,temperature_2m:10,weather_code:code},daily:{time:[day/1000],sunrise:[(day+7*3600000)/1000],sunset:[(day+17*3600000)/1000]}}}));
@@ -172,7 +172,8 @@ const server=createServer((req,res)=>{
       },{hour,code});
       assert.equal(await page.locator('.sr-room').getAttribute('data-dayphase'),phase);
       assert.equal(await page.locator('.sr-room').getAttribute('data-weather'),weather);
-      await page.screenshot({path:'test-results/'+phase+'-'+width+'.png',fullPage:true});
+      if(weather==='cloudy')assert.equal(await page.locator('.sr-room').getAttribute('data-cloudiness'),'overcast');
+      await page.screenshot({path:'test-results/'+phase+'-'+weather+'-'+width+'.png',fullPage:true});
     }
     await page.evaluate(()=>{window.HakunaRoomWeather=window.__weatherOriginal;});
 

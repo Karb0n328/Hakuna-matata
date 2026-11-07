@@ -51,7 +51,7 @@ assert.equal(growth(3600),1);
 assert.equal(growth(14400),2);
 assert.equal(growth(129600),6);
 assert.equal(growth(999999),6);
-assert.ok(fs.readFileSync(require('node:path').join(__dirname,'..','main.js'),'utf8').includes("import('./room-weather.js?v=1')"));
+assert.ok(fs.readFileSync(require('node:path').join(__dirname,'..','main.js'),'utf8').includes("import('./room-weather.js?v=2')"));
 vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname,'..','room-weather.js'),'utf8'),{window:win,document:doc});
 const env=win.HakunaRoomWeather.utils;
 const rise=Date.parse('2026-11-06T04:00:00Z'),set=Date.parse('2026-11-06T14:00:00Z');

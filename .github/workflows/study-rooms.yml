@@ -16,6 +16,8 @@ on:
       - study-rooms.css
       - study-rooms-immersive.css
       - room-experience.js
+      - room-notifications.js
+      - tests/room-push.test.cjs
       - room-weather.js
       - room-experience.css
       - tests/study-rooms-unit.test.cjs
@@ -38,6 +40,8 @@ on:
       - study-rooms.css
       - study-rooms-immersive.css
       - room-experience.js
+      - room-notifications.js
+      - tests/room-push.test.cjs
       - room-weather.js
       - room-experience.css
       - tests/study-rooms-unit.test.cjs
@@ -69,6 +73,7 @@ jobs:
           node --check tests/study-rooms-unit.test.cjs
           node --check tests/study-rooms-browser.test.cjs
           node tests/study-rooms-unit.test.cjs
+          node tests/room-push.test.cjs
       - name: Install browser test runner
         run: npm install --no-save --ignore-scripts playwright@1.56.1
       - name: Verify real offline app launch and persisted work

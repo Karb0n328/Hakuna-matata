@@ -44,7 +44,7 @@
   const p=phase(now,rise,set);room.dataset.dayphase=p;room.dataset.atmosphere=p==='night'?'night':'dawn';
   const current=cache?.data.current,age=current?now-current.time*1000:Infinity;
   const fresh=age>=-15*60000&&age<=MAX_AGE,kind=fresh?weather(current.weather_code):'unknown';
-  room.dataset.weather=kind;
+  room.dataset.weather=kind;room.dataset.cloudiness=fresh&&current.weather_code===3?'overcast':kind==='cloudy'?'partial':['rain','snow','fog','thunder'].includes(kind)?'overcast':'clear';
   const labels={clear:'Açık',cloudy:'Bulutlu',rain:'Yağmurlu',snow:'Karlı',fog:'Sisli',thunder:'Gök gürültülü yağmur',unknown:'Hava verisi bekleniyor'};
   const part={dawn:'Gün doğumu',day:'Gündüz',sunset:'Gün batımı',night:'Gece'};
   const badge=host.querySelector('[data-sx-weather]');

@@ -31,3 +31,10 @@ body.sr-immersed .sx-room{padding-top:calc(env(safe-area-inset-top,0px) + 48px)!
 
 .sr-shared-timer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;color:var(--muted);font-size:12px}.sr-shared-timer strong{color:var(--ink);font-variant-numeric:tabular-nums}.sr-shared-timer[hidden]{display:none}.sx-room-settings form+form{margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
 @media(max-width:1120px){.sx-room .sr-shared-timer{grid-column:1/-1}}
+
+.sx-room[data-dayphase=day][data-cloudiness=overcast]{--sky-top:#6d7e89;--sky-bottom:#b1bec4;--bg:#c7d0d1;--ink:#283b43;--muted:#53676f;background:linear-gradient(150deg,#cbd2cf,#a9bbc3 75%,#9eafb9)}
+.sx-room[data-dayphase=day][data-cloudiness=partial]{--sky-top:#789aaa;--sky-bottom:#ced8d6;background:linear-gradient(150deg,#dce2d9,#bdcfd4)}
+.sx-room[data-weather=cloudy] .sx-window:before{content:'';display:block;position:absolute;inset:-15%;z-index:1;background:radial-gradient(ellipse at 25% 25%,#dce3e680,transparent 50%),radial-gradient(ellipse at 75% 40%,#a5b5bf80,transparent 45%);filter:blur(12px);animation:sx-cloud-drift 35s ease-in-out infinite alternate;pointer-events:none}
+.sx-room[data-cloudiness=overcast] .sx-moon{opacity:.06}.sx-room .sr-desk-working .sr-avatar{animation:sr-lean 6s ease-in-out infinite}.sx-room .sr-desk-working .sr-avatar-arm{animation:sx-pencil 2.8s ease-in-out infinite}.sx-room .sr-desk-working .sr-scene-notebook{animation:sr-page 12s ease-in-out infinite}.sx-plant>svg{transform-origin:50% 90%;animation:sx-plant-sway 9s ease-in-out infinite}
+@keyframes sx-cloud-drift{to{transform:translateX(8%)}}@keyframes sx-pencil{0%,60%,100%{transform:rotate(-18deg)}10%,30%,50%{transform:rotate(-24deg) translateX(1px)}20%,40%{transform:rotate(-16deg)}}@keyframes sx-plant-sway{0%,100%{transform:rotate(-.6deg)}50%{transform:rotate(.6deg)}}
+@media(prefers-reduced-motion:reduce){.sx-room .sx-window:before,.sx-plant>svg,.sx-room .sr-desk-working *{animation:none!important}}

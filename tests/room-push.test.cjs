@@ -1,0 +1,7 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const handlers={},shown=[],opened=[],posted=[];let requests=0;
+const self={location:{origin:'https://example.test'},registration:{scope:'https://example.test/Hakuna/',showNotification:async(t,o)=>shown.push({t,o})},clients:{matchAll:async()=>[{postMessage:m=>posted.push(m)}],openWindow:async u=>opened.push(u)},addEventListener:(n,f)=>handlers[n]=f};
+const source=fs.readFileSync('sw.js','utf8');vm.runInNewContext(source.slice(source.indexOf("self.addEventListener('push'")),{self,URL,fetch:async()=>{requests++;return {ok:true}}});
+(async()=>{let pending;handlers.push({data:{json:()=>({body:'Odam',roomId:'123',code:'K7MP4X9R',pauseToken:'test-token'})},waitUntil:p=>pending=p});await pending;assert.equal(shown[0].t,'Çalışılıyor…');assert.equal(shown[0].o.actions[0].title,'Mola ver');assert.equal(new URL(shown[0].o.data.url).searchParams.get('room'),'K7MP4X9R');
+handlers.notificationclick({notification:{data:shown[0].o.data,close(){}},action:'pause',waitUntil:p=>pending=p});await pending;assert.equal(requests,1);assert.equal(opened.length,0);assert.equal(posted[0].type,'hakuna-study-paused');
+handlers.notificationclick({notification:{data:shown[0].o.data,close(){}},action:'',waitUntil:p=>pending=p});await pending;assert.equal(opened.length,1);console.log('PASS personal notification, pause action and room deep link');})().catch(e=>{console.error(e);process.exitCode=1});

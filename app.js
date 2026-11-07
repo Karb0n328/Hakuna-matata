@@ -1001,7 +1001,7 @@ YANIT KURALI
     const descriptions={
       questions:'Çözdürülecek soru havuzu',
       books:'Fotoğraflı sorular ve PDF kitapçık',
-      rooms:'Arkadaşlarınla ortak etüt',
+      rooms:'Arkadaşlarınla çalış',
       analytics:'Çalışma ve deneme gelişimi',
       guidance:'Ayzos ödev takibi',
       suggestions:'Geri bildirim ve geliştirme fikirleri',
@@ -1041,7 +1041,7 @@ YANIT KURALI
     state.selectedDate=todayISO();
     // Room invite links open the Odalar page and prefill the invite code.
     const sharedCode=new URLSearchParams(location.search).get('room');
-    if(sharedCode&&/^[A-Fa-f0-9]{18}$/.test(sharedCode))currentPage='rooms';
+    if(sharedCode&&/^(?:[A-Fa-f0-9]{18}|[2-9A-HJ-NP-Za-hj-np-z]{8})$/.test(sharedCode))currentPage='rooms';
     render();
     let lastGuidanceRole=window.HakunaGuidance?.role();
     setInterval(()=>{const nextRole=window.HakunaGuidance?.role();if(nextRole!==lastGuidanceRole){lastGuidanceRole=nextRole;render();}},1200);

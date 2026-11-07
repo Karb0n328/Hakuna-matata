@@ -101,6 +101,7 @@ window.HakunaAccount=Object.freeze({
     const {error}=await supabase.storage.from('hakuna-question-photos').remove([path]);
     if(error)throw error;
   },
+  roomNotifications:async(body)=>{if(!user?.id)throw Error('Giriş gerekli');const {data,error}=await supabase.functions.invoke('room-notifications',{body});if(error)throw Error('Bildirim bağlantısı kurulamadı.');return data;},
   roomRpc:async(name,args={})=>{
     const allowed=['study_room_create','study_room_join','study_room_leave','study_room_settings',
       'study_room_set_phase','study_room_start','study_room_stop','study_room_close',
@@ -111,6 +112,8 @@ window.HakunaAccount=Object.freeze({
     if(!navigator.onLine)throw new Error('Ortak çalışma odaları için internet bağlantısı gerekiyor.');
     const {data,error}=await supabase.rpc(name,args);
     if(error)throw error;
+    if(name==='study_room_start')void supabase.functions.invoke('room-notifications',{body:{action:'started',roomId:args.p_room_id}}).catch(()=>{});
+    if(name==='study_room_stop')void window.HakunaRoomNotifications?.close();
     return data;
   },
   roomListen:(id,callback)=>{
