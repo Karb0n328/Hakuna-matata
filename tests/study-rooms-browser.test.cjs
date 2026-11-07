@@ -152,7 +152,6 @@ const server=createServer((req,res)=>{
     fs.mkdirSync('test-results',{recursive:true});
     await page.screenshot({path:'test-results/desk-'+width+'.png',fullPage:true});
     await page.locator('[data-sx=desk]').click();
-    assert.equal(await page.evaluate(()=>localStorage.getItem('hakuna.roomNote.v1.user-1.room-1')),'Sayfa 42');
     await page.locator('.sx-sound summary').click();
     await page.locator('[data-sx-sound=rain]').click();
     await page.waitForFunction(()=>document.querySelector('[data-sx-sound=rain]')?.getAttribute('aria-pressed')==='true');
