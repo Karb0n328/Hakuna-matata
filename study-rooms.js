@@ -561,6 +561,7 @@
   window.addEventListener('hakuna-account-changed',()=>{
     if(!active()){refreshLaunch();return;}
     const user=accountId();
+    if(bootOwner&&!user&&window.HakunaOffline?.roomLaunch?.()?.user===bootOwner)return;
     if(lastUser!==user){
       const view=host;
       leaveView();

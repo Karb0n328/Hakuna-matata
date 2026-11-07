@@ -2,7 +2,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 const {chromium}=require('playwright');
 const root=path.resolve(__dirname,'..');
 const server=http.createServer((req,res)=>{const p=decodeURIComponent(req.url.split('?')[0]);const f=path.join(root,p==='/'?'index.html':p);if(!f.startsWith(root+path.sep)){res.writeHead(403).end();return;}try{const body=fs.readFileSync(f);res.writeHead(200,{'Content-Type':f.endsWith('.js')?'text/javascript':f.endsWith('.css')?'text/css':f.endsWith('.html')?'text/html':'application/octet-stream','Cache-Control':'no-cache'});res.end(body);}catch{res.writeHead(404).end();}});
-(async()=>{await new Promise(r=>server.listen(0,'127.0.0.1',r));const browser=await chromium.launch();const context=await browser.newContext();let page;
+(async()=>{await new Promise(r=>server.listen(0,'127.0.0.1',r));const browser=await chromium.launch();const context=await browser.newContext();let page,resumeContext;
 try{
  await context.route('https://**/*',r=>r.abort());
  page=await context.newPage();const base='http://127.0.0.1:'+server.address().port;
@@ -38,6 +38,15 @@ try{
  await page.getByText('Bu cihazda bildirimler açık.',{exact:true}).waitFor();
  assert(await page.evaluate(()=>window.__notificationsEnabled));
 
+ // Isolate startup from the real worker's cached auth dependencies.
+ resumeContext=await browser.newContext({serviceWorkers:'block'});
+ await resumeContext.route('https://**/*',r=>r.abort());
+ await resumeContext.route('**/account-sync-v2.js?*',route=>route.fulfill({
+  contentType:'text/javascript',body:"window.HakunaAccount={info:()=>({id:null})};window.dispatchEvent(new Event('hakuna-account-changed'));"
+ }));
+ page=await resumeContext.newPage();
+ await page.goto(base);
+ await page.waitForSelector('[data-nav=plan]');
  // An already active room must be the first real view even with the cloud blocked.
  await page.addInitScript(()=>{
   window.__launchTitles=[];
@@ -73,5 +82,5 @@ try{
  assert.deepEqual(await page.evaluate(()=>window.__launchTitles),['Bugün']);
 
  console.log('PASS real service worker installation, cold offline launch, unversioned core fallback, local photo, plan, task persistence, online-only tabs, account-scoped snapshots and reconnect');
-}catch(e){fs.mkdirSync('test-results',{recursive:true});if(page&&!page.isClosed()){console.log('OFFLINE FAILURE VIEW',await page.locator('body').innerText());await page.screenshot({path:'test-results/offline-failure.png',fullPage:true});}throw e;}finally{await context.close();await browser.close();await new Promise(r=>server.close(r));}
+}catch(e){fs.mkdirSync('test-results',{recursive:true});if(page&&!page.isClosed()){console.log('OFFLINE FAILURE VIEW',await page.locator('body').innerText());await page.screenshot({path:'test-results/offline-failure.png',fullPage:true});}throw e;}finally{await resumeContext?.close();await context.close();await browser.close();await new Promise(r=>server.close(r));}
 })().catch(e=>{console.error(e);process.exitCode=1});
