@@ -46,11 +46,22 @@ const growth=win.HakunaRoomExperience.utils.growth;
 assert.equal(growth(0),0);
 assert.equal(growth(-20),0);
 assert.equal(growth(Infinity),0);
-assert.equal(growth(3599),0);
-assert.equal(growth(3600),1);
-assert.equal(growth(14400),2);
-assert.equal(growth(129600),6);
-assert.equal(growth(999999),6);
+for(const [index,hour] of [12,40,90,160,250,360].entries()){
+  assert.equal(growth(hour*3600-1),index);
+  assert.equal(growth(hour*3600),index+1);
+}
+const pet=win.HakunaRoomExperience.utils.petStage;
+assert.equal(pet(400*3600-1).kind,'plant');
+assert.equal(pet(400*3600).kind,'egg');
+assert.equal(pet(900*3600).stage,3);
+assert.equal(pet(1000*3600-1).kind,'egg');
+assert.equal(pet(1000*3600).kind,'dragon');
+assert.equal(pet(1900*3600).stage,2);
+for(const [index,hour] of [10,20,30,40,50,65,85,110,150,220,320].entries()){
+  assert.equal(util.chairLevel(hour*3600-1),index);
+  assert.equal(util.chairLevel(hour*3600),index+1);
+}
+assert.equal(util.chairLevel(1000*3600),11);
 assert.ok(fs.readFileSync(require('node:path').join(__dirname,'..','main.js'),'utf8').includes("import('./room-weather.js?v=2')"));
 vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname,'..','room-weather.js'),'utf8'),{window:win,document:doc});
 const env=win.HakunaRoomWeather.utils;

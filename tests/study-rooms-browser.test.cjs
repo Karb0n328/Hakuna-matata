@@ -21,7 +21,7 @@ const fixture=[
   ' if(name==="study_room_create_v2"){s.room={id:"room-1",owner_id:"user-1",name:args.p_name,invite_code:"K7MP4X9R",focus_minutes:args.p_focus_minutes,break_minutes:args.p_break_minutes,mode:args.p_mode||"shared",phase:"idle",phase_started_at:null,is_active:true};return s.room.id;}',
   ' if(name==="study_room_join"){if(args.p_invite_code!==s.room?.invite_code)throw Error("Geçersiz kod");return s.room.id;}',
   ' if(name==="study_room_touch")return true;',
-  ' if(name==="study_room_snapshot"){if(!s.room)throw Error("Oda yok");return {room:{...s.room},members:[{user_id:"user-1",username:"Batu",look:s.look,seconds:s.seconds,today_seconds:s.seconds,studying:s.selfStudying,last_seen_at:new Date().toISOString(),active_started_at:s.startedAt||null,active_end_at:null,task_title:s.task||null},...(s.other?[{user_id:"user-2",username:"<img src=x onerror=alert(1)>",look:{top:"coogi",head:"headphones",face:"aviators",neck:"pendant",hand:"watch"},seconds:1200,today_seconds:1200,studying:!s.away,last_seen_at:new Date(Date.now()-120000).toISOString(),active_end_at:new Date(Date.now()+300000).toISOString()}]:[])],server_now:new Date().toISOString()};}',
+  ' if(name==="study_room_snapshot"){if(!s.room)throw Error("Oda yok");return {room:{...s.room},members:[{user_id:"user-1",username:"Batu",look:s.look,seconds:s.seconds,today_seconds:s.seconds,studying:s.selfStudying,last_seen_at:new Date().toISOString(),active_started_at:s.startedAt||null,active_end_at:null,task_title:s.task||null},...(s.other?[{user_id:"user-2",username:"<img src=x onerror=alert(1)>",look:{top:"coogi",head:"headphones",face:"aviators",neck:"pendant",hand:"watch"},seconds:1200,today_seconds:1200,studying:!s.away,last_seen_at:new Date(Date.now()-120000).toISOString(),active_end_at:new Date(Date.now()+300000).toISOString()}]:[])],room_total_seconds:s.roomTotal,server_now:new Date().toISOString()};}',
   ' if(name==="study_room_rename"){if(uid!==s.room.owner_id)throw Error("Not owner");s.room.name=args.p_name;return true;}',
   ' if(name==="study_room_configure"){s.room.focus_minutes=args.p_focus_minutes;s.room.break_minutes=args.p_break_minutes;s.room.mode=args.p_mode;return true;}',
   ' if(name==="study_room_set_phase"){s.room.phase=args.p_phase;s.room.phase_started_at=args.p_phase==="idle"?null:new Date(Date.now()+(args.p_phase==="focus"?3100:0)).toISOString();return true;}',
@@ -95,13 +95,25 @@ const server=createServer((req,res)=>{
     assert.equal(await chair.getAttribute('data-chair-level'),'0');
     const initialHeight=(await chair.boundingBox()).height;
     await page.locator('.sr-chair-guide summary').click();
-    await page.getByText('50 sa ve üzeri',{exact:true}).waitFor();
+    await page.getByText('320 sa ve üzeri',{exact:true}).waitFor();
     await page.locator('.sr-chair-guide summary').click();
     await page.evaluate(()=>{window.__state.seconds=180000;window.dispatchEvent(new Event('online'));});
     await page.waitForFunction(()=>document.querySelector('[data-sr-user="user-1"] [data-chair-level]')?.dataset.chairLevel==='5');
     await page.waitForFunction(height=>document.querySelector('[data-sr-user="user-1"] [data-chair-level]').getBoundingClientRect().height>height,initialHeight);
     await page.locator('[data-sr-user="user-1"] .sr-desk-scene').screenshot({path:'test-results/throne-'+width+'.png'});
-    await page.evaluate(()=>{window.__state.seconds=12;window.dispatchEvent(new Event('online'));});
+    await page.evaluate(()=>{window.__state.seconds=320*3600;window.dispatchEvent(new Event('online'));});
+    await page.waitForFunction(()=>document.querySelector('[data-sr-user="user-1"] [data-chair-level]')?.dataset.chairLevel==='11');
+    await page.locator('[data-sr-user="user-1"] .sr-desk-scene').screenshot({path:'test-results/imperial-'+width+'.png'});
+    await page.evaluate(()=>{window.__state.roomTotal=900*3600;window.dispatchEvent(new Event('online'));});
+    await page.locator('[data-sx-egg][data-stage="3"]:visible').waitFor();
+    assert.equal(await page.locator('[data-sx-plant]').isVisible(),false);
+    await page.locator('.sx-horizon').screenshot({path:'test-results/egg-'+width+'.png'});
+    await page.evaluate(()=>{window.__state.roomTotal=1000*3600;window.dispatchEvent(new Event('online'));});
+    await page.locator('[data-sx-dragon][data-stage="0"]:visible').waitFor();
+    assert.equal(await page.locator('[data-sx-egg]').isVisible(),false);
+    await page.locator('.sx-horizon').screenshot({path:'test-results/dragon-'+width+'.png'});
+
+    await page.evaluate(()=>{window.__state.seconds=12;delete window.__state.roomTotal;window.dispatchEvent(new Event('online'));});
     await page.waitForFunction(()=>document.querySelector('[data-sr-user="user-1"] [data-chair-level]')?.dataset.chairLevel==='0');
 
     await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>{window.__copied=value}}}));
@@ -148,7 +160,7 @@ const server=createServer((req,res)=>{
     assert(await page.locator('[data-sr-action=start]').isEnabled(),'resume after a personal break');
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2);
     assert.equal(overflow,false,'study room must not overflow viewport at '+width);
-    await page.evaluate(()=>{window.__state.seconds=3600;window.dispatchEvent(new Event('online'));});
+    await page.evaluate(()=>{window.__state.seconds=12*3600;window.dispatchEvent(new Event('online'));});
     await page.waitForFunction(()=>document.querySelector('[data-sx-plant]')?.dataset.stage==='1');
     assert.equal(await page.locator('.sx-leaf.is-grown').count(),1);
     assert.equal(await page.locator('.sr-person').first().getAttribute('data-sr-user'),'user-1','ranks update when a member takes the lead');

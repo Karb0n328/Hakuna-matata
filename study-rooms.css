@@ -333,3 +333,45 @@ html[data-hakuna-palette="republic"] .sr-desk-scene{filter:hue-rotate(323deg) sa
   content:"";position:absolute;left:4px;top:-1px;width:6px;height:7px;border-radius:2px;
   background:linear-gradient(145deg,#536680,#222c41);border:1px solid #e7edf7;
 }
+
+/* Advanced thrones keep the same seat position while changing the backrest. */
+.sr-room .sr-scene-chair:is([data-chair-level="6"],[data-chair-level="7"],[data-chair-level="8"],[data-chair-level="9"],[data-chair-level="10"],[data-chair-level="11"]) {
+  width:79px;height:91px;border:4px solid var(--chair-trim);
+  border-radius:var(--chair-shape);background:var(--chair-finish);
+  box-shadow:inset 0 0 0 2px var(--chair-highlight),0 0 10px var(--chair-glow);
+}
+.sr-room .sr-scene-chair:is([data-chair-level="6"],[data-chair-level="7"],[data-chair-level="8"],[data-chair-level="9"],[data-chair-level="10"],[data-chair-level="11"])::before {
+  content:var(--chair-emblem);position:absolute;top:-7px;left:50%;transform:translateX(-50%);
+  display:grid;place-items:center;width:17px;height:17px;border-radius:50%;border:1px solid var(--chair-highlight);
+  background:var(--chair-trim);color:var(--chair-ink,#242032);font:700 11px/1 sans-serif;
+}
+.sr-room .sr-scene-chair[data-chair-level="6"] {
+  --chair-trim:#eb8ba2;--chair-highlight:#ffd0c7;--chair-glow:#e3587955;
+  --chair-shape:10px 23px 7px 7px;--chair-emblem:'◆';
+  --chair-finish:linear-gradient(135deg,#521932 25%,#9b304b 25% 51%,#69203b 51% 78%,#b6425e 78%);
+}
+.sr-room .sr-scene-chair[data-chair-level="7"] {
+  --chair-trim:#7ec6a9;--chair-highlight:#d3f0be;--chair-glow:#42cfa955;
+  --chair-shape:34px 34px 8px 8px;--chair-emblem:'✿';
+  --chair-finish:repeating-linear-gradient(60deg,#14483f 0 8px,#255d4b 8px 12px,#2a6858 12px 14px);
+}
+.sr-room .sr-scene-chair[data-chair-level="8"] {
+  --chair-trim:#83b8f0;--chair-highlight:#d1e7ff;--chair-glow:#548aef66;
+  --chair-shape:7px 7px 9px 9px;--chair-emblem:'✧';
+  --chair-finish:linear-gradient(130deg,#142c63 16%,#2d5495 17% 39%,#1e3975 40% 65%,#416eac 66%);
+}
+.sr-room .sr-scene-chair[data-chair-level="9"] {
+  width:82px;height:93px;--chair-trim:#a89ad7;--chair-highlight:#ece5ff;--chair-glow:#a48af077;
+  --chair-shape:41px 41px 8px 8px;--chair-emblem:'☾';
+  --chair-finish:radial-gradient(circle,#bcb0ea 1px,transparent 2px) 1px 2px/13px 13px,linear-gradient(#2e2757,#514175);
+}
+.sr-room .sr-scene-chair[data-chair-level="10"] {
+  width:85px;height:94px;--chair-trim:#f2bd66;--chair-highlight:#fff0b1;--chair-glow:#ffd36777;
+  --chair-shape:28px 28px 7px 7px;--chair-emblem:'☀';
+  --chair-finish:repeating-conic-gradient(from -38deg at 50% 18%,#703b28 0 15deg,#9d5a37 15deg 30deg);
+}
+.sr-room .sr-scene-chair[data-chair-level="11"] {
+  width:88px;height:96px;--chair-trim:#f5c985;--chair-highlight:#fff0cd;--chair-glow:#d4a9ff88;
+  --chair-shape:18px 18px 8px 8px;--chair-emblem:'♛';
+  --chair-finish:radial-gradient(circle,#f2c883 1px,transparent 2px) 2px 3px/11px 11px,linear-gradient(150deg,#543766,#24192f);
+}

@@ -11,11 +11,21 @@
     if(!window.HakunaAccount?.roomRpc)throw new Error('Hesap bağlantısı henüz hazır değil. Yeniden dene.');
     return window.HakunaAccount.roomRpc(name,args);
   };
-  const chairLevels=['Ahşap sandalye','Demir koltuk','Altın koltuk','Kadife koltuk','Obsidyen taht','Kral tahtı'];
-  const chairLevel=value=>Math.min(chairLevels.length-1,Math.floor(seconds(value)/36000));
+  const chairLevels=[
+    [0,'Ahşap sandalye'],[10,'Demir koltuk'],[20,'Altın koltuk'],[30,'Kadife koltuk'],
+    [40,'Obsidyen taht'],[50,'Kral tahtı'],[65,'Yakut taht'],[85,'Zümrüt taht'],
+    [110,'Safir taht'],[150,'Ay tahtı'],[220,'Güneş tahtı'],[320,'İmparator tahtı']
+  ];
+  function chairLevel(value){
+    const hours=seconds(value)/3600;
+    let level=0;
+    while(level+1<chairLevels.length&&hours>=chairLevels[level+1][0])level++;
+    return level;
+  }
   function chairGuide(){
-    const rows=chairLevels.map((label,index)=>{
-      const range=index===chairLevels.length-1?'50 sa ve üzeri':index*10+'–'+(index+1)*10+' sa';
+    const rows=chairLevels.map(([hours,label],index)=>{
+      const next=chairLevels[index+1];
+      const range=next?hours+'–'+next[0]+' sa':hours+' sa ve üzeri';
       return '<li><span>'+label+'</span><span>'+range+'</span></li>';
     }).join('');
     return '<details class="sr-chair-guide"><summary aria-label="Sandalye seviyeleri"><span aria-hidden="true">?</span></summary><div><strong>Sandalye seviyeleri</strong><p>Bu odadaki toplam çalışma süren</p><ul>'+rows+'</ul></div></details>';

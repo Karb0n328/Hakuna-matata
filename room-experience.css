@@ -38,3 +38,22 @@ body.sr-immersed .sx-room{padding-top:calc(env(safe-area-inset-top,0px) + 48px)!
 .sx-room[data-cloudiness=overcast] .sx-moon{opacity:.06}.sx-room .sr-desk-working .sr-avatar{animation:sr-lean 6s ease-in-out infinite}.sx-room .sr-desk-working .sr-avatar-arm{animation:sx-pencil 2.8s ease-in-out infinite}.sx-room .sr-desk-working .sr-scene-notebook{animation:sr-page 12s ease-in-out infinite}.sx-plant>svg{transform-origin:50% 90%;animation:sx-plant-sway 9s ease-in-out infinite}
 @keyframes sx-cloud-drift{to{transform:translateX(8%)}}@keyframes sx-pencil{0%,60%,100%{transform:rotate(-18deg)}10%,30%,50%{transform:rotate(-24deg) translateX(1px)}20%,40%{transform:rotate(-16deg)}}@keyframes sx-plant-sway{0%,100%{transform:rotate(-.6deg)}50%{transform:rotate(.6deg)}}
 @media(prefers-reduced-motion:reduce){.sx-room .sx-window:before,.sx-plant>svg,.sx-room .sr-desk-working *{animation:none!important}}
+
+.sx-companion {
+  position:absolute;right:7%;bottom:8px;width:clamp(125px,24vw,185px);z-index:1;
+  pointer-events:none;filter:drop-shadow(0 10px 12px #0002);
+}
+.sx-companion svg { width:100%;display:block;overflow:visible; }
+.sx-horizon [hidden] { display:none; }
+.sx-horizon-caption [data-sx-companion-label] { font-size:12px;color:#f5e9d6; }
+.sx-egg-shell { transform-origin:90px 189px; }
+.sx-egg-crack { opacity:0;fill:none;stroke:#554567;stroke-width:2;stroke-linecap:round;stroke-linejoin:round; }
+[data-sx-egg]:not([data-stage="0"]) .sx-egg-crack-first,
+[data-sx-egg]:is([data-stage="2"],[data-stage="3"]) .sx-egg-crack-second,
+[data-sx-egg][data-stage="3"] .sx-egg-crack-third { opacity:1; }
+[data-sx-egg][data-stage="3"] .sx-egg-shell { animation:sx-egg-wiggle 9s ease-in-out infinite; }
+.sx-dragon-body { transform:scale(var(--dragon-scale,.8));transform-origin:90px 201px;transition:transform .6s ease; }
+[data-sx-dragon] svg { transform-origin:50% 91%;animation:sx-dragon-breathe 5s ease-in-out infinite; }
+@keyframes sx-egg-wiggle { 0%,80%,100%{transform:rotate(0)} 85%,95%{transform:rotate(-4deg)} 90%{transform:rotate(4deg)} }
+@keyframes sx-dragon-breathe { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-2px)} }
+@media(max-width:480px){.sx-companion{right:3%;width:125px}}
