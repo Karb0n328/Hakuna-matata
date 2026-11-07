@@ -102,6 +102,12 @@ window.HakunaAccount=Object.freeze({
     if(error)throw error;
   },
   roomNotifications:async(body)=>{if(!user?.id)throw Error('Giriş gerekli');const {data,error}=await supabase.functions.invoke('room-notifications',{body});if(error)throw Error('Bildirim bağlantısı kurulamadı.');return data;},
+  roomLoadLook:async ()=>{
+    if(!user?.id)throw new Error('Giriş gerekli.');
+    const {data,error}=await supabase.from('study_room_looks').select('look').eq('user_id',user.id).maybeSingle();
+    if(error)throw new Error('Gardırop yüklenemedi. Tekrar dene.');
+    return data?.look||{};
+  },
   roomSaveLook:async look=>{
     if(!user?.id)throw new Error('Giriş gerekli.');
     const {error}=await supabase.from('study_room_looks').upsert({user_id:user.id,look});

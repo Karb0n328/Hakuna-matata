@@ -13,7 +13,7 @@ const fixture=[
   'window.__state={room:null,selfStudying:false,seconds:12,other:false};',
   'window.HakunaAccount={',
   'info:()=>({id:window.__uid}),open:()=>{window.__loginOpened=true},',
-  'roomListen:()=>()=>{},roomSaveLook:async look=>{window.__state.look=look},',
+  'roomListen:()=>()=>{},roomLoadLook:async()=>window.__state.look||{},roomSaveLook:async look=>{window.__state.look=look},',
   'roomRpc:async(name,args={})=>{',
   ' const s=window.__state,uid=window.__uid;',
   ' if(!uid)throw Error("Giriş gerekli");',
@@ -74,19 +74,16 @@ const server=createServer((req,res)=>{
         tx.oncomplete=()=>{db.close();resolve();};tx.onerror=()=>reject(tx.error);
       };
     }));
-    await page.locator('[data-sr-action=entry-create]').click();
-    await page.locator('[data-sr-form=create] [name=name]').fill('Kütüphane Ekibi');
-    await page.locator('[data-sr-form=create] button[type=submit]').click();
-    await page.locator('[data-sr-room-title]').getByText('Kütüphane Ekibi').waitFor();
-    assert.equal(await page.locator('[data-sr-invite]').textContent(),'K7MP-4X9R');
     await page.locator('[data-sr-action=wardrobe]').click();
     const wardrobe=page.locator('.sr-wardrobe');
     await wardrobe.waitFor();
     await wardrobe.locator('[name=top]').selectOption('les');
+    await wardrobe.getByRole('button',{name:'Aksesuar'}).click();
     await wardrobe.locator('[name=head]').selectOption('crown');
     await wardrobe.locator('[name=hand]').selectOption('glove');
     await wardrobe.locator('[name=face]').selectOption('shades');
     await wardrobe.locator('[name=neck]').selectOption('rope');
+    await wardrobe.getByRole('button',{name:'Karakter'}).click();
     await wardrobe.locator('[name=hair]').selectOption('braids');
     await wardrobe.locator('[name=skin]').selectOption('deep');
     const preview=wardrobe.locator('.sr-wardrobe-preview');
@@ -96,7 +93,26 @@ const server=createServer((req,res)=>{
     await wardrobe.screenshot({path:'test-results/wardrobe-'+width+'.png'});
     await wardrobe.getByRole('button',{name:'Kaydet'}).click();
     await wardrobe.waitFor({state:'detached'});
+    await page.locator('[data-sr-action=entry-create]').click();
+    await page.locator('[data-sr-form=create] [name=name]').fill('Kütüphane Ekibi');
+    await page.locator('[data-sr-form=create] button[type=submit]').click();
+    await page.locator('[data-sr-room-title]').getByText('Kütüphane Ekibi').waitFor();
+    assert.equal(await page.locator('[data-sr-invite]').textContent(),'K7MP-4X9R');
     assert.equal(await page.locator('.sr-roster .sr-jeweled-glove').count(),1);
+    assert.equal(await page.locator('[data-sr-action=wardrobe]').count(),0);
+    const chair=page.locator('[data-sr-user="user-1"] [data-chair-level]');
+    assert.equal(await chair.getAttribute('data-chair-level'),'0');
+    const initialHeight=(await chair.boundingBox()).height;
+    await page.locator('.sr-chair-guide summary').click();
+    await page.getByText('50 sa ve üzeri',{exact:true}).waitFor();
+    await page.locator('.sr-chair-guide summary').click();
+    await page.evaluate(()=>{window.__state.seconds=180000;window.dispatchEvent(new Event('online'));});
+    await page.waitForFunction(()=>document.querySelector('[data-sr-user="user-1"] [data-chair-level]')?.dataset.chairLevel==='5');
+    await page.waitForFunction(height=>document.querySelector('[data-sr-user="user-1"] [data-chair-level]').getBoundingClientRect().height>height,initialHeight);
+    await page.locator('[data-sr-user="user-1"] .sr-desk-scene').screenshot({path:'test-results/throne-'+width+'.png'});
+    await page.evaluate(()=>{window.__state.seconds=12;window.dispatchEvent(new Event('online'));});
+    await page.waitForFunction(()=>document.querySelector('[data-sr-user="user-1"] [data-chair-level]')?.dataset.chairLevel==='0');
+
     await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>{window.__copied=value}}}));
     await page.locator('.sr-invite summary').click();
     await page.locator('[data-sr-action=copy-code]').click();

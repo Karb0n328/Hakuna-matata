@@ -11,6 +11,15 @@
     if(!window.HakunaAccount?.roomRpc)throw new Error('Hesap bağlantısı henüz hazır değil. Yeniden dene.');
     return window.HakunaAccount.roomRpc(name,args);
   };
+  const chairLevels=['Ahşap sandalye','Demir koltuk','Altın koltuk','Kadife koltuk','Obsidyen taht','Kral tahtı'];
+  const chairLevel=value=>Math.min(chairLevels.length-1,Math.floor(seconds(value)/36000));
+  function chairGuide(){
+    const rows=chairLevels.map((label,index)=>{
+      const range=index===chairLevels.length-1?'50 sa ve üzeri':index*10+'–'+(index+1)*10+' sa';
+      return '<li><span>'+label+'</span><span>'+range+'</span></li>';
+    }).join('');
+    return '<details class="sr-chair-guide"><summary aria-label="Sandalye seviyeleri"><span aria-hidden="true">?</span></summary><div><strong>Sandalye seviyeleri</strong><p>Bu odadaki toplam çalışma süren</p><ul>'+rows+'</ul></div></details>';
+  }
   const seconds=value=>Math.max(0,Math.floor(Number(value)||0));
   function duration(value){
     const s=seconds(value),hours=Math.floor(s/3600),minutes=Math.floor(s%3600/60),secs=s%60;
@@ -78,7 +87,7 @@
       +'<form hidden class="sr-panel sr-lobby-form" data-sr-form="join">'
       +'<label>Davet kodu<input name="code" type="text" maxlength="32" placeholder="K7MP-4X9R" autocapitalize="characters" autocomplete="off" spellcheck="false" required></label>'
       +'<button type="submit" class="primary-btn">Katıl</button></form>'
-      +'<div class="sr-section-head"><h3>Odalarım</h3><button type="button" class="secondary-btn" data-sr-action="refresh">Yenile</button></div>'
+      +'<div class="sr-section-head"><h3>Odalarım</h3><button type="button" class="secondary-btn sr-wardrobe-entry" data-sr-action="wardrobe">Gardırop</button></div>'
       +'<div class="sr-room-list" data-sr-list><div class="sr-loading">Odalar yükleniyor…</div></div>'
       +'<div class="sr-stats" data-sr-stats hidden><div><small>Bugün</small><strong data-sr-today>—</strong></div><div><small>Toplam</small><strong data-sr-total>—</strong></div></div>'
       +'<p class="sr-note" data-sr-notice hidden role="status"></p>'
@@ -147,7 +156,7 @@
       +'<div data-sr-owner-actions class="sr-owner-area"></div></section>'
       +'<section class="sr-friends"><div class="sr-section-head"><h3>Masalar <span data-sr-member-count></span></h3></div>'
       +'<div class="sr-roster" data-sr-roster><div class="sr-loading">Yükleniyor…</div></div></section></div>'
-      +'<div class="sr-room-footer" data-sr-footer></div>'
+      +'<div class="sr-room-footer" data-sr-footer></div>'+chairGuide()
       +'<div class="sr-countdown" data-sr-countdown hidden aria-live="assertive"><div class="sr-countdown-inner"><div>ETÜT BAŞLIYOR</div><strong data-sr-countdown-num>3</strong></div></div>'
       +'<p class="sr-note" data-sr-notice hidden role="status"></p></div>';
   }
@@ -232,12 +241,12 @@
     const end=Date.parse(m.active_end_at||'');
     return !!m.studying&&(!Number.isFinite(end)||now<end);
   }
-  function deskMarkup(m,index,working,online){
+  function deskMarkup(m,working,online,level=0){
     const avatar=(m.user_id||m.username||'').split('').reduce((a,c)=>a+c.charCodeAt(0),0)%5;
     const state=online?(working?'working':'resting'):'away';
     return '<div class="sr-desk-scene sr-desk-'+state+' sr-outfit-'+avatar+'" aria-hidden="true">'
       +'<span class="sr-scene-stars">✦</span><div class="sr-scene-window"><span></span><span></span></div>'
-      +'<div class="sr-scene-chair"></div>'
+      +'<div class="sr-scene-chair" data-chair-level="'+level+'"></div>'
       +(online?window.HakunaRoomWardrobe.character(m.look):'<span class="sr-vacant">🪑</span>')
       +'<div class="sr-scene-table"></div><div class="sr-scene-notebook"><i></i><i></i><i></i></div>'
       +'<div class="sr-scene-coffee"><span></span></div>'
@@ -245,44 +254,69 @@
       +'</div>';
   }
 
-  function openWardrobe(){
-    const member=snapshot?.members?.find(m=>m.user_id===id());
-    if(!member||host.querySelector('.sr-wardrobe'))return;
+  async function openWardrobe(trigger){
+    if(roomId||trigger.disabled||host.querySelector('.sr-wardrobe'))return;
+    const owner=id(),ticket=epoch;
+    trigger.disabled=true;
+    try{
+      const look=await window.HakunaAccount.roomLoadLook();
+      if(owner!==id()||ticket!==epoch||!active()||roomId)return;
+      showWardrobe(look,owner,ticket);
+    }catch(error){
+      if(ticket===epoch)notice(error?.message||'Gardırop yüklenemedi.',true);
+    }finally{
+      trigger.disabled=false;
+    }
+  }
+
+  function showWardrobe(look,owner,ticket){
     const {catalog,normalize}=window.HakunaRoomWardrobe;
-    const selected=normalize(member.look);
+    const selected=normalize(look);
+    const groups=[
+      {label:'Kıyafet',slots:['top']},
+      {label:'Aksesuar',slots:['head','face','neck','hand']},
+      {label:'Karakter',slots:['hair','skin']}
+    ];
     const dialog=document.createElement('dialog');
     dialog.className='sr-wardrobe';
     dialog.setAttribute('aria-label','Gardırop');
-    const choices=Object.entries(catalog).map(([slot,{label,items}])=>
-      '<label>'+E(label)+'<select name="'+slot+'"><option value="">'+
-      (slot==='skin'||slot==='hair'?'Varsayılan':slot==='top'?'Sade':'Yok')+
-      '</option>'+Object.entries(items).map(([key,name])=>
-        '<option value="'+key+'"'+(selected[slot]===key?' selected':'')+'>'+E(name)+'</option>'
-      ).join('')+'</select></label>').join('');
+    const choice=slot=>{
+      const {label,items}=catalog[slot];
+      const fallback=slot==='skin'||slot==='hair'?'Varsayılan':slot==='top'?'Sade':'Yok';
+      return '<label>'+E(label)+'<select name="'+slot+'"><option value="">'+fallback+'</option>'+
+        Object.entries(items).map(([key,name])=>
+          '<option value="'+key+'"'+(selected[slot]===key?' selected':'')+'>'+E(name)+'</option>'
+        ).join('')+'</select></label>';
+    };
+    const tabs=groups.map(({label},i)=>'<button type="button" data-wardrobe-tab="'+i+'" aria-pressed="'+(i===0)+'">'+label+'</button>').join('');
+    const panels=groups.map(({slots},i)=>'<div class="sr-wardrobe-fields" data-wardrobe-panel="'+i+'"'+(i?' hidden':'')+'>'+slots.map(choice).join('')+'</div>').join('');
     dialog.innerHTML='<form><h2>Gardırop</h2><div class="sr-wardrobe-preview"></div>'+
-      '<div class="sr-wardrobe-fields">'+choices+'</div><p role="alert"></p>'+
-      '<div class="sr-wardrobe-actions"><button type="button" class="secondary-btn">Vazgeç</button>'+
+      '<div class="sr-wardrobe-tabs" role="group" aria-label="Gardırop kategorileri">'+tabs+'</div>'+
+      panels+'<p role="alert"></p>'+
+      '<div class="sr-wardrobe-actions"><button type="button" class="secondary-btn" data-wardrobe-close>Vazgeç</button>'+
       '<button type="submit" class="primary-btn">Kaydet</button></div></form>';
     const form=dialog.querySelector('form');
     const readLook=()=>normalize(Object.fromEntries(new FormData(form)));
     const preview=()=>{dialog.querySelector('.sr-wardrobe-preview').innerHTML=deskMarkup(
-      {...member,look:readLook()},0,true,true
+      {user_id:owner,look:readLook()},true,true
     );};
     form.addEventListener('change',preview);
-    dialog.querySelector('[type=button]').onclick=()=>dialog.close();
+    for(const tab of dialog.querySelectorAll('[data-wardrobe-tab]')){
+      tab.addEventListener('click',()=>{
+        for(const other of dialog.querySelectorAll('[data-wardrobe-tab]'))other.setAttribute('aria-pressed',String(other===tab));
+        for(const panel of dialog.querySelectorAll('[data-wardrobe-panel]'))panel.hidden=panel.dataset.wardrobePanel!==tab.dataset.wardrobeTab;
+      });
+    }
+    dialog.querySelector('[data-wardrobe-close]').onclick=()=>dialog.close();
     dialog.addEventListener('close',()=>dialog.remove(),{once:true});
     form.addEventListener('submit',async event=>{
       event.preventDefault();
       const button=form.querySelector('[type=submit]');
       if(button.disabled)return;
       button.disabled=true;
-      const look=readLook(),owner=id(),ticket=epoch;
       try{
-        await window.HakunaAccount.roomSaveLook(look);
-        if(owner===id()&&ticket===epoch){
-          const current=snapshot?.members?.find(m=>m.user_id===owner);
-          if(current){current.look=look;drawSnapshot();}
-        }
+        await window.HakunaAccount.roomSaveLook(readLook());
+        if(owner===id()&&ticket===epoch)notice('Kombin kaydedildi.');
         if(dialog.open)dialog.close();
       }catch(error){
         dialog.querySelector('[role=alert]').textContent=error?.message||'Kombin kaydedilemedi.';
@@ -343,15 +377,13 @@
         memberWorking(m,now),isAtDesk(m,now),m.task_title,m.look])});
     if(rosterKey!==lastRosterKey){
       lastRosterKey=rosterKey;
-      host.querySelector('[data-sr-roster]').innerHTML=roster.map((m,i)=>{
+      host.querySelector('[data-sr-roster]').innerHTML=roster.map(m=>{
       // Backgrounded phones can keep a valid focus session while WebKit suspends presence pings.
       const inClass=memberWorking(m,now)||isAtDesk(m,now),atWork=inClass&&memberWorking(m,now);
       const label=!inClass?'Uzakta':atWork?'Çalışıyor':'Molada';
       const task=atWork&&m.task_title?'<small class="sr-person-task">✎ '+E(m.task_title)+'</small>':'';
       return '<article data-sr-user="'+E(m.user_id)+'" class="sr-person '+(atWork?'sr-person-working ':'')+(inClass?'':'sr-person-away')+'">'
-         +(m.user_id===id()
-          ?'<button type="button" class="sr-character-edit" data-sr-action="wardrobe" aria-label="Karakterini düzenle">'+deskMarkup(m,i,atWork,true)+'<span class="sr-edit-label">Gardırop</span></button>'
-          :deskMarkup(m,i,atWork,inClass))
+        +deskMarkup(m,atWork,inClass,chairLevel(liveSeconds(m,now)))
         +'<div class="sr-person-info"><strong>'+E(m.username)+(m.user_id===id()?' <span class="sr-me">sen</span>':'')+'</strong>'
         +'<small>'+label+'</small>'
         +task+'<span data-sr-member-time="'+E(m.user_id)+'">'+duration(liveSeconds(m,now))+'</span></div></article>';
@@ -382,7 +414,13 @@
     if(own)own.textContent=working?'Çalışılıyor · Süren sayılıyor':'Molada';
     for(const m of snapshot.members||[]){
       const node=host.querySelector('[data-sr-member-time="'+m.user_id+'"]');
-      if(node)node.textContent=duration(liveSeconds(m,now));
+      const total=liveSeconds(m,now);
+      if(node){
+        node.textContent=duration(total);
+        const chair=node.closest('[data-sr-user]')?.querySelector('[data-chair-level]');
+        const level=String(chairLevel(total));
+        if(chair&&chair.dataset.chairLevel!==level)chair.dataset.chairLevel=level;
+      }
     }
     window.HakunaRoomExperience?.update(snapshot,now);
     host.classList.remove('sr-timer-ended');
@@ -413,7 +451,7 @@
   async function act(action,button){
     if(busy)return;
     if(action==='entry-create'||action==='entry-join'){showEntry(action.slice(6));return;}
-    if(action==='wardrobe'){openWardrobe();return;}
+    if(action==='wardrobe'){void openWardrobe(button);return;}
     if(action==='back'){showLobby();return;}
     if(action==='refresh'){void loadLobby();return;}
     if(action==='login'){window.HakunaAccount?.open?.('login');return;}
@@ -497,5 +535,5 @@
   });
   window.navigator?.serviceWorker?.addEventListener('message',e=>{if(e.data?.type==='hakuna-study-paused'&&roomId)void loadRoom();});
   window.HakunaStudyRooms=Object.freeze({render,leaveView,
-    utils:Object.freeze({duration,displayClock,phaseLeft,phaseEnd})});
+    utils:Object.freeze({duration,displayClock,phaseLeft,phaseEnd,chairLevel})});
 })();

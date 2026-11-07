@@ -6,39 +6,39 @@
     top: {
       label: 'Kıyafet',
       items: {
-        palm: 'Palm Angels · Siyah track ceket',
-        les: 'Les Benjamins · Halı desenli hoodie',
-        coogi: 'Biggie · COOGI kazak',
-        adidas: 'Run-DMC · Üç çizgili eşofman',
-        fubu: 'FUBU · 05 forması',
-        wu: 'Wu Wear · Siyah sweatshirt',
-        kani: 'Karl Kani · Bol denim ceket'
+        palm: 'Şeritli track ceket',
+        les: 'Halı desenli hoodie',
+        coogi: 'Renkli örgü kazak',
+        adidas: 'Üç çizgili eşofman',
+        fubu: '05 forması',
+        wu: 'Sarı desenli sweatshirt',
+        kani: 'Bol denim ceket'
       }
     },
     head: {
       label: 'Baş',
       items: {
-        crown: 'Kendrick · Elmaslı dikenli taç',
-        bandana: '2Pac · Bağlı bandana',
-        bucket: 'LL Cool J · Kırmızı bucket şapka',
-        fedora: 'Run-DMC · Siyah şapka'
+        crown: 'Dikenli taç',
+        bandana: 'Bağlı bandana',
+        bucket: 'Kırmızı bucket şapka',
+        fedora: 'Siyah fötr'
       }
     },
     face: {
       label: 'Yüz',
       items: {
-        patch: 'Slick Rick · Taşlı göz bandı',
-        shades: 'Eazy-E · Koyu gözlük'
+        patch: 'Taşlı göz bandı',
+        shades: 'Koyu gözlük'
       }
     },
     neck: {
       label: 'Boyun',
       items: {
-        clock: 'Flavor Flav · Saat kolye',
-        rope: 'Run-DMC · Altın halat zincir'
+        clock: 'Saat kolye',
+        rope: 'Altın halat zincir'
       }
     },
-    hand: {label: 'El', items: {glove: 'MJ · Tek taşlı eldiven'}},
+    hand: {label: 'El', items: {glove: 'Taşlı eldiven'}},
     hair: {label: 'Saç', items: {fade:'Kısa', curls:'Kıvırcık', braids:'Örgülü'}},
     skin: {label: 'Ten tonu', items: {light:'Açık', medium:'Orta', deep:'Koyu'}}
   };
