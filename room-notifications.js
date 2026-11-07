@@ -12,11 +12,12 @@
   let scheduledTimer;
   let syncAgain = false;
 
-  async function close() {
+  async function close(roomId) {
     if (!('serviceWorker' in navigator)) return;
     const registration = await navigator.serviceWorker.ready;
     for (const notification of await registration.getNotifications()) {
-      if (notification.tag.startsWith('hakuna-study-')) notification.close();
+      const matchesRoom = roomId ? notification.tag === 'hakuna-study-' + roomId : notification.tag.startsWith('hakuna-study-');
+      if (matchesRoom) notification.close();
     }
   }
 

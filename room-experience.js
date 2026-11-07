@@ -1,11 +1,8 @@
 /* Room experience: a shared windowsill plant derived from server study totals,
-   private room notes, and opt-in local ambience. No extra time writes. */
+   and opt-in local ambience. No extra time writes. */
 (()=>{'use strict';
- const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  function growth(total){const value=Number(total);return Math.min(6,Math.floor(Math.sqrt(Math.max(0,Number.isFinite(value)?value:0)/3600)));}
- let root=null,snapshot=null,uid=null,scope='',desk=false,note='',sound=null,audio=null,nodes=[],volume=.35,listen=null,change=null;
- function key(){return 'hakuna.roomNote.v1.'+uid+'.'+snapshot.room.id}
- function readNote(){try{return localStorage.getItem(key())||''}catch{return ''}}
+ let root=null,uid=null,scope='',desk=false,sound=null,audio=null,nodes=[],volume=.35,listen=null,change=null;
  function soundStop(){for(const n of nodes){try{n.stop?.();n.disconnect?.()}catch{}}nodes=[];sound=null;if(audio){const old=audio;audio=null;void old.close().catch(()=>{})}paintSound()}
  function paintSound(){root?.querySelectorAll('[data-sx-sound]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.sxSound===sound)));const state=root?.querySelector('[data-sx-audio-state]');if(state)state.textContent=sound?'Ses açık':'Ses kapalı'}
  async function soundStart(kind){
@@ -28,32 +25,27 @@
   +Array.from({length:6},(_,i)=>'<path class="sx-leaf" data-leaf="'+(i+1)+'" style="--leaf:'+i+'" d="'+(i%2?'M91 '+(139-i*18)+'q-45 -5 -44 -31q35 -7 44 31Z':'M91 '+(139-i*18)+'q43 -5 44 -31q-35 -7 -44 31Z')+'"/>').join('')
   +'<path class="sx-sprout" d="M90 160q-26 -2 -28 -20q23 -7 28 20m0 0q3 -24 25 -23q0 20 -25 23"/></g><path class="sx-pot" d="M56 163h68l-9 37q-25 9 -50 0Z"/><rect class="sx-pot-rim" x="51" y="157" width="78" height="12" rx="5"/></svg></div>'
   +'<div class="sx-horizon-foot"><span data-sx-together></span></div></section>'
-  +'<div class="sx-toolbar"><button type="button" data-sx="desk" aria-pressed="false">Masama geç</button><details class="sx-sound"><summary>Ses ortamı <span data-sx-audio-state>Ses kapalı</span></summary><div><button type="button" data-sx-sound="rain" aria-pressed="false">Pencerede yağmur</button><button type="button" data-sx-sound="warm" aria-pressed="false">Derin uğultu</button><label>Ses seviyesi<input data-sx-volume type="range" min="0" max="100" value="35"></label></div></details><button type="button" data-sx="note">Masamdaki not</button></div>'
-  +'<section class="sx-note" data-sx-note hidden><div><span>SONRAKİ OTURUMA</span><button type="button" data-sx="close-note" aria-label="Notu kapat">×</button></div><h3>Buradan devam edeceğim.</h3><label class="sx-note-label" for="sx-next-note">Kendine bir not</label><textarea id="sx-next-note" maxlength="240" rows="3" placeholder="Örn. Organik kimya, 42. sayfadaki sorudan devam.">'+esc(note)+'</textarea><footer><small>Yalnızca sen, bu cihazda.</small><button type="button" data-sx="save-note">Notu sakla</button></footer></section>'
+  +'<div class="sx-toolbar"><button type="button" data-sx="desk" aria-pressed="false">Masama geç</button><details class="sx-sound"><summary>Ses ortamı <span data-sx-audio-state>Ses kapalı</span></summary><div><button type="button" data-sx-sound="rain" aria-pressed="false">Pencerede yağmur</button><button type="button" data-sx-sound="warm" aria-pressed="false">Derin uğultu</button><label>Ses seviyesi<input data-sx-volume type="range" min="0" max="100" value="35"></label></div></details></div>'
   +'<small class="sx-weather-credit">Hava: <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a></small><p class="sx-status" data-sx-status role="status"></p>';
  }
- function clear(){window.HakunaRoomWeather?.clear();soundStop();if(root&&listen)root.removeEventListener('click',listen);if(root&&change)root.removeEventListener('input',change);root?.querySelector('.sx-experience')?.remove();root?.querySelector('.sr-room')?.classList.remove('sx-my-desk');root=null;snapshot=null;scope='';listen=null;change=null;desk=false;volume=.35;}
+ function clear(){window.HakunaRoomWeather?.clear();soundStop();if(root&&listen)root.removeEventListener('click',listen);if(root&&change)root.removeEventListener('input',change);root?.querySelector('.sx-experience')?.remove();root?.querySelector('.sr-room')?.classList.remove('sx-my-desk');root=null;scope='';listen=null;change=null;desk=false;volume=.35;}
  function mount(host,data,user){
   const next=user+':'+data.room.id;if(scope===next&&root===host)return;
-  clear();root=host;snapshot=data;uid=user;scope=next;note=readNote();
+  clear();root=host;uid=user;scope=next;
   const box=document.createElement('div');box.className='sx-experience';box.innerHTML=markup();root.querySelector('.sr-room-header').after(box);
   root.querySelector('.sr-room').classList.add('sx-room');
   listen=e=>{
    const button=e.target.closest('[data-sx],[data-sx-sound]');if(!button||!root.contains(button))return;
    if(button.dataset.sxSound){void soundStart(button.dataset.sxSound);return}
-   const panel=root.querySelector('[data-sx-note]');
    switch(button.dataset.sx){
     case 'desk':desk=!desk;root.querySelector('.sr-room').classList.toggle('sx-my-desk',desk);button.setAttribute('aria-pressed',String(desk));button.textContent=desk?'Ortak masaya dön':'Masama geç';break;
-    case 'note':panel.hidden=false;root.querySelector('#sx-next-note').focus();break;
-    case 'close-note':panel.hidden=true;break;
-    case 'save-note':try{note=root.querySelector('#sx-next-note').value.trim();localStorage.setItem(key(),note);message('Notun masanda seni bekliyor.');panel.hidden=true}catch{message('Not kaydedilemedi; bu cihazın depolama alanını kontrol et.')}break;
    }
   };
   change=e=>{if(e.target.matches('[data-sx-volume]')){volume=Number(e.target.value)/100;if(nodes[2]&&audio)nodes[2].gain.setTargetAtTime(volume*.16,audio.currentTime,.1)}};
   window.HakunaRoomWeather?.mount(root);root.addEventListener('click',listen);root.addEventListener('input',change);update(data,Date.now());
  }
  function update(data,now){
-  if(!root?.isConnected)return;snapshot=data;window.HakunaRoomWeather?.update(now);
+  if(!root?.isConnected)return;window.HakunaRoomWeather?.update(now);
   const members=data.members||[],total=members.reduce((n,m)=>n+Math.max(0,Number(m.seconds)||0),0),stage=growth(total);
   const plant=root.querySelector('[data-sx-plant]');
   plant.dataset.stage=String(stage);

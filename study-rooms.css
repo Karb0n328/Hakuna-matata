@@ -308,3 +308,18 @@ html[data-hakuna-palette="republic"] .sr-desk-scene{filter:hue-rotate(323deg) sa
 .sr-chair-guide p { margin:4px 0; color:var(--muted); }
 .sr-chair-guide ul { list-style:none; padding:0; margin:8px 0 0; }
 .sr-chair-guide li { display:flex; justify-content:space-between; gap:16px; padding:4px 0; }
+
+.sr-lobby .sr-wardrobe-entry {
+  display:grid;grid-template-columns:42px minmax(0,1fr) auto;align-items:center;gap:12px;
+  width:100%;padding:12px 16px;border:1px solid var(--line);border-radius:15px;text-align:left;
+  color:var(--ink);background:linear-gradient(105deg,var(--blue-soft),var(--card));
+}
+.sr-wardrobe-entry > span:nth-child(2) { display:grid;gap:2px; }
+.sr-wardrobe-entry strong { font-size:16px; }
+.sr-wardrobe-entry small { font-size:12px;color:var(--muted); }
+.sr-wardrobe-icon {
+  display:grid;place-items:center;width:42px;height:42px;border-radius:12px;
+  color:var(--sr-accent);background:var(--card);font-size:22px;
+}
+.sr-room-times { display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted); }
+.sr-room-times b { color:var(--ink);font-variant-numeric:tabular-nums; }

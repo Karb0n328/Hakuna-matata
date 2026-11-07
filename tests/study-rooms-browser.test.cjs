@@ -17,7 +17,7 @@ const fixture=[
   'roomRpc:async(name,args={})=>{',
   ' const s=window.__state,uid=window.__uid;',
   ' if(!uid)throw Error("Giriş gerekli");',
-  ' if(name==="study_room_overview")return {rooms:s.room?.is_active?[{...s.room,member_count:s.other?2:1}]:[],total_seconds:s.seconds,today_seconds:s.seconds};',
+  ' if(name==="study_room_overview")return {rooms:s.room?.is_active?[{...s.room,member_count:s.other?2:1,today_seconds:0,total_seconds:0,studying:s.selfStudying}]:[],total_seconds:s.seconds,today_seconds:s.seconds};',
   ' if(name==="study_room_create_v2"){s.room={id:"room-1",owner_id:"user-1",name:args.p_name,invite_code:"K7MP4X9R",focus_minutes:args.p_focus_minutes,break_minutes:args.p_break_minutes,mode:args.p_mode||"shared",phase:"idle",phase_started_at:null,is_active:true};return s.room.id;}',
   ' if(name==="study_room_join"){if(args.p_invite_code!==s.room?.invite_code)throw Error("Geçersiz kod");return s.room.id;}',
   ' if(name==="study_room_touch")return true;',
@@ -63,17 +63,7 @@ const server=createServer((req,res)=>{
     await page.locator('[data-sr-action=entry-create]').waitFor();
     assert.equal(await page.locator('[name=code]').inputValue(),'K7MP4X9R');
     await page.locator('.sr-empty').waitFor();
-    assert.equal(await page.locator('[data-sr-stats]').isVisible(),false,'past study does not show stats in an empty lobby');
-    await page.evaluate(()=>new Promise((resolve,reject)=>{
-      const req=indexedDB.open('hakuna-matata-db',1);
-      req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('app'))req.result.createObjectStore('app');};
-      req.onerror=()=>reject(req.error);
-      req.onsuccess=()=>{
-        const db=req.result,tx=db.transaction('app','readwrite');
-        tx.objectStore('app').put({tasks:[{id:'task-1',title:'Organik Kimya Testi',completed:false}]},'state');
-        tx.oncomplete=()=>{db.close();resolve();};tx.onerror=()=>reject(tx.error);
-      };
-    }));
+    assert.equal(await page.locator('[data-room-total]').count(),0,'past study does not show stats in an empty lobby');
     await page.locator('[data-sr-action=wardrobe]').click();
     const wardrobe=page.locator('.sr-wardrobe');
     await wardrobe.waitFor();
@@ -133,12 +123,10 @@ const server=createServer((req,res)=>{
     await page.locator('.sx-room-settings summary').click();
 
     assert(await page.locator('[data-sr-action=start]').isEnabled(),'personal work starts without a shared session');
-    await page.locator('[data-sr-task]').selectOption('Organik Kimya Testi');
-    await page.locator('[data-sx-intent]').fill('Bugün organik kimyayı bitireceğim');
+    assert.equal(await page.locator('[data-sr-task],[data-sx-intent],[data-sx=note]').count(),0);
     await page.locator('[data-sr-action=start]').click();
     await page.locator('.sr-person-working').waitFor();
     assert((await page.locator('[data-sr-own-status]').textContent()).includes('sayılıyor'));
-    assert((await page.locator('.sr-person-task').textContent()).includes('Bugün organik kimyayı bitireceğim'));
     assert.equal(await page.locator('[data-sr-action=focus],[data-sr-action=break],[data-sr-action=idle],[data-sr-shared]').count(),0);
     await page.evaluate(()=>window.__state.other=true);
     // Force a fresh server snapshot to check XSS escaping and animated study desks.
@@ -149,7 +137,7 @@ const server=createServer((req,res)=>{
     assert((await page.locator('.sr-roster').textContent()).includes('<img src=x onerror=alert(1)>'));
     await page.evaluate(()=>{window.__state.away=true;window.dispatchEvent(new Event('online'));});
     await page.locator('.sr-person-away').waitFor();
-    assert(await page.locator('.sr-person-away .sr-vacant').count()===1,'Offline member should have an empty desk');
+    assert.equal(await page.locator('.sr-person-away .sr-clothes-art').count(),1,'away members keep their saved outfit visible');
     await page.evaluate(()=>window.__state.away=false);
     await page.locator('[data-sr-action=stop]').click();
     assert(await page.locator('[data-sr-action=start]').isEnabled(),'resume after a personal break');
@@ -164,9 +152,6 @@ const server=createServer((req,res)=>{
     fs.mkdirSync('test-results',{recursive:true});
     await page.screenshot({path:'test-results/desk-'+width+'.png',fullPage:true});
     await page.locator('[data-sx=desk]').click();
-    await page.locator('[data-sx=note]').click();
-    await page.locator('#sx-next-note').fill('Sayfa 42');
-    await page.locator('[data-sx=save-note]').click();
     assert.equal(await page.evaluate(()=>localStorage.getItem('hakuna.roomNote.v1.user-1.room-1')),'Sayfa 42');
     await page.locator('.sx-sound summary').click();
     await page.locator('[data-sx-sound=rain]').click();
@@ -188,7 +173,6 @@ const server=createServer((req,res)=>{
     assert.equal(await page.locator('.sr-roster .sr-avatar[data-hair=braids]').count(),1,'saved look persists on room re-entry');
     assert.equal(await page.locator('.sx-leaf.is-grown').count(),1,'plant must render after remount');
     assert.equal(await page.locator('[data-sx-audio-state]').textContent(),'Ses kapalı');
-    assert.equal(await page.locator('#sx-next-note').inputValue(),'Sayfa 42');
     assert(await page.locator('body').evaluate(el=>el.classList.contains('sr-immersed')),'room should enter isolated screen');
     await page.waitForFunction(()=>document.querySelector('.sr-room')?.dataset.weather==='rain');
     assert((await page.locator('[data-sx-weather]').textContent()).includes('Elazığ'));
@@ -226,7 +210,8 @@ const server=createServer((req,res)=>{
     await page.locator('[data-sr-form=create] button[type=submit]').click();
     await page.locator('[data-sr-action=back]').click();
     await page.locator('[data-sr-action=delete-room]').waitFor();
-    assert(await page.locator('[data-sr-stats]').isVisible(),'stats are visible with an active room');
+    assert.equal(await page.locator('[data-room-today]').textContent(),'0 dk 00 sn');
+    assert.equal(await page.locator('[data-room-total]').textContent(),'0 dk 00 sn','new room excludes past study from other rooms');
     page.once('dialog',d=>d.dismiss());await page.locator('[data-sr-action=delete-room]').click();
     assert.equal(await page.locator('[data-sr-action=delete-room]').count(),1);
     const before=await page.evaluate(()=>window.__state.seconds);

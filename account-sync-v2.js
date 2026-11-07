@@ -124,7 +124,7 @@ window.HakunaAccount=Object.freeze({
     const {data,error}=await supabase.rpc(name,args);
     if(error)throw error;
     if(name==='study_room_start')void supabase.functions.invoke('room-notifications',{body:{action:'started',roomId:args.p_room_id}}).catch(()=>{});
-    if(name==='study_room_stop')void window.HakunaRoomNotifications?.close();
+    if(['study_room_stop','study_room_leave','study_room_close'].includes(name))void window.HakunaRoomNotifications?.close(args.p_room_id);
     return data;
   },
   roomListen:(id,callback)=>{

@@ -3,7 +3,7 @@
   'use strict';
   let host=null,roomId=null,snapshot=null,unsubscribe=null,poll=null,clock=null;
   let loading=false,busy=false,epoch=0,skewMs=0,lastUser=null,realtimeDelay=null;
-  let heartbeat=null,personalTasks=[],selectedTask='',starting=false,countdownTimeout=null,countdownResolve=null;
+  let heartbeat=null,starting=false,countdownTimeout=null,countdownResolve=null;
   let lastRosterKey='',lastPersonalKey='';
   const E=(value='')=>String(value==null?'':value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const id=()=>window.HakunaAccount?.info?.().id||null;
@@ -51,7 +51,7 @@
   }
   function leaveView(){
     document.body.classList.remove('sr-immersed');
-    clearLoops();epoch++;host=null;roomId=null;snapshot=null;busy=false;personalTasks=[];selectedTask='';
+    clearLoops();epoch++;host=null;roomId=null;snapshot=null;busy=false;
   }
   function notice(message,isError=false){
     const n=host?.querySelector('[data-sr-notice]');
@@ -87,9 +87,9 @@
       +'<form hidden class="sr-panel sr-lobby-form" data-sr-form="join">'
       +'<label>Davet kodu<input name="code" type="text" maxlength="32" placeholder="K7MP-4X9R" autocapitalize="characters" autocomplete="off" spellcheck="false" required></label>'
       +'<button type="submit" class="primary-btn">Katıl</button></form>'
-      +'<div class="sr-section-head"><h3>Odalarım</h3><button type="button" class="secondary-btn sr-wardrobe-entry" data-sr-action="wardrobe">Gardırop</button></div>'
+      +'<button type="button" class="sr-wardrobe-entry" data-sr-action="wardrobe"><span class="sr-wardrobe-icon" aria-hidden="true">✦</span><span><strong>Gardırop</strong><small>Karakterini düzenle</small></span><span aria-hidden="true">→</span></button>'
+      +'<div class="sr-section-head"><h3>Odalarım</h3></div>'
       +'<div class="sr-room-list" data-sr-list><div class="sr-loading">Odalar yükleniyor…</div></div>'
-      +'<div class="sr-stats" data-sr-stats hidden><div><small>Bugün</small><strong data-sr-today>—</strong></div><div><small>Toplam</small><strong data-sr-total>—</strong></div></div>'
       +'<p class="sr-note" data-sr-notice hidden role="status"></p>'
       +'</div>';
   }
@@ -107,7 +107,7 @@
   }
   function showLobby(){
     document.body.classList.remove('sr-immersed');
-    clearLoops();roomId=null;snapshot=null;epoch++;personalTasks=[];selectedTask='';
+    clearLoops();roomId=null;snapshot=null;epoch++;
     if(!active())return;
     host.innerHTML=lobbyMarkup();
     const code=(new URLSearchParams(location.search).get('room')||'').replace(/[\s-]/g,'').toUpperCase();
@@ -122,14 +122,13 @@
     try{
       const data=await rpc('study_room_overview');
       if(ticket!==epoch||!active()||roomId)return;
-      host.querySelector('[data-sr-today]').textContent=duration(data.today_seconds);
-      host.querySelector('[data-sr-total]').textContent=duration(data.total_seconds);
       const items=Array.isArray(data.rooms)?data.rooms:[];
-      host.querySelector('[data-sr-stats]').hidden=items.length===0;
       host.querySelector('[data-sr-list]').innerHTML=items.length?items.map(r=>
         '<div class="sr-room-list-row"><button class="sr-room-item" type="button" data-sr-action="open" data-id="'+E(r.id)+'">'
         +'<span class="sr-room-bubble">📚</span><span class="sr-room-info"><strong>'+E(r.name)+'</strong>'
-        +'<small>'+Number(r.member_count)+' üye</small></span>'
+        +'<small>'+Number(r.member_count)+' üye'+(r.studying?' · Çalışıyorsun':'')+'</small>'
+        +'<span class="sr-room-times"><span>Bugün <b data-room-today>'+duration(r.today_seconds)+'</b></span>'
+        +'<span>Toplam <b data-room-total>'+duration(r.total_seconds)+'</b></span></span></span>'
         +'<span class="sr-room-go">Giriş →</span></button>'+(r.owner_id===id()?'<button type="button" class="sr-link-danger" data-sr-action="delete-room" data-id="'+E(r.id)+'">Odayı sil</button>':'')+'</div>'
       ).join(''):'<div class="sr-empty">Henüz odan yok. Bir oda kur veya arkadaşının davet kodunu gir. 🌱</div>';
       notice('');
@@ -162,9 +161,9 @@
   }
   function openRoom(next){
     if(!active())return;
-    clearLoops();roomId=next;snapshot=null;epoch++;personalTasks=[];selectedTask='';host.innerHTML=roomMarkup();window.scrollTo(0,0);
+    clearLoops();roomId=next;snapshot=null;epoch++;host.innerHTML=roomMarkup();window.scrollTo(0,0);
     document.body.classList.add('sr-immersed');window.HakunaRoomWeather?.update(Date.now()+skewMs);
-    void loadRoom();void loadPersonalTasks();void touchRoom();
+    void loadRoom();void touchRoom();
     heartbeat=setInterval(()=>{if(document.visibilityState==='visible')void touchRoom();},25000);
     unsubscribe=window.HakunaAccount?.roomListen?.(roomId,()=>{
       clearTimeout(realtimeDelay);
@@ -192,37 +191,6 @@
     }finally{if(ticket===epoch)loading=false;}
   }
 
-  function currentISO(){
-    const d=new Date(),y=d.getFullYear();
-    return y+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-  }
-  async function loadPersonalTasks(){
-    const ticket=epoch;
-    try{
-      const state=await new Promise((resolve,reject)=>{
-        if(!indexedDB?.open){resolve(null);return;}
-        const req=indexedDB.open('hakuna-matata-db',1);
-        req.onerror=()=>reject(req.error||new Error('Local state unavailable'));
-        req.onsuccess=()=>{
-          const db=req.result;
-          if(!db.objectStoreNames.contains('app')){db.close();resolve(null);return;}
-          const tx=db.transaction('app','readonly');
-          const read=tx.objectStore('app').get('state');
-          read.onsuccess=()=>{db.close();resolve(read.result||null);};
-          read.onerror=()=>{db.close();reject(read.error);};
-        };
-      });
-      if(ticket!==epoch||!active()||!roomId)return;
-      const today=currentISO();
-      const entries=[
-        ...(state?.blocks||[]).filter(b=>b.date===today).map(b=>b.title),
-        ...(state?.tasks||[]).filter(t=>!t.completed).map(t=>t.title)
-      ].map(v=>String(v||'').trim()).filter(v=>v&&v.length<=90);
-      personalTasks=[...new Set(entries)].slice(0,40);
-      if(snapshot)drawSnapshot();
-    }catch{personalTasks=[];}
-  }
-
   function liveSeconds(m,now){
     let value=seconds(m.seconds);
     if(m.studying){
@@ -244,10 +212,11 @@
   function deskMarkup(m,working,online,level=0){
     const avatar=(m.user_id||m.username||'').split('').reduce((a,c)=>a+c.charCodeAt(0),0)%5;
     const state=online?(working?'working':'resting'):'away';
+    const hasLook=Object.keys(window.HakunaRoomWardrobe.normalize(m.look)).length>0;
     return '<div class="sr-desk-scene sr-desk-'+state+' sr-outfit-'+avatar+'" aria-hidden="true">'
       +'<span class="sr-scene-stars">✦</span><div class="sr-scene-window"><span></span><span></span></div>'
       +'<div class="sr-scene-chair" data-chair-level="'+level+'"></div>'
-      +(online?window.HakunaRoomWardrobe.character(m.look):'<span class="sr-vacant">🪑</span>')
+      +(online||hasLook?window.HakunaRoomWardrobe.character(m.look):'<span class="sr-vacant">🪑</span>')
       +'<div class="sr-scene-table"></div><div class="sr-scene-notebook"><i></i><i></i><i></i></div>'
       +'<div class="sr-scene-coffee"><span></span></div>'
       +'<div class="sr-scene-lamp"><i></i></div>'
@@ -343,24 +312,17 @@
       +' · '+duration(total)+' toplam';
     host.querySelector('[data-sr-invite]').textContent=r.invite_code.length===8?r.invite_code.slice(0,4)+'-'+r.invite_code.slice(4):r.invite_code;
     host.querySelector('[data-sr-member-count]').textContent='('+members.length+'/30)';
-    const taskOptions=personalTasks.map(t=>'<option value="'+E(t)+'">'+E(t)+'</option>').join('');
-    const taskPicker='<label class="sr-task-pick">Bu oturumda tek hedefim<input class="sx-intent" data-sx-intent maxlength="90" placeholder="Örn. Dinamikten iki test" value="'+E(selectedTask)+'"></label><label class="sr-task-pick sx-task-select">Planımdan seç'
-      +'<select data-sr-task><option value="">Görev seçmeden çalış</option>'+taskOptions+'</select>'
-      +'</label>';
     const personalHtml=!r.is_active
       ?'<div class="sr-muted">Bu oda kapatıldı. Önceki sürelerin kayıtlı.</div>'
       :working
         ?'<button class="sr-button-stop" type="button" data-sr-action="stop">☕ Mola ver</button>'
-        :taskPicker
-          +'<button class="primary-btn sr-cta" type="button" data-sr-action="start" '+(canStart?'':'disabled')+'>▶ Çalışmaya başla</button>'
+        :'<button class="primary-btn sr-cta" type="button" data-sr-action="start" '+(canStart?'':'disabled')+'>▶ Çalışmaya başla</button>'
           ;
-    const personalKey=JSON.stringify([working,canStart,r.is_active,r.mode,r.phase,personalTasks]);
+    const personalKey=JSON.stringify([working,canStart,r.is_active,r.mode,r.phase]);
     if(personalKey!==lastPersonalKey){
       lastPersonalKey=personalKey;
       host.querySelector('[data-sr-personal-actions]').innerHTML=personalHtml;
     }
-    const picker=host.querySelector('[data-sr-task]');
-    if(picker)picker.value=personalTasks.includes(selectedTask)?selectedTask:'';
     let actions='';
     if(owner&&r.is_active){
       actions+='<details class="sx-room-settings"><summary>Oda ayarları</summary><form data-sr-form="rename" class="sr-settings"><label class="sr-settings-mode">Oda adı<input name="name" minlength="3" maxlength="60" value="'+E(r.name)+'" required></label><button type="submit" class="secondary-btn">Adı kaydet</button></form>';
@@ -374,19 +336,18 @@
     // Avoid re-creating animated characters on every 12-second sync.
     const rosterKey=JSON.stringify({mode:r.mode,phase:r.phase,
       friends:roster.map(m=>[m.user_id,m.username,
-        memberWorking(m,now),isAtDesk(m,now),m.task_title,m.look])});
+        memberWorking(m,now),isAtDesk(m,now),m.look])});
     if(rosterKey!==lastRosterKey){
       lastRosterKey=rosterKey;
       host.querySelector('[data-sr-roster]').innerHTML=roster.map(m=>{
       // Backgrounded phones can keep a valid focus session while WebKit suspends presence pings.
       const inClass=memberWorking(m,now)||isAtDesk(m,now),atWork=inClass&&memberWorking(m,now);
       const label=!inClass?'Uzakta':atWork?'Çalışıyor':'Molada';
-      const task=atWork&&m.task_title?'<small class="sr-person-task">✎ '+E(m.task_title)+'</small>':'';
       return '<article data-sr-user="'+E(m.user_id)+'" class="sr-person '+(atWork?'sr-person-working ':'')+(inClass?'':'sr-person-away')+'">'
         +deskMarkup(m,atWork,inClass,chairLevel(liveSeconds(m,now)))
         +'<div class="sr-person-info"><strong>'+E(m.username)+(m.user_id===id()?' <span class="sr-me">sen</span>':'')+'</strong>'
         +'<small>'+label+'</small>'
-        +task+'<span data-sr-member-time="'+E(m.user_id)+'">'+duration(liveSeconds(m,now))+'</span></div></article>';
+        +'<span data-sr-member-time="'+E(m.user_id)+'">'+duration(liveSeconds(m,now))+'</span></div></article>';
       }).join('');
     }
     host.querySelector('[data-sr-footer]').innerHTML=r.is_active
@@ -436,7 +397,7 @@
       if(ticket!==epoch||room!==roomId||!active())return;
       if(panel)panel.hidden=true;
       notice('Etüdün başlatılıyor…');
-      await rpc('study_room_start',{p_room_id:room,p_task_title:selectedTask||null});
+      await rpc('study_room_start',{p_room_id:room});
       if(ticket===epoch&&room===roomId&&active())await loadRoom();
     }catch(error){
       if(ticket===epoch&&room===roomId&&active())notice(error?.message||'Etüt başlatılamadı.',true);
@@ -513,10 +474,6 @@
     host.onclick=e=>{
       const b=e.target.closest('[data-sr-action]');
       if(b&&host.contains(b))void act(b.dataset.srAction,b);
-    };
-    host.oninput=e=>{if(e.target?.matches?.('[data-sx-intent]'))selectedTask=String(e.target.value||'').slice(0,90);};
-    host.onchange=e=>{
-      if(e.target?.matches?.('[data-sr-task]')){selectedTask=String(e.target.value||'');const input=host.querySelector('[data-sx-intent]');if(input)input.value=selectedTask;}
     };
     host.onsubmit=e=>{
       const form=e.target.closest('[data-sr-form]');
