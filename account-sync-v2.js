@@ -102,6 +102,11 @@ window.HakunaAccount=Object.freeze({
     if(error)throw error;
   },
   roomNotifications:async(body)=>{if(!user?.id)throw Error('Giriş gerekli');const {data,error}=await supabase.functions.invoke('room-notifications',{body});if(error)throw Error('Bildirim bağlantısı kurulamadı.');return data;},
+  roomSaveLook:async look=>{
+    if(!user?.id)throw new Error('Giriş gerekli.');
+    const {error}=await supabase.from('study_room_looks').upsert({user_id:user.id,look});
+    if(error)throw new Error('Kombin kaydedilemedi. Tekrar dene.');
+  },
   roomRpc:async(name,args={})=>{
     const allowed=['study_room_create','study_room_join','study_room_leave','study_room_settings',
       'study_room_set_phase','study_room_start','study_room_stop','study_room_close',

@@ -3,7 +3,7 @@ const {createServer}=require('node:http');
 const fs=require('node:fs');
 const {chromium,webkit}=require('playwright');
 const files={};
-for(const name of ['styles.css','study-rooms.css','study-rooms-immersive.css','room-experience.css','room-experience.js','room-weather.js','study-rooms.js'])files[name]=fs.readFileSync(require('node:path').join(__dirname,'..',name),'utf8');
+for(const name of ['styles.css','study-rooms.css','study-rooms-immersive.css','room-experience.css','room-experience.js','room-weather.js','room-wardrobe.js','study-rooms.js'])files[name]=fs.readFileSync(require('node:path').join(__dirname,'..',name),'utf8');
 const fixture=[
   '<!doctype html><html lang="tr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
   '<link href="/styles.css" rel="stylesheet"><link href="/study-rooms.css" rel="stylesheet"><link href="/study-rooms-immersive.css" rel="stylesheet"><link href="/room-experience.css" rel="stylesheet">',
@@ -13,7 +13,7 @@ const fixture=[
   'window.__state={room:null,selfStudying:false,seconds:0,other:false};',
   'window.HakunaAccount={',
   'info:()=>({id:window.__uid}),open:()=>{window.__loginOpened=true},',
-  'roomListen:()=>()=>{},',
+  'roomListen:()=>()=>{},roomSaveLook:async look=>{window.__state.look=look},',
   'roomRpc:async(name,args={})=>{',
   ' const s=window.__state,uid=window.__uid;',
   ' if(!uid)throw Error("Giriş gerekli");',
@@ -21,7 +21,7 @@ const fixture=[
   ' if(name==="study_room_create_v2"){s.room={id:"room-1",owner_id:"user-1",name:args.p_name,invite_code:"K7MP4X9R",focus_minutes:args.p_focus_minutes,break_minutes:args.p_break_minutes,mode:args.p_mode||"shared",phase:"idle",phase_started_at:null,is_active:true};return s.room.id;}',
   ' if(name==="study_room_join"){if(args.p_invite_code!==s.room?.invite_code)throw Error("Geçersiz kod");return s.room.id;}',
   ' if(name==="study_room_touch")return true;',
-  ' if(name==="study_room_snapshot"){if(!s.room)throw Error("Oda yok");return {room:{...s.room},members:[{user_id:"user-1",username:"Batu",seconds:s.seconds,today_seconds:s.seconds,studying:s.selfStudying,last_seen_at:new Date().toISOString(),active_started_at:s.startedAt||null,active_end_at:null,task_title:s.task||null},...(s.other?[{user_id:"user-2",username:"<img src=x onerror=alert(1)>",seconds:1200,today_seconds:1200,studying:!s.away,last_seen_at:new Date(Date.now()-(s.away?120000:0)).toISOString(),active_end_at:new Date(Date.now()+300000).toISOString()}]:[])],server_now:new Date().toISOString()};}',
+  ' if(name==="study_room_snapshot"){if(!s.room)throw Error("Oda yok");return {room:{...s.room},members:[{user_id:"user-1",username:"Batu",look:s.look,seconds:s.seconds,today_seconds:s.seconds,studying:s.selfStudying,last_seen_at:new Date().toISOString(),active_started_at:s.startedAt||null,active_end_at:null,task_title:s.task||null},...(s.other?[{user_id:"user-2",username:"<img src=x onerror=alert(1)>",look:{top:"coogi",head:"fedora"},seconds:1200,today_seconds:1200,studying:!s.away,last_seen_at:new Date(Date.now()-(s.away?120000:0)).toISOString(),active_end_at:new Date(Date.now()+300000).toISOString()}]:[])],server_now:new Date().toISOString()};}',
   ' if(name==="study_room_rename"){if(uid!==s.room.owner_id)throw Error("Not owner");s.room.name=args.p_name;return true;}',
   ' if(name==="study_room_configure"){s.room.focus_minutes=args.p_focus_minutes;s.room.break_minutes=args.p_break_minutes;s.room.mode=args.p_mode;return true;}',
   ' if(name==="study_room_set_phase"){s.room.phase=args.p_phase;s.room.phase_started_at=args.p_phase==="idle"?null:new Date(Date.now()+(args.p_phase==="focus"?3100:0)).toISOString();return true;}',
@@ -31,7 +31,7 @@ const fixture=[
   ' if(name==="study_room_leave"){s.room=null;return true;}',
   ' throw Error("Unknown RPC "+name);',
   '}};',
-  '</script><script src="/room-weather.js"></script><script src="/room-experience.js"></script><script src="/study-rooms.js"></script>',
+  '</script><script src="/room-weather.js"></script><script src="/room-experience.js"></script><script src="/room-wardrobe.js"></script><script src="/study-rooms.js"></script>',
   '<script>window.HakunaStudyRooms.render(document.querySelector("#view"));</script></html>'
 ].join('');
 const server=createServer((req,res)=>{
@@ -60,7 +60,7 @@ const server=createServer((req,res)=>{
       return route.fulfill({json:{current:{time:Math.floor(now/1000),temperature_2m:10,weather_code:63},daily:{time:[day/1000],sunrise:[(day+7*3600000)/1000],sunset:[(day+17*3600000)/1000]}}});
     });
     await page.goto(base+'?room=k7mp-4x9r');
-    await page.locator('[data-sr-form=create]').waitFor();
+    await page.locator('[data-sr-action=entry-create]').waitFor();
     assert.equal(await page.locator('[name=code]').inputValue(),'K7MP4X9R');
     await page.evaluate(()=>new Promise((resolve,reject)=>{
       const req=indexedDB.open('hakuna-matata-db',1);
@@ -72,10 +72,29 @@ const server=createServer((req,res)=>{
         tx.oncomplete=()=>{db.close();resolve();};tx.onerror=()=>reject(tx.error);
       };
     }));
+    await page.locator('[data-sr-action=entry-create]').click();
     await page.locator('[data-sr-form=create] [name=name]').fill('Kütüphane Ekibi');
     await page.locator('[data-sr-form=create] button[type=submit]').click();
     await page.locator('[data-sr-room-title]').getByText('Kütüphane Ekibi').waitFor();
     assert.equal(await page.locator('[data-sr-invite]').textContent(),'K7MP-4X9R');
+    await page.locator('[data-sr-action=wardrobe]').click();
+    const wardrobe=page.locator('.sr-wardrobe');
+    await wardrobe.waitFor();
+    await wardrobe.locator('[name=top]').selectOption('les');
+    await wardrobe.locator('[name=head]').selectOption('crown');
+    await wardrobe.locator('[name=hand]').selectOption('glove');
+    await wardrobe.locator('[name=face]').selectOption('shades');
+    await wardrobe.locator('[name=neck]').selectOption('rope');
+    await wardrobe.locator('[name=hair]').selectOption('braids');
+    await wardrobe.locator('[name=skin]').selectOption('deep');
+    const preview=wardrobe.locator('.sr-wardrobe-preview');
+    assert.equal(await preview.locator('.sr-avatar-arm .sr-jeweled-glove').count(),1);
+    assert.equal(await preview.locator('.sr-avatar[data-hair=braids] .sr-accessory-art').count(),1);
+    fs.mkdirSync('test-results',{recursive:true});
+    await wardrobe.screenshot({path:'test-results/wardrobe-'+width+'.png'});
+    await wardrobe.getByRole('button',{name:'Kaydet'}).click();
+    await wardrobe.waitFor({state:'detached'});
+    assert.equal(await page.locator('.sr-roster .sr-jeweled-glove').count(),1);
     await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>{window.__copied=value}}}));
     await page.locator('.sr-invite summary').click();
     await page.locator('[data-sr-action=copy-code]').click();
@@ -139,13 +158,15 @@ const server=createServer((req,res)=>{
     page.once('dialog',dialog=>dialog.accept());
     await page.locator('[data-sr-action=close]').click();
     // browser dialog may race the click above, so wait for room list after it resolves.
-    await page.locator('[data-sr-form=create]').waitFor({timeout:10000});
+    await page.locator('[data-sr-action=entry-create]').waitFor({timeout:10000});
     assert.equal(await page.locator('.ataturk-corner').isVisible(),true,'Atatürk Köşesi should be visible again in lobby');
     assert.equal(await page.locator('.republic-hero').isVisible(),true,'holiday banner should be restored outside room');
     await page.evaluate(()=>{window.__state.other=false;window.__state.away=false;});
+    await page.locator('[data-sr-action=entry-create]').click();
     await page.locator('[data-sr-form=create] [name=name]').fill('Serbest Test');
     await page.locator('[data-sr-form=create] button[type=submit]').click();
     await page.locator('[data-sr-room-mode]').getByText('ÇALIŞMA ODASI').waitFor();
+    assert.equal(await page.locator('.sr-roster .sr-avatar[data-hair=braids]').count(),1,'saved look persists on room re-entry');
     assert.equal(await page.locator('.sx-leaf.is-grown').count(),1,'plant must render after remount');
     assert.equal(await page.locator('[data-sx-audio-state]').textContent(),'Ses kapalı');
     assert.equal(await page.locator('#sx-next-note').inputValue(),'Sayfa 42');
@@ -179,8 +200,9 @@ const server=createServer((req,res)=>{
 
     page.once('dialog',dialog=>dialog.accept());
     await page.locator('[data-sr-action=close]').click();
-    await page.locator('[data-sr-form=create]').waitFor();
+    await page.locator('[data-sr-action=entry-create]').waitFor();
     assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('sr-immersed')),false,'lobby should restore regular shell');
+    await page.locator('[data-sr-action=entry-create]').click();
     await page.locator('[data-sr-form=create] [name=name]').fill('Silme testi');
     await page.locator('[data-sr-form=create] button[type=submit]').click();
     await page.locator('[data-sr-action=back]').click();
@@ -195,6 +217,7 @@ const server=createServer((req,res)=>{
     await page.unroute('https://api.open-meteo.com/**');
     await page.route('https://api.open-meteo.com/**',route=>route.abort());
     await page.reload();
+    await page.locator('[data-sr-action=entry-create]').click();
     await page.locator('[data-sr-form=create] [name=name]').fill('Çevrimdışı hava');
     await page.locator('[data-sr-form=create] button[type=submit]').click();
     await page.waitForFunction(()=>document.querySelector('.sr-room')?.dataset.weather==='unknown');

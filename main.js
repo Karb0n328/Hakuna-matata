@@ -43,7 +43,7 @@ async function importAccountSyncOptimized(){
     return nativeSetInterval.call(window,fn,next,...args);
   };
   try{
-    await import('./account-sync-v2.js?v=push-v1');
+    await import('./account-sync-v2.js?v=wardrobe-v1');
   }finally{
     window.setInterval=nativeSetInterval;
   }
@@ -65,7 +65,8 @@ afterFirstPaint(()=>{
       await import('./room-notifications.js?v=3');
       await import('./room-weather.js?v=2');
       await import('./room-experience.js?v=4-plant');
-      await import('./study-rooms.js?v=11-permission');
+      await import('./room-wardrobe.js?v=1');
+      await import('./study-rooms.js?v=12-wardrobe');
       if(document.querySelector('#pageTitle')?.textContent==='Odalar')window.HakunaStudyRooms?.render(document.querySelector('#view'));
     }catch(err){console.warn('Hakuna study rooms load',err);}
     await Promise.allSettled([

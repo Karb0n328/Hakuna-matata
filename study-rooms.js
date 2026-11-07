@@ -71,20 +71,16 @@
   }
   function lobbyMarkup(){
     return '<div class="sr-shell sr-lobby">'
-      +'<header class="sr-intro"><div class="sr-kicker">HAKUNA · BİRLİKTE ODAKLAN</div>'
-      +'<h2>Çalışma odaları <span>✦</span></h2><p>Arkadaşlarınla aynı masada, herkes kendi hedefine odaklansın.</p></header>'
-      +'<div class="sr-stats"><div><small>Bugün çalıştın</small><strong data-sr-today>—</strong></div>'
-      +'<div><small>Toplam çalışman</small><strong data-sr-total>—</strong></div></div>'
-      +'<div class="sr-forms"><form class="sr-panel" data-sr-form="create">'
-      +'<div class="sr-panel-title">✨ Yeni oda oluştur</div>'
-      +'<label>Odanın adı<input name="name" type="text" maxlength="60" minlength="3" placeholder="Örn. Kütüphane Ekibi" autocomplete="off" required></label>'
-      +'<button type="submit" class="primary-btn sr-cta">Odayı oluştur</button></form>'
-      +'<form class="sr-panel" data-sr-form="join"><div class="sr-panel-title">🔑 Arkadaşının odasına katıl</div>'
-      +'<p>Davet bağlantısı veya koduyla özel odaya gir.</p>'
+      +'<div class="sr-lobby-entry"><button type="button" class="primary-btn" data-sr-action="entry-create">Oda aç</button><button type="button" class="secondary-btn" data-sr-action="entry-join">Koda katıl</button></div>'
+      +'<form hidden class="sr-panel sr-lobby-form" data-sr-form="create">'
+      +'<label>Oda adı<input name="name" type="text" maxlength="60" minlength="3" placeholder="Örn. Kütüphane Ekibi" autocomplete="off" required></label>'
+      +'<button type="submit" class="primary-btn">Aç</button></form>'
+      +'<form hidden class="sr-panel sr-lobby-form" data-sr-form="join">'
       +'<label>Davet kodu<input name="code" type="text" maxlength="32" placeholder="K7MP-4X9R" autocapitalize="characters" autocomplete="off" spellcheck="false" required></label>'
-      +'<button type="submit" class="secondary-btn sr-cta">Odaya katıl</button></form></div>'
+      +'<button type="submit" class="primary-btn">Katıl</button></form>'
       +'<div class="sr-section-head"><h3>Odalarım</h3><button type="button" class="secondary-btn" data-sr-action="refresh">Yenile</button></div>'
       +'<div class="sr-room-list" data-sr-list><div class="sr-loading">Odalar yükleniyor…</div></div>'
+      +'<div class="sr-stats"><div><small>Bugün</small><strong data-sr-today>—</strong></div><div><small>Toplam</small><strong data-sr-total>—</strong></div></div>'
       +'<p class="sr-note" data-sr-notice hidden role="status"></p>'
       +'</div>';
   }
@@ -94,6 +90,12 @@
       +'<button class="primary-btn" data-sr-action="login" type="button">Hesap aç / Giriş yap</button>'
       +'<p data-sr-notice hidden role="status"></p></div>';
   }
+  function showEntry(type, focus=true){
+    for(const form of host.querySelectorAll('.sr-lobby-form')){
+      form.hidden=form.dataset.srForm!==type;
+      if(!form.hidden&&focus)form.querySelector('input').focus();
+    }
+  }
   function showLobby(){
     document.body.classList.remove('sr-immersed');
     clearLoops();roomId=null;snapshot=null;epoch++;personalTasks=[];selectedTask='';
@@ -101,7 +103,7 @@
     host.innerHTML=lobbyMarkup();
     const code=(new URLSearchParams(location.search).get('room')||'').replace(/[\s-]/g,'').toUpperCase();
     if(code&&/^(?:[A-F0-9]{18}|[2-9A-HJ-NP-Z]{8})$/.test(code)){
-      const inp=host.querySelector('[name=code]');if(inp)inp.value=code.toUpperCase();
+      const inp=host.querySelector('[name=code]');if(inp){inp.value=code;showEntry('join',false);}
     }
     void loadLobby();
   }
@@ -235,12 +237,60 @@
     return '<div class="sr-desk-scene sr-desk-'+state+' sr-outfit-'+avatar+'" aria-hidden="true">'
       +'<span class="sr-scene-stars">✦</span><div class="sr-scene-window"><span></span><span></span></div>'
       +'<div class="sr-scene-chair"></div>'
-      +(online?'<div class="sr-avatar"><div class="sr-avatar-hair"></div><div class="sr-avatar-head"><i></i><b></b></div>'
-      +'<div class="sr-avatar-body"></div><div class="sr-avatar-arm"></div></div>':'<span class="sr-vacant">🪑</span>')
+      +(online?window.HakunaRoomWardrobe.character(m.look):'<span class="sr-vacant">🪑</span>')
       +'<div class="sr-scene-table"></div><div class="sr-scene-notebook"><i></i><i></i><i></i></div>'
       +'<div class="sr-scene-coffee"><span></span></div>'
       +'<div class="sr-scene-lamp"><i></i></div>'
       +'</div>';
+  }
+
+  function openWardrobe(){
+    const member=snapshot?.members?.find(m=>m.user_id===id());
+    if(!member||host.querySelector('.sr-wardrobe'))return;
+    const {catalog,normalize}=window.HakunaRoomWardrobe;
+    const selected=normalize(member.look);
+    const dialog=document.createElement('dialog');
+    dialog.className='sr-wardrobe';
+    dialog.setAttribute('aria-label','Gardırop');
+    const choices=Object.entries(catalog).map(([slot,{label,items}])=>
+      '<label>'+E(label)+'<select name="'+slot+'"><option value="">'+
+      (slot==='skin'||slot==='hair'?'Varsayılan':slot==='top'?'Sade':'Yok')+
+      '</option>'+Object.entries(items).map(([key,name])=>
+        '<option value="'+key+'"'+(selected[slot]===key?' selected':'')+'>'+E(name)+'</option>'
+      ).join('')+'</select></label>').join('');
+    dialog.innerHTML='<form><h2>Gardırop</h2><div class="sr-wardrobe-preview"></div>'+
+      '<div class="sr-wardrobe-fields">'+choices+'</div><p role="alert"></p>'+
+      '<div class="sr-wardrobe-actions"><button type="button" class="secondary-btn">Vazgeç</button>'+
+      '<button type="submit" class="primary-btn">Kaydet</button></div></form>';
+    const form=dialog.querySelector('form');
+    const readLook=()=>normalize(Object.fromEntries(new FormData(form)));
+    const preview=()=>{dialog.querySelector('.sr-wardrobe-preview').innerHTML=deskMarkup(
+      {...member,look:readLook()},0,true,true
+    );};
+    form.addEventListener('change',preview);
+    dialog.querySelector('[type=button]').onclick=()=>dialog.close();
+    dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+    form.addEventListener('submit',async event=>{
+      event.preventDefault();
+      const button=form.querySelector('[type=submit]');
+      if(button.disabled)return;
+      button.disabled=true;
+      const look=readLook(),owner=id(),ticket=epoch;
+      try{
+        await window.HakunaAccount.roomSaveLook(look);
+        if(owner===id()&&ticket===epoch){
+          const current=snapshot?.members?.find(m=>m.user_id===owner);
+          if(current){current.look=look;drawSnapshot();}
+        }
+        if(dialog.open)dialog.close();
+      }catch(error){
+        dialog.querySelector('[role=alert]').textContent=error?.message||'Kombin kaydedilemedi.';
+        button.disabled=false;
+      }
+    });
+    host.append(dialog);
+    preview();
+    dialog.showModal();
   }
 
   function drawSnapshot(){
@@ -289,7 +339,7 @@
     // Avoid re-creating animated characters on every 12-second sync.
     const rosterKey=JSON.stringify({mode:r.mode,phase:r.phase,
       friends:roster.map(m=>[m.user_id,m.username,
-        memberWorking(m,now),isAtDesk(m,now),m.task_title])});
+        memberWorking(m,now),isAtDesk(m,now),m.task_title,m.look])});
     if(rosterKey!==lastRosterKey){
       lastRosterKey=rosterKey;
       host.querySelector('[data-sr-roster]').innerHTML=roster.map((m,i)=>{
@@ -298,7 +348,9 @@
       const label=!inClass?'Uzakta':atWork?'Çalışıyor':'Molada';
       const task=atWork&&m.task_title?'<small class="sr-person-task">✎ '+E(m.task_title)+'</small>':'';
       return '<article data-sr-user="'+E(m.user_id)+'" class="sr-person '+(atWork?'sr-person-working ':'')+(inClass?'':'sr-person-away')+'">'
-        +deskMarkup(m,i,atWork,inClass)
+         +(m.user_id===id()
+          ?'<button type="button" class="sr-character-edit" data-sr-action="wardrobe" aria-label="Karakterini düzenle">'+deskMarkup(m,i,atWork,true)+'<span class="sr-edit-label">Gardırop</span></button>'
+          :deskMarkup(m,i,atWork,inClass))
         +'<div class="sr-person-info"><strong>'+E(m.username)+(m.user_id===id()?' <span class="sr-me">sen</span>':'')+'</strong>'
         +'<small>'+label+'</small>'
         +task+'<span data-sr-member-time="'+E(m.user_id)+'">'+duration(liveSeconds(m,now))+'</span></div></article>';
@@ -359,6 +411,8 @@
   }
   async function act(action,button){
     if(busy)return;
+    if(action==='entry-create'||action==='entry-join'){showEntry(action.slice(6));return;}
+    if(action==='wardrobe'){openWardrobe();return;}
     if(action==='back'){showLobby();return;}
     if(action==='refresh'){void loadLobby();return;}
     if(action==='login'){window.HakunaAccount?.open?.('login');return;}
