@@ -430,3 +430,19 @@ html[data-batu-theme="dark"] .question-top-notice-mark {
 .terminal-guide { background: linear-gradient(145deg, #0d1729, #10213a); }
 .terminal-guide textarea { min-height: 290px; }
 @media (max-width: 980px) { .bridge-stack { grid-template-columns: 1fr; } }
+
+.hm-notification-permission {
+  width: min(360px, calc(100% - 40px));
+  box-sizing: border-box;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: 0 16px 48px #0003;
+  text-align: center;
+}
+.hm-notification-permission::backdrop { background: #10182880; }
+.hm-notification-permission h2 { margin: 0 0 20px; font-size: 1.2rem; }
+.hm-notification-permission div { display: flex; gap: 10px; }
+.hm-notification-permission button { flex: 1; min-height: 44px; }

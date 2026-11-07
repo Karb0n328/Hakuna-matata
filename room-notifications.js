@@ -9,6 +9,8 @@
   const api = body => window.HakunaAccount.roomNotifications(body);
   let prompt;
   let syncing = false;
+  let scheduledTimer;
+  let syncAgain = false;
 
   async function close() {
     if (!('serviceWorker' in navigator)) return;
@@ -25,13 +27,22 @@
 
   function showPrompt() {
     if (prompt || localStorage.getItem(dismissedKey)) return;
-    prompt = document.createElement('aside');
-    prompt.setAttribute('aria-label', 'Bildirim izni');
-    prompt.style.cssText = 'position:fixed;z-index:1000;top:calc(env(safe-area-inset-top,0px) + 12px);right:12px;display:flex;gap:6px;padding:6px;border:1px solid var(--line,#ddd);border-radius:14px;background:var(--card,#fff);box-shadow:0 6px 22px #0002';
-    prompt.innerHTML = '<button type="button" class="primary-btn">Bildirimleri aç</button><button type="button" class="secondary-btn" aria-label="Şimdi değil">×</button>';
-    const [allow, dismiss] = prompt.querySelectorAll('button');
+    prompt = document.createElement('dialog');
+    prompt.className = 'hm-notification-permission';
+    prompt.setAttribute('aria-labelledby', 'hm-notification-title');
+    prompt.innerHTML = '<h2 id="hm-notification-title">Bildirimleri aç?</h2><div><button type="button" class="secondary-btn" autofocus>Açma</button><button type="button" class="primary-btn">İzin ver</button></div>';
+    const [dismiss, allow] = prompt.querySelectorAll('button');
+    const decline = () => {
+      localStorage.setItem(dismissedKey, '1');
+      hidePrompt();
+    };
+    prompt.addEventListener('cancel', event => {
+      event.preventDefault();
+      decline();
+    });
     allow.addEventListener('click', async () => {
       allow.disabled = true;
+      dismiss.disabled = true;
       try {
         if (await Notification.requestPermission() === 'denied') {
           localStorage.setItem(dismissedKey, '1');
@@ -40,19 +51,35 @@
         console.warn('Hakuna bildirim izni açılamadı', error);
       } finally {
         if (Notification.permission !== 'default') hidePrompt();
-        else allow.disabled = false;
+        else {
+          allow.disabled = false;
+          dismiss.disabled = false;
+        }
         void sync();
       }
     });
-    dismiss.addEventListener('click', () => {
-      localStorage.setItem(dismissedKey, '1');
-      hidePrompt();
-    });
+    dismiss.addEventListener('click', decline);
     document.body.append(prompt);
+    prompt.showModal();
+  }
+
+  async function scheduleTimer(subscription, user) {
+    const state = window.HakunaStudyTimer?.state();
+    if (!state) return;
+    const endAt = state.status === 'running' || state.status === 'finished'
+      ? Number(state.endAt) : null;
+    const signature = JSON.stringify([user, subscription.endpoint, endAt]);
+    if (signature === scheduledTimer) return;
+    await api({action:'timer-schedule', endpoint:subscription.endpoint, endAt});
+    scheduledTimer = signature;
   }
 
   async function sync(accountChanged = false) {
-    if (!supported || syncing) return;
+    if (!supported) return;
+    if (syncing) {
+      syncAgain = true;
+      return;
+    }
     const user = accountId();
     if (!user || Notification.permission !== 'default') hidePrompt();
     if (!user && !accountChanged) return;
@@ -72,7 +99,11 @@
         showPrompt();
         return;
       }
-      if (Notification.permission !== 'granted' || (subscription && owner === user)) return;
+      if (Notification.permission !== 'granted') return;
+      if (subscription && owner === user) {
+        await scheduleTimer(subscription, user);
+        return;
+      }
 
       const config = await api({action:'config'});
       if (user !== accountId()) return;
@@ -90,15 +121,24 @@
         await subscription.unsubscribe();
         throw error;
       }
+      await scheduleTimer(subscription, user);
     } catch (error) {
       console.warn('Hakuna bildirim kaydı tamamlanamadı', error);
     } finally {
       syncing = false;
-      if (user !== accountId()) void sync(true);
+      const accountSwitched = user !== accountId();
+      if (syncAgain || accountSwitched) {
+        syncAgain = false;
+        void sync(accountSwitched);
+      }
     }
   }
 
   window.addEventListener('hakuna-account-changed', () => void sync(true));
+  window.addEventListener('hakuna-timer-changed', () => void sync());
+  window.addEventListener('storage', event => {
+    if (event.key === 'hakuna.studyTimer.v1') void sync();
+  });
   window.addEventListener('online', () => void sync());
   window.addEventListener('focus', () => void sync());
   window.HakunaRoomNotifications = {close};

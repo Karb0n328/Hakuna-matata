@@ -16,6 +16,7 @@
 
   function write(value){
     localStorage.setItem(KEY,JSON.stringify(value));
+    window.dispatchEvent(new Event('hakuna-timer-changed'));
     return value;
   }
 
