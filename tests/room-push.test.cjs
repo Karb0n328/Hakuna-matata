@@ -7,3 +7,41 @@ handlers.notificationclick({notification:{data:shown[0].o.data,close(){}},action
 handlers.notificationclick({notification:{data:shown[0].o.data,close(){}},action:'',waitUntil:p=>pending=p});await pending;assert.equal(opened.length,1);handlers.push({data:{json:()=>({kind:'timer-finished',endAt:123456})},waitUntil:p=>pending=p});await pending;
 assert.equal(shown[1].t,'Süre bitti');assert.equal(shown[1].o.tag,'hakuna-timer-123456');assert.equal(shown[1].o.silent,true);assert.equal(shown[1].o.actions,undefined);
 console.log('PASS room and timer notifications, pause action and room deep link');})().catch(e=>{console.error(e);process.exitCode=1});
+
+(async () => {
+  const listeners = {};
+  const messages = [];
+  const bridge = {
+    postMessage: data => {
+      const message = JSON.parse(data);
+      messages.push(message);
+      if (message.action === 'enable') bridge.onmessage({data:'settings'});
+    }
+  };
+  let timer = {status:'running', endAt:12345};
+  const window = {
+    HakunaAndroidNotifications: bridge,
+    HakunaAccount: {info:() => ({id:'user'})},
+    HakunaStudyTimer: {state:() => timer},
+    addEventListener: (event, handler) => { listeners[event] = handler; }
+  };
+  vm.runInNewContext(require('node:fs').readFileSync('room-notifications.js', 'utf8'), {window});
+  assert.deepEqual(messages.splice(0), [
+    {action:'account', user:'user'},
+    {action:'timer', endAt:12345, finished:false}
+  ]);
+  window.HakunaRoomNotifications.started('room', 'K7MP4X9R');
+  window.HakunaRoomNotifications.close('room');
+  window.HakunaRoomNotifications.syncRooms([{id:'room', studying:false},{id:'other', studying:true}]);
+  timer = {status:'paused', endAt:12345};
+  listeners['hakuna-timer-changed']();
+  assert.equal(await window.HakunaRoomNotifications.enable(), false);
+  assert.deepEqual(messages, [
+    {action:'room-start', room:'room', code:'K7MP4X9R'},
+    {action:'room-stop', room:'room'},
+    {action:'room-sync', active:['other']},
+    {action:'timer', endAt:0, finished:false},
+    {action:'enable'}
+  ]);
+  console.log('PASS Android bridge works without browser push and cancels paused timers');
+})().catch(error => { console.error(error); process.exitCode = 1; });

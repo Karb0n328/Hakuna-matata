@@ -22,6 +22,12 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 
+import androidx.webkit.WebViewCompat;
+import androidx.webkit.WebViewFeature;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.Collections;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -30,7 +36,8 @@ import java.io.OutputStream;
 
 public class MainActivity extends Activity {
     private static final int FILE_CHOOSER_REQUEST = 1107;
-    private static final String HOME_URL = "https://karb0n328.github.io/Hakuna-matata/?native=1.0.5";
+    private static final String WEB_ORIGIN = "https://karb0n328.github.io";
+    private static final String HOME_URL = WEB_ORIGIN + "/Hakuna-matata/?native=" + BuildConfig.VERSION_NAME;
 
     private WebView webView;
     private ValueCallback<Uri[]> filePathCallback;
@@ -59,7 +66,7 @@ public class MainActivity extends Activity {
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
-        settings.setUserAgentString(settings.getUserAgentString() + " HakunaMatataAndroid/1.0.5");
+        settings.setUserAgentString(settings.getUserAgentString() + " HakunaMatataAndroid/" + BuildConfig.VERSION_NAME);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         }
@@ -70,6 +77,8 @@ public class MainActivity extends Activity {
         }
 
         webView.addJavascriptInterface(new DownloadBridge(), "HakunaAndroid");
+        installNotificationBridge();
+        HakunaNotifications.setup(this);
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
@@ -153,10 +162,65 @@ public class MainActivity extends Activity {
         });
 
         if (savedInstanceState == null) {
-            webView.loadUrl(HOME_URL);
+            webView.loadUrl(launchUrl(getIntent()));
         } else {
             webView.restoreState(savedInstanceState);
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        syncNotificationState();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
+        super.onRequestPermissionsResult(requestCode, permissions, results);
+        syncNotificationState();
+    }
+
+    private void syncNotificationState() {
+        if (webView != null) {
+            webView.evaluateJavascript("window.dispatchEvent(new Event('hakuna-native-resumed'))", null);
+        }
+    }
+
+    private String launchUrl(Intent intent) {
+        String code = intent.getStringExtra("roomCode");
+        if (!HakunaNotifications.validCode(code)) return HOME_URL;
+        return Uri.parse(HOME_URL).buildUpon().appendQueryParameter("room", code).build().toString();
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        if (HakunaNotifications.validCode(intent.getStringExtra("roomCode"))) {
+            webView.loadUrl(launchUrl(intent));
+        }
+    }
+
+    private void installNotificationBridge() {
+        if (!WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) return;
+        WebViewCompat.addWebMessageListener(webView, "HakunaAndroidNotifications",
+                Collections.singleton(WEB_ORIGIN), (view, message, origin, isMainFrame, reply) -> {
+            Uri page = Uri.parse(view.getUrl() == null ? "" : view.getUrl());
+            String path = page.getPath();
+            if (!isMainFrame || path == null || !path.startsWith("/Hakuna-matata/")) return;
+            String payload = message.getData();
+            if (payload == null || payload.length() > 16000) return;
+            try {
+                JSONObject data = new JSONObject(payload);
+                if ("enable".equals(data.optString("action"))) {
+                    reply.postMessage(HakunaNotifications.enableFromSettings(this) ? "granted" : "settings");
+                } else {
+                    HakunaNotifications.handle(this, data);
+                }
+            } catch (JSONException ignored) {
+                // Malformed bridge message.
+            }
+        });
     }
 
     private String buildNativeLogoDataUrl() {

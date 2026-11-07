@@ -861,8 +861,8 @@
       notificationButton.disabled=true;
       try{
         if(!window.HakunaRoomNotifications)throw Error('Bildirimler hazırlanıyor. Birazdan tekrar dene.');
-        await window.HakunaRoomNotifications.enable();
-        notificationStatus.textContent='Bu cihazda bildirimler açık.';
+        const enabled=await window.HakunaRoomNotifications.enable();
+        notificationStatus.textContent=enabled===false?'':'Bu cihazda bildirimler açık.';
       }catch(error){
         notificationStatus.textContent=error?.message||'Bildirimler açılamadı.';
       }finally{

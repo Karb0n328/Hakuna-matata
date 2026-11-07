@@ -133,6 +133,7 @@
       const data=await rpc('study_room_overview');
       if(ticket!==epoch||!active()||roomId)return;
       const items=Array.isArray(data.rooms)?data.rooms:[];
+      window.HakunaRoomNotifications?.syncRooms?.(items);
       host.querySelector('[data-sr-list]').innerHTML=items.length?items.map(r=>
         '<div class="sr-room-list-row"><button class="sr-room-item" type="button" data-sr-action="open" data-id="'+E(r.id)+'">'
         +'<span class="sr-room-bubble">📚</span><span class="sr-room-info"><strong>'+E(r.name)+'</strong>'
@@ -193,6 +194,9 @@
       const data=await rpc('study_room_snapshot',{p_room_id:requested});
       if(ticket!==epoch||requested!==roomId||!active())return;
       snapshot=data;
+      if(!data.members?.some(member=>member.user_id===id()&&member.studying)) {
+        void window.HakunaRoomNotifications?.closeAndroidRoom?.(roomId);
+      }
       const serverMs=Date.parse(data.server_now);
       if(Number.isFinite(serverMs))skewMs=serverMs-Date.now();
       drawSnapshot();notice('');
@@ -406,7 +410,10 @@
       if(ticket!==epoch||room!==roomId||!active())return;
       if(panel)panel.hidden=true;
       notice('Etüdün başlatılıyor…');
+      const code=snapshot.room.invite_code;
+      const user=id();
       await rpc('study_room_start',{p_room_id:room});
+      if(user===id())window.HakunaRoomNotifications?.started?.(room,code);
       if(ticket===epoch&&room===roomId&&active())await loadRoom();
     }catch(error){
       if(ticket===epoch&&room===roomId&&active())notice(error?.message||'Etüt başlatılamadı.',true);

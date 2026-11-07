@@ -12,7 +12,7 @@ function showBootError(error){
 // cloud sync and enhancements are maintenance work and must never keep the PWA
 // on a blank screen during startup.
 try{
-  await import('./app.js?v=settings-notifications-v1');
+  await import('./app.js?v=settings-notifications-v2');
 }catch(error){
   showBootError(error);
 }
@@ -62,11 +62,11 @@ afterFirstPaint(()=>{
     if(navigator.onLine)void connect();
     window.addEventListener('online',()=>{void connect();},{once:true});
     try{
-      await import('./room-notifications.js?v=5');
+      await import('./room-notifications.js?v=6-android');
       await import('./room-weather.js?v=2');
       await import('./room-experience.js?v=6-dragon');
       await import('./room-wardrobe.js?v=3');
-      await import('./study-rooms.js?v=17-thrones');
+      await import('./study-rooms.js?v=18-android');
       if(document.querySelector('#pageTitle')?.textContent==='Odalar')window.HakunaStudyRooms?.render(document.querySelector('#view'));
     }catch(err){console.warn('Hakuna study rooms load',err);}
     await Promise.allSettled([

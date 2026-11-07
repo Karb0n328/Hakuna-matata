@@ -1,6 +1,40 @@
 (() => {
   'use strict';
 
+  const android = window.HakunaAndroidNotifications;
+  if (typeof android?.postMessage === 'function') {
+    const send = (action, data) => android.postMessage(JSON.stringify({action, ...data}));
+    const syncTimer = () => {
+      const timer = window.HakunaStudyTimer?.state();
+      if (timer) send('timer', {
+        endAt: timer.status === 'running' || timer.status === 'finished' ? timer.endAt : 0,
+        finished: timer.status === 'finished'
+      });
+    };
+    const syncAccount = () => send('account', {user: window.HakunaAccount?.info()?.id || ''});
+    window.addEventListener('hakuna-account-changed', syncAccount);
+    if (window.HakunaAccount?.info()?.id) syncAccount();
+    for (const event of ['hakuna-timer-changed', 'hakuna-native-resumed', 'focus']) {
+      window.addEventListener(event, syncTimer);
+    }
+    const closeRoom = room => send('room-stop', {room});
+    window.HakunaRoomNotifications = {
+      close: closeRoom,
+      closeAndroidRoom: closeRoom,
+      started: (room, code) => send('room-start', {room, code}),
+      syncRooms: rooms => send('room-sync', {active: rooms.filter(room => room.studying).map(room => room.id)}),
+      enable: () => new Promise(resolve => {
+        android.onmessage = event => {
+          android.onmessage = null;
+          resolve(event.data === 'granted');
+        };
+        send('enable');
+      })
+    };
+    syncTimer();
+    return;
+  }
+
   const ownerKey = 'hakuna.push.owner';
   const dismissedKey = 'hakuna.push.prompt.dismissed';
   const supported = 'Notification' in window && 'PushManager' in window &&
@@ -137,6 +171,7 @@
   }
 
   async function enable() {
+    if (!supported && window.HakunaAndroid) throw Error('Bildirimler için Android APK’yı güncelle.');
     if (!supported) throw Error('Bildirim için Hakuna’yı ana ekrana ekleyip oradan aç.');
     const user = accountId();
     if (!user) throw Error('Önce Hakuna hesabına giriş yap.');
