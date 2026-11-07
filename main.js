@@ -20,7 +20,7 @@ function loadRoomUi(){
 }
 
 const launch=navigator.onLine&&!new URLSearchParams(location.search).has('room')
-  ?window.HakunaOffline?.roomLaunch():null;
+  ?window.HakunaOffline?.roomLaunch?.():null;
 if(launch?.entries.length){
   window.HakunaRoomLaunchReady=loadRoomUi().then(()=>launch).catch(error=>{
     console.warn('Hakuna cached rooms load',error);

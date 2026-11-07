@@ -10,7 +10,7 @@
   const accountId=()=>window.HakunaAccount?.info?.().id||null;
   const id=()=>accountId()||bootOwner;
   function cachedRooms(owner){
-    const cached=window.HakunaOffline?.roomLaunch();
+    const cached=window.HakunaOffline?.roomLaunch?.();
     return cached?.user===owner?cached.entries:[];
   }
   function rememberRoom(owner,data){
@@ -21,7 +21,7 @@
       entries.push({room:{...room,studying:true,member_count:data.members.length,
         today_seconds:self.today_seconds,total_seconds:self.seconds},snapshot:data});
     }
-    window.HakunaOffline?.saveRoomLaunch(owner,entries);
+    window.HakunaOffline?.saveRoomLaunch?.(owner,entries);
   }
   async function rpc(name,args={}){
     const owner=accountId(),revision=cacheRevision;
@@ -31,7 +31,7 @@
     if(name==='study_room_overview'&&revision===cacheRevision){
       const previous=new Map(cachedRooms(owner).map(entry=>[entry.room.id,entry.snapshot]));
       const entries=(data.rooms||[]).filter(room=>room.studying).map(room=>({room,snapshot:previous.get(room.id)}));
-      window.HakunaOffline?.saveRoomLaunch(owner,entries);
+      window.HakunaOffline?.saveRoomLaunch?.(owner,entries);
     }else if(name==='study_room_snapshot'&&revision===cacheRevision){
       rememberRoom(owner,data);
     }else if(name==='study_room_start'&&snapshot?.room.id===args.p_room_id&&data.started_at){
@@ -40,7 +40,7 @@
         member.user_id===owner?{...member,studying:true,active_started_at:data.started_at,active_end_at:data.planned_end_at}:member)});
     }else if(['study_room_stop','study_room_leave','study_room_close'].includes(name)){
       cacheRevision++;
-      window.HakunaOffline?.saveRoomLaunch(owner,cachedRooms(owner).filter(entry=>entry.room.id!==args.p_room_id));
+      window.HakunaOffline?.saveRoomLaunch?.(owner,cachedRooms(owner).filter(entry=>entry.room.id!==args.p_room_id));
     }
     return data;
   }
