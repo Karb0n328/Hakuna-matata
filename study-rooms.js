@@ -6,11 +6,55 @@
   let heartbeat=null,starting=false,countdownTimeout=null,countdownResolve=null;
   let lastRosterKey='',lastPersonalKey='';
   const E=(value='')=>String(value==null?'':value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const id=()=>window.HakunaAccount?.info?.().id||null;
-  const rpc=(name,args={})=>{
-    if(!window.HakunaAccount?.roomRpc)throw new Error('Hesap bağlantısı henüz hazır değil. Yeniden dene.');
-    return window.HakunaAccount.roomRpc(name,args);
-  };
+  let bootOwner=null,cacheRevision=0,refreshTask=null;
+  const accountId=()=>window.HakunaAccount?.info?.().id||null;
+  const id=()=>accountId()||bootOwner;
+  function cachedRooms(owner){
+    const cached=window.HakunaOffline?.roomLaunch();
+    return cached?.user===owner?cached.entries:[];
+  }
+  function rememberRoom(owner,data){
+    const self=data.members?.find(member=>member.user_id===owner);
+    const room=data.room;
+    const entries=cachedRooms(owner).filter(entry=>entry.room.id!==room.id);
+    if(room.is_active&&self&&memberWorking(self,Date.parse(data.server_now)||Date.now())){
+      entries.push({room:{...room,studying:true,member_count:data.members.length,
+        today_seconds:self.today_seconds,total_seconds:self.seconds},snapshot:data});
+    }
+    window.HakunaOffline?.saveRoomLaunch(owner,entries);
+  }
+  async function rpc(name,args={}){
+    const owner=accountId(),revision=cacheRevision;
+    if(!owner||!window.HakunaAccount?.roomRpc)throw new Error('Hesap bağlantısı henüz hazır değil. Yeniden dene.');
+    const data=await window.HakunaAccount.roomRpc(name,args);
+    if(owner!==accountId())return data;
+    if(name==='study_room_overview'&&revision===cacheRevision){
+      const previous=new Map(cachedRooms(owner).map(entry=>[entry.room.id,entry.snapshot]));
+      const entries=(data.rooms||[]).filter(room=>room.studying).map(room=>({room,snapshot:previous.get(room.id)}));
+      window.HakunaOffline?.saveRoomLaunch(owner,entries);
+    }else if(name==='study_room_snapshot'&&revision===cacheRevision){
+      rememberRoom(owner,data);
+    }else if(name==='study_room_start'&&snapshot?.room.id===args.p_room_id&&data.started_at){
+      cacheRevision++;
+      rememberRoom(owner,{...snapshot,server_now:data.server_now,members:snapshot.members.map(member=>
+        member.user_id===owner?{...member,studying:true,active_started_at:data.started_at,active_end_at:data.planned_end_at}:member)});
+    }else if(['study_room_stop','study_room_leave','study_room_close'].includes(name)){
+      cacheRevision++;
+      window.HakunaOffline?.saveRoomLaunch(owner,cachedRooms(owner).filter(entry=>entry.room.id!==args.p_room_id));
+    }
+    return data;
+  }
+  function refreshLaunch(){
+    const owner=accountId();
+    if(!owner||!navigator.onLine||refreshTask)return;
+    refreshTask=(async()=>{
+      await rpc('study_room_overview');
+      const entries=cachedRooms(owner);
+      if(owner===accountId()&&entries.length===1&&!entries[0].snapshot&&entries[0].room.id!==roomId){
+        await rpc('study_room_snapshot',{p_room_id:entries[0].room.id});
+      }
+    })().catch(()=>{}).finally(()=>{refreshTask=null;});
+  }
   const chairLevels=[
     [0,'Ahşap sandalye'],[10,'Demir koltuk'],[20,'Altın koltuk'],[30,'Kadife koltuk'],
     [40,'Obsidyen taht'],[50,'Kral tahtı'],[65,'Yakut taht'],[85,'Zümrüt taht'],
@@ -61,7 +105,7 @@
   }
   function leaveView(){
     document.body.classList.remove('sr-immersed');
-    clearLoops();epoch++;host=null;roomId=null;snapshot=null;busy=false;
+    clearLoops();epoch++;host=null;roomId=null;snapshot=null;busy=false;bootOwner=null;
   }
   function notice(message,isError=false){
     const n=host?.querySelector('[data-sr-notice]');
@@ -115,7 +159,7 @@
       if(!form.hidden&&focus)form.querySelector('input').focus();
     }
   }
-  function showLobby(){
+  function showLobby(initial){
     document.body.classList.remove('sr-immersed');
     clearLoops();roomId=null;snapshot=null;epoch++;
     if(!active())return;
@@ -124,7 +168,8 @@
     if(code&&/^(?:[A-F0-9]{18}|[2-9A-HJ-NP-Z]{8})$/.test(code)){
       const inp=host.querySelector('[name=code]');if(inp){inp.value=code;showEntry('join',false);}
     }
-    void loadLobby();
+    if(initial)paintLobby(initial);
+    if(accountId())void loadLobby();
   }
   async function loadLobby(){
     if(!active()||roomId||loading)return;
@@ -134,20 +179,23 @@
       if(ticket!==epoch||!active()||roomId)return;
       const items=Array.isArray(data.rooms)?data.rooms:[];
       window.HakunaRoomNotifications?.syncRooms?.(items);
-      host.querySelector('[data-sr-list]').innerHTML=items.length?items.map(r=>
-        '<div class="sr-room-list-row"><button class="sr-room-item" type="button" data-sr-action="open" data-id="'+E(r.id)+'">'
-        +'<span class="sr-room-bubble">📚</span><span class="sr-room-info"><strong>'+E(r.name)+'</strong>'
-        +'<small>'+Number(r.member_count)+' üye'+(r.studying?' · Çalışıyorsun':'')+'</small>'
-        +'<span class="sr-room-times"><span>Bugün <b data-room-today>'+duration(r.today_seconds)+'</b></span>'
-        +'<span>Toplam <b data-room-total>'+duration(r.total_seconds)+'</b></span></span></span>'
-        +'<span class="sr-room-go">Giriş →</span></button>'+(r.owner_id===id()?'<button type="button" class="sr-link-danger" data-sr-action="delete-room" data-id="'+E(r.id)+'">Odayı sil</button>':'')+'</div>'
-      ).join(''):'<div class="sr-empty">Henüz odan yok. Bir oda kur veya arkadaşının davet kodunu gir. 🌱</div>';
+      paintLobby(items);
       notice('');
       const url=new URL(location.href),target=items.find(r=>r.invite_code===url.searchParams.get('room'));
       if(target){url.searchParams.delete('room');history.replaceState(null,'',url);openRoom(target.id);}
     }catch(error){
       if(ticket===epoch&&active()){const list=host.querySelector('[data-sr-list]');if(list)list.textContent='Odalar alınamadı.';notice(error?.message||'Bağlantı hatası',true);}
     }finally{if(ticket===epoch)loading=false;}
+  }
+  function paintLobby(items){
+    host.querySelector('[data-sr-list]').innerHTML=items.length?items.map(r=>
+      '<div class="sr-room-list-row"><button class="sr-room-item" type="button" data-sr-action="open" data-id="'+E(r.id)+'">'
+      +'<span class="sr-room-bubble">📚</span><span class="sr-room-info"><strong>'+E(r.name)+'</strong>'
+      +'<small>'+Number(r.member_count)+' üye'+(r.studying?' · Çalışıyorsun':'')+'</small>'
+      +'<span class="sr-room-times"><span>Bugün <b data-room-today>'+duration(r.today_seconds)+'</b></span>'
+      +'<span>Toplam <b data-room-total>'+duration(r.total_seconds)+'</b></span></span></span>'
+      +'<span class="sr-room-go">Giriş →</span></button>'+(r.owner_id===id()?'<button type="button" class="sr-link-danger" data-sr-action="delete-room" data-id="'+E(r.id)+'">Odayı sil</button>':'')+'</div>'
+    ).join(''):'<div class="sr-empty">Henüz odan yok. Bir oda kur veya arkadaşının davet kodunu gir. 🌱</div>';
   }
   function roomMarkup(){
     return '<div class="sr-shell sr-room" data-atmosphere="night">'
@@ -170,10 +218,18 @@
       +'<div class="sr-countdown" data-sr-countdown hidden aria-live="assertive"><div class="sr-countdown-inner"><div>ETÜT BAŞLIYOR</div><strong data-sr-countdown-num>3</strong></div></div>'
       +'<p class="sr-note" data-sr-notice hidden role="status"></p></div>';
   }
-  function openRoom(next){
+  function openRoom(next,initial){
     if(!active())return;
     clearLoops();roomId=next;snapshot=null;epoch++;host.innerHTML=roomMarkup();window.scrollTo(0,0);
     document.body.classList.add('sr-immersed');window.HakunaRoomWeather?.update(Date.now()+skewMs);
+    if(initial){
+      snapshot=initial;
+      drawSnapshot();
+    }
+    if(accountId())connectRoom(next);
+    clock=setInterval(tick,1000);
+  }
+  function connectRoom(next){
     void loadRoom();void touchRoom();
     heartbeat=setInterval(()=>{if(document.visibilityState==='visible')void touchRoom();},25000);
     unsubscribe=window.HakunaAccount?.roomListen?.(roomId,()=>{
@@ -181,14 +237,13 @@
       realtimeDelay=setTimeout(()=>{if(active()&&roomId===next)void loadRoom();},300);
     })||null;
     poll=setInterval(()=>{if(document.visibilityState==='visible')void loadRoom();},12000);
-    clock=setInterval(tick,1000);
   }
   async function touchRoom(){
-    if(!active()||!roomId||!navigator.onLine)return;
+    if(!active()||!roomId||!navigator.onLine||!accountId())return;
     try{await rpc('study_room_touch',{p_room_id:roomId});}catch(error){console.warn('Room presence',error);}
   }
   async function loadRoom(){
-    if(!active()||!roomId||loading)return;
+    if(!active()||!roomId||loading||!accountId())return;
     const ticket=epoch,requested=roomId;loading=true;
     try{
       const data=await rpc('study_room_snapshot',{p_room_id:requested});
@@ -316,7 +371,7 @@
     const owner=r.owner_id===id();
     const self=members.find(m=>m.user_id===id()),now=Date.now()+skewMs;
     const working=!!self&&memberWorking(self,now);
-    const canStart=!!r.is_active&&!working;
+    const connected=!!accountId(),canStart=!!r.is_active&&!working&&connected;
     host.querySelector('[data-sr-room-title]').textContent=r.name;
     host.querySelector('[data-sr-room-mode]').textContent='ÇALIŞMA ODASI';
     const total=members.reduce((sum,m)=>sum+seconds(m.seconds),0);
@@ -328,10 +383,10 @@
     const personalHtml=!r.is_active
       ?'<div class="sr-muted">Bu oda kapatıldı. Önceki sürelerin kayıtlı.</div>'
       :working
-        ?'<button class="sr-button-stop" type="button" data-sr-action="stop">☕ Mola ver</button>'
+        ?'<button class="sr-button-stop" type="button" data-sr-action="stop" '+(connected?'':'disabled')+'>☕ Mola ver</button>'
         :'<button class="primary-btn sr-cta" type="button" data-sr-action="start" '+(canStart?'':'disabled')+'>▶ Çalışmaya başla</button>'
           ;
-    const personalKey=JSON.stringify([working,canStart,r.is_active,r.mode,r.phase]);
+    const personalKey=JSON.stringify([working,canStart,connected,r.is_active,r.mode,r.phase]);
     if(personalKey!==lastPersonalKey){
       lastPersonalKey=personalKey;
       host.querySelector('[data-sr-personal-actions]').innerHTML=personalHtml;
@@ -427,6 +482,7 @@
   }
   async function act(action,button){
     if(busy)return;
+    if(bootOwner&&!accountId()&&!['back','open','copy','copy-code'].includes(action))return;
     if(action==='entry-create'||action==='entry-join'){showEntry(action.slice(6));return;}
     if(action==='wardrobe'){void openWardrobe(button);return;}
     if(action==='back'){showLobby();return;}
@@ -464,7 +520,7 @@
     finally{busy=false;if(button.isConnected)button.disabled=false;}
   }
   async function submit(form){
-    if(busy)return;
+    if(busy||!accountId())return;
     const type=form.dataset.srForm,fd=new FormData(form);
     let name,args;
     if(type==='create'){
@@ -485,8 +541,9 @@
     }catch(error){notice(error?.message||'Kaydetme işlemi başarısız.',true);}
     finally{busy=false;if(btn?.isConnected)btn.disabled=false;}
   }
-  function render(view){
-    leaveView();host=view;host.dataset.studyRooms='1';if(navigator.onLine===false){host.innerHTML='<section class="card" data-online-required><div class="card-body"><h2>İnternet bağlantısı gerekiyor</h2><p>Ortak odaları kullanmak için internete bağlan.</p></div></section>';return;}lastUser=id();
+  function render(view,launch){
+    if(active()&&host===view&&!host.querySelector('[data-online-required]'))return;
+    leaveView();host=view;host.dataset.studyRooms='1';if(navigator.onLine===false){host.innerHTML='<section class="card" data-online-required><div class="card-body"><h2>İnternet bağlantısı gerekiyor</h2><p>Ortak odaları kullanmak için internete bağlan.</p></div></section>';return;}bootOwner=launch?.user||null;lastUser=id();
     host.onclick=e=>{
       const b=e.target.closest('[data-sr-action]');
       if(b&&host.contains(b))void act(b.dataset.srAction,b);
@@ -496,17 +553,32 @@
       if(form&&host.contains(form)){e.preventDefault();void submit(form);}
     };
     if(!lastUser){host.innerHTML=loginMarkup();return;}
-    showLobby();
+    if(launch?.entries.length===1&&launch.entries[0].snapshot){
+      const entry=launch.entries[0];
+      openRoom(entry.room.id,entry.snapshot);
+    }else showLobby(launch?.entries.map(entry=>entry.room));
   }
   window.addEventListener('hakuna-account-changed',()=>{
-    if(active()&&lastUser!==id())render(host);
+    if(!active()){refreshLaunch();return;}
+    const user=accountId();
+    if(lastUser!==user){
+      const view=host;
+      leaveView();
+      render(view);
+    }else if(bootOwner&&user){
+      bootOwner=null;
+      if(roomId){drawSnapshot();connectRoom(roomId);refreshLaunch();}else void loadLobby();
+    }
   });
-  window.addEventListener('online',()=>{if(active()){if(host.querySelector('[data-online-required]'))render(host);else if(roomId)void loadRoom();else void loadLobby();}});
+  window.addEventListener('online',()=>{if(active()){if(host.querySelector('[data-online-required]'))render(host);else if(roomId)void loadRoom();else void loadLobby();}else refreshLaunch();});
   window.addEventListener('offline',()=>{if(active())render(host);});
   document.addEventListener('visibilitychange',()=>{
-    if(document.visibilityState==='visible'&&active()){if(roomId){void touchRoom();void loadRoom();}else void loadLobby();tick();}
+    if(document.visibilityState!=='visible')return;
+    if(active()){if(roomId){void touchRoom();void loadRoom();refreshLaunch();}else void loadLobby();tick();}
+    else refreshLaunch();
   });
   window.navigator?.serviceWorker?.addEventListener('message',e=>{if(e.data?.type==='hakuna-study-paused'&&roomId)void loadRoom();});
+  refreshLaunch();
   window.HakunaStudyRooms=Object.freeze({render,leaveView,
     utils:Object.freeze({duration,displayClock,phaseLeft,phaseEnd,chairLevel})});
 })();

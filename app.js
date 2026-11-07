@@ -140,7 +140,7 @@
     view.innerHTML='<section class="card" data-online-required><div class="card-body" style="padding:24px"><h2>İnternet bağlantısı gerekiyor</h2><p>Bu bölüm için internete bağlanmalısın. Cihazındaki sorular, plan ve görevler kullanılabilir.</p><button type="button" class="primary-btn" data-connection-retry>Yeniden dene</button></div></section>';
     view.querySelector('[data-connection-retry]').onclick=()=>render();
   }
-  function render() {
+  function render(roomLaunch) {
     const activeRole=window.HakunaGuidance?.role();
     if(activeRole==='student'&&!['today','plan','tasks','rooms','settings'].includes(currentPage))currentPage='today';
     if(currentPage==='guidance'&&activeRole!=='mentor')currentPage='today';
@@ -160,7 +160,7 @@
     else if (currentPage==='exams') renderExams(view,actions);
     else if (currentPage==='questions') renderQuestions(view,actions);
     else if (currentPage==='books') { if(window.HakunaQuestionBooks) window.HakunaQuestionBooks.render(view,actions,state); else view.innerHTML='<div class="card"><div class="card-body">Soru kitaplığı yükleniyor…</div></div>'; }
-    else if (currentPage==='rooms') { if(window.HakunaStudyRooms)window.HakunaStudyRooms.render(view); else view.innerHTML='<div class="card"><div class="card-body">Çalışma odaları yükleniyor…</div></div>'; }
+    else if (currentPage==='rooms') { if(window.HakunaStudyRooms)window.HakunaStudyRooms.render(view,roomLaunch); else view.innerHTML='<div class="card"><div class="card-body">Çalışma odaları yükleniyor…</div></div>'; }
     else if (currentPage==='analytics') renderAnalytics(view,actions);
     else if (currentPage==='suggestions') renderSuggestions(view,actions);
     else if (currentPage==='settings') renderSettings(view,actions);
@@ -1056,7 +1056,10 @@ YANIT KURALI
     // Room invite links open the Odalar page and prefill the invite code.
     const sharedCode=new URLSearchParams(location.search).get('room');
     if(sharedCode&&/^(?:[A-Fa-f0-9]{18}|[2-9A-HJ-NP-Za-hj-np-z]{8})$/.test(sharedCode))currentPage='rooms';
-    render();
+    const roomLaunch=window.HakunaRoomLaunchReady?await window.HakunaRoomLaunchReady:null;
+    delete window.HakunaRoomLaunchReady;
+    if(roomLaunch)currentPage='rooms';
+    render(roomLaunch);
     let lastGuidanceRole=window.HakunaGuidance?.role();
     setInterval(()=>{const nextRole=window.HakunaGuidance?.role();if(nextRole!==lastGuidanceRole){lastGuidanceRole=nextRole;render();}},1200);
     if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});

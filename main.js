@@ -8,11 +8,28 @@ function showBootError(error){
   view.querySelector('[data-hakuna-boot-reload]')?.addEventListener('click',()=>location.reload());
 }
 
-// Core UI must be the first expensive module to load. Service-worker updates,
-// cloud sync and enhancements are maintenance work and must never keep the PWA
-// on a blank screen during startup.
+let roomUi;
+function loadRoomUi(){
+  roomUi??=Promise.all([
+    import('./room-weather.js?v=2'),
+    import('./room-experience.js?v=7-bloom'),
+    import('./room-wardrobe.js?v=4'),
+    import('./study-rooms.js?v=20-resume')
+  ]);
+  return roomUi;
+}
+
+const launch=navigator.onLine&&!new URLSearchParams(location.search).has('room')
+  ?window.HakunaOffline?.roomLaunch():null;
+if(launch?.entries.length){
+  window.HakunaRoomLaunchReady=loadRoomUi().then(()=>launch).catch(error=>{
+    console.warn('Hakuna cached rooms load',error);
+    return null;
+  });
+}
+
 try{
-  await import('./app.js?v=settings-notifications-v2');
+  await import('./app.js?v=room-resume-v1');
 }catch(error){
   showBootError(error);
 }
@@ -62,11 +79,7 @@ afterFirstPaint(()=>{
     if(navigator.onLine)void connect();
     window.addEventListener('online',()=>{void connect();},{once:true});
     try{
-      await import('./room-notifications.js?v=6-android');
-      await import('./room-weather.js?v=2');
-      await import('./room-experience.js?v=7-bloom');
-      await import('./room-wardrobe.js?v=4');
-      await import('./study-rooms.js?v=19-bloom');
+      await Promise.all([loadRoomUi(),import('./room-notifications.js?v=6-android')]);
       if(document.querySelector('#pageTitle')?.textContent==='Odalar')window.HakunaStudyRooms?.render(document.querySelector('#view'));
     }catch(err){console.warn('Hakuna study rooms load',err);}
     await Promise.allSettled([

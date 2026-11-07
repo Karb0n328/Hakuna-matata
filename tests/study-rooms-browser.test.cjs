@@ -3,13 +3,13 @@ const {createServer}=require('node:http');
 const fs=require('node:fs');
 const {chromium,webkit}=require('playwright');
 const files={};
-for(const name of ['styles.css','study-rooms.css','study-rooms-immersive.css','room-experience.css','room-experience.js','room-weather.js','room-wardrobe.js','study-rooms.js'])files[name]=fs.readFileSync(require('node:path').join(__dirname,'..',name),'utf8');
+for(const name of ['offline-support.js','styles.css','study-rooms.css','study-rooms-immersive.css','room-experience.css','room-experience.js','room-weather.js','room-wardrobe.js','study-rooms.js'])files[name]=fs.readFileSync(require('node:path').join(__dirname,'..',name),'utf8');
 const fixture=[
   '<!doctype html><html lang="tr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
   '<link href="/styles.css" rel="stylesheet"><link href="/study-rooms.css" rel="stylesheet"><link href="/study-rooms-immersive.css" rel="stylesheet"><link href="/room-experience.css" rel="stylesheet">',
   '<main class="main-area"><h1 id="pageTitle">Odalar</h1><section class="ataturk-corner" aria-label="Atatürk Köşesi">Atatürk Köşesi</section><section class="republic-hero">Cumhuriyet</section><section id="view"></section></main>',
   '<script>',
-  'window.__uid="user-1";',
+  'window.__uid="user-1";localStorage.setItem("sb-zyrbbkbwrijnnykbgjvc-auth-token",JSON.stringify({user:{id:window.__uid}}));',
   'window.__state={room:null,selfStudying:false,seconds:12,other:false};',
   'window.HakunaAccount={',
   'info:()=>({id:window.__uid}),open:()=>{window.__loginOpened=true},',
@@ -25,13 +25,13 @@ const fixture=[
   ' if(name==="study_room_rename"){if(uid!==s.room.owner_id)throw Error("Not owner");s.room.name=args.p_name;return true;}',
   ' if(name==="study_room_configure"){s.room.focus_minutes=args.p_focus_minutes;s.room.break_minutes=args.p_break_minutes;s.room.mode=args.p_mode;return true;}',
   ' if(name==="study_room_set_phase"){s.room.phase=args.p_phase;s.room.phase_started_at=args.p_phase==="idle"?null:new Date(Date.now()+(args.p_phase==="focus"?3100:0)).toISOString();return true;}',
-  ' if(name==="study_room_start"){s.selfStudying=true;s.startedAt=s.startedAt||new Date().toISOString();s.task=args.p_task_title||null;return {server_now:new Date().toISOString()};}',
+  ' if(name==="study_room_start"){s.selfStudying=true;s.startedAt=s.startedAt||new Date().toISOString();s.task=args.p_task_title||null;return {started_at:s.startedAt,server_now:new Date().toISOString()};}',
   ' if(name==="study_room_stop"){s.selfStudying=false;s.startedAt=null;s.seconds+=12;return 12;}',
   ' if(name==="study_room_close"){s.room.is_active=false;s.selfStudying=false;return true;}',
   ' if(name==="study_room_leave"){s.room=null;return true;}',
   ' throw Error("Unknown RPC "+name);',
   '}};',
-  '</script><script src="/room-weather.js"></script><script src="/room-experience.js"></script><script src="/room-wardrobe.js"></script><script src="/study-rooms.js"></script>',
+  '</script><script src="/offline-support.js"></script><script src="/room-weather.js"></script><script src="/room-experience.js"></script><script src="/room-wardrobe.js"></script><script src="/study-rooms.js"></script>',
   '<script>window.HakunaStudyRooms.render(document.querySelector("#view"));</script></html>'
 ].join('');
 const server=createServer((req,res)=>{
@@ -146,6 +146,7 @@ const server=createServer((req,res)=>{
     assert.equal(await page.locator('[data-sr-task],[data-sx-intent],[data-sx=note]').count(),0);
     await page.locator('[data-sr-action=start]').click();
     await page.locator('.sr-person-working').waitFor();
+    assert.equal(await page.evaluate(()=>window.HakunaOffline.roomLaunch().entries[0]?.room.id),'room-1');
     assert((await page.locator('[data-sr-own-status]').textContent()).includes('sayılıyor'));
     assert.equal(await page.locator('[data-sr-action=focus],[data-sr-action=break],[data-sr-action=idle],[data-sr-shared]').count(),0);
     await page.evaluate(()=>window.__state.other=true);
@@ -166,6 +167,7 @@ const server=createServer((req,res)=>{
     await page.evaluate(()=>window.__state.away=false);
     await page.locator('[data-sr-action=stop]').click();
     assert(await page.locator('[data-sr-action=start]').isEnabled(),'resume after a personal break');
+    assert.equal(await page.evaluate(()=>window.HakunaOffline.roomLaunch().entries.length),0);
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2);
     assert.equal(overflow,false,'study room must not overflow viewport at '+width);
     await page.evaluate(()=>{window.__state.seconds=12*3600;window.dispatchEvent(new Event('online'));});

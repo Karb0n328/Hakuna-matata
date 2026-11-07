@@ -38,6 +38,40 @@ try{
  await page.getByText('Bu cihazda bildirimler açık.',{exact:true}).waitFor();
  assert(await page.evaluate(()=>window.__notificationsEnabled));
 
+ // An already active room must be the first real view even with the cloud blocked.
+ await page.addInitScript(()=>{
+  window.__launchTitles=[];
+  new MutationObserver(()=>{
+   const title=document.querySelector('#pageTitle')?.textContent;
+   if(title&&window.__launchTitles.at(-1)!==title)window.__launchTitles.push(title);
+  }).observe(document,{subtree:true,childList:true,characterData:true});
+ });
+ await page.evaluate(()=>{
+  const user='resume-student',now=Date.now();
+  const room={id:'active-room',name:'Doğrudan açılan oda',owner_id:user,invite_code:'K7MP4X9R',
+   is_active:true,mode:'free',phase:'idle',focus_minutes:50,break_minutes:10,member_count:1,studying:true};
+  const member={user_id:user,username:'Öğrenci',studying:true,active_started_at:new Date(now-125000).toISOString(),seconds:125};
+  localStorage.setItem('sb-zyrbbkbwrijnnykbgjvc-auth-token',JSON.stringify({user:{id:user}}));
+  window.HakunaOffline.saveRoomLaunch(user,[{room,snapshot:{room,members:[member],server_now:new Date(now).toISOString()}}]);
+ });
+ await page.reload();
+ await page.getByRole('heading',{name:'Doğrudan açılan oda'}).waitFor();
+ assert.deepEqual(await page.evaluate(()=>window.__launchTitles),['Odalar']);
+ assert.match(await page.locator('[data-sr-clock]').textContent(),/^00:02:/);
+ assert.equal(await page.locator('[data-hakuna-boot-placeholder],.sr-loading').count(),0);
+ await page.evaluate(()=>{
+  const {user,entries}=window.HakunaOffline.roomLaunch();
+  window.HakunaOffline.saveRoomLaunch(user,[...entries,{room:{...entries[0].room,id:'another-room',name:'İkinci etüt'}}]);
+ });
+ await page.reload();
+ await page.getByRole('button',{name:/İkinci etüt/}).waitFor();
+ assert.deepEqual(await page.evaluate(()=>window.__launchTitles),['Odalar']);
+ assert.equal(await page.locator('.sr-room').count(),0);
+ await page.evaluate(()=>localStorage.setItem('sb-zyrbbkbwrijnnykbgjvc-auth-token',JSON.stringify({user:{id:'another-account'}})));
+ await page.reload();
+ await page.getByRole('heading',{name:'Bugün',exact:true}).first().waitFor();
+ assert.deepEqual(await page.evaluate(()=>window.__launchTitles),['Bugün']);
+
  console.log('PASS real service worker installation, cold offline launch, unversioned core fallback, local photo, plan, task persistence, online-only tabs, account-scoped snapshots and reconnect');
 }catch(e){fs.mkdirSync('test-results',{recursive:true});if(page&&!page.isClosed()){console.log('OFFLINE FAILURE VIEW',await page.locator('body').innerText());await page.screenshot({path:'test-results/offline-failure.png',fullPage:true});}throw e;}finally{await context.close();await browser.close();await new Promise(r=>server.close(r));}
 })().catch(e=>{console.error(e);process.exitCode=1});
