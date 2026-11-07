@@ -9,13 +9,6 @@ try{
  await page.goto(base);await page.waitForSelector('[data-nav=plan]');
  await page.evaluate(async()=>{await navigator.serviceWorker.ready;});
  await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
- await page.waitForFunction(()=>typeof window.HakunaRoomNotifications?.enable==='function');
- await page.locator('#sidebarNav [data-nav=settings]').click();
- await page.evaluate(()=>{window.HakunaRoomNotifications.enable=async()=>{window.__notificationsEnabled=true};});
- await page.locator('[data-enable-notifications]').click();
- await page.getByText('Bu cihazda bildirimler açık.',{exact:true}).waitFor();
- assert(await page.evaluate(()=>window.__notificationsEnabled));
-
  await page.evaluate(async()=>{
   const today=new Date().toLocaleDateString('en-CA'),now=new Date().toISOString();
   function put(dbName,store,key,value){return new Promise((resolve,reject)=>{const req=indexedDB.open(dbName,1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(store))req.result.createObjectStore(store)};req.onsuccess=()=>{const db=req.result,tx=db.transaction(store,'readwrite');tx.objectStore(store).put(value,key);tx.oncomplete=()=>{db.close();resolve()};tx.onerror=()=>reject(tx.error)};req.onerror=()=>reject(req.error)});}
@@ -38,6 +31,13 @@ try{
  // A cached student plan remains readable and is isolated from another account.
  await page.evaluate(async()=>{localStorage.setItem('sb-zyrbbkbwrijnnykbgjvc-auth-token',JSON.stringify({access_token:'test',user:{id:'test-student'}}));const k='hakuna.offline.read.v1.test-student.plan';localStorage.setItem(k,JSON.stringify({data:[{title:'Kayıtlı program'}]}));const data=await window.HakunaOffline.read('plan',()=>{throw Error('must not fetch')});if(data[0].title!=='Kayıtlı program')throw Error('missing offline plan');localStorage.setItem('sb-zyrbbkbwrijnnykbgjvc-auth-token',JSON.stringify({access_token:'test',user:{id:'another'}}));let blocked=false;try{await window.HakunaOffline.read('plan',()=>{})}catch{blocked=true}if(!blocked)throw Error('cache leaked across accounts');localStorage.removeItem('sb-zyrbbkbwrijnnykbgjvc-auth-token');});
  await context.setOffline(false);await page.reload();await page.locator('#sidebarNav [data-nav=tasks]').click();await page.getByText('İnternetsiz ekledim',{exact:false}).first().waitFor();
+ await page.waitForFunction(()=>typeof window.HakunaRoomNotifications?.enable==='function');
+ await page.locator('#sidebarNav [data-nav=settings]').click();
+ await page.evaluate(()=>{window.HakunaRoomNotifications.enable=async()=>{window.__notificationsEnabled=true};});
+ await page.locator('[data-enable-notifications]').click();
+ await page.getByText('Bu cihazda bildirimler açık.',{exact:true}).waitFor();
+ assert(await page.evaluate(()=>window.__notificationsEnabled));
+
  console.log('PASS real service worker installation, cold offline launch, unversioned core fallback, local photo, plan, task persistence, online-only tabs, account-scoped snapshots and reconnect');
 }catch(e){fs.mkdirSync('test-results',{recursive:true});if(page&&!page.isClosed()){console.log('OFFLINE FAILURE VIEW',await page.locator('body').innerText());await page.screenshot({path:'test-results/offline-failure.png',fullPage:true});}throw e;}finally{await context.close();await browser.close();await new Promise(r=>server.close(r));}
 })().catch(e=>{console.error(e);process.exitCode=1});
