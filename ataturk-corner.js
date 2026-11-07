@@ -27,7 +27,8 @@ let corner=null,previous='',version=0;
 function currentPage(){const title=document.getElementById('pageTitle')?.textContent?.trim();return Object.prototype.hasOwnProperty.call(pages,title)?pages[title]:0}
 function render(){
  const view=document.getElementById('view');if(!view)return;
- if(!enabled()){corner?.remove();corner=null;previous='';return;}
+ const title=document.getElementById('pageTitle')?.textContent?.trim();
+ if(!title||title==='Odalar'||!enabled()){corner?.remove();corner=null;previous='';return;}
  const page=currentPage(),today=dayKey(),identity=page+':'+today;
  if(identity===previous)return;
  previous=identity;

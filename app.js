@@ -1071,5 +1071,14 @@ YANIT KURALI
   window.addEventListener('offline',()=>{if(currentPage==='rooms')render();});
   window.addEventListener('online',()=>{if(document.querySelector('[data-online-required]'))render();});
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
-  init();
+  const initialized=init();
+  window.addEventListener('hakuna-local-state-updated',async()=>{
+    try{
+      await initialized;
+      const incoming=await dbGet(STATE_KEY);
+      if(!incoming)return;
+      state={...incoming,selectedDate:state.selectedDate||todayISO()};
+      render();
+    }catch(error){console.warn('Hakuna local state refresh failed',error);}
+  });
 })();

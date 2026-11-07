@@ -29,13 +29,13 @@ if(launch?.entries.length){
 }
 
 try{
-  await import('./app.js?v=room-resume-v1');
+  await import('./app.js?v=room-first-frame-v1');
 }catch(error){
   showBootError(error);
 }
 
 // These modules protect/repair data but are not allowed to block first paint.
-void import('./auto-debt.js?v=fastboot1').catch(err=>console.warn('Auto debt load',err));
+void import('./auto-debt.js?v=state-refresh-v1').catch(err=>console.warn('Auto debt load',err));
 void import('./deletion-guard-v2.js?v=1').catch(err=>console.warn('Deletion guard load',err));
 void import('./performance-runtime.js?v=4').catch(err=>console.warn('Performance runtime load',err));
 
@@ -60,7 +60,7 @@ async function importAccountSyncOptimized(){
     return nativeSetInterval.call(window,fn,next,...args);
   };
   try{
-    await import('./account-sync-v2.js?v=room-sessions-v1');
+    await import('./account-sync-v2.js?v=state-refresh-v1');
   }finally{
     window.setInterval=nativeSetInterval;
   }

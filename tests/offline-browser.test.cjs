@@ -63,11 +63,31 @@ try{
   localStorage.setItem('sb-zyrbbkbwrijnnykbgjvc-auth-token',JSON.stringify({user:{id:user}}));
   window.HakunaOffline.saveRoomLaunch(user,[{room,snapshot:{room,members:[member],server_now:new Date(now).toISOString()}}]);
  });
- await page.reload();
+ let releaseRoomModule,roomModuleRequested;
+ const roomModuleGate=new Promise(resolve=>{releaseRoomModule=resolve});
+ const roomModuleIntercepted=new Promise(resolve=>{roomModuleRequested=resolve});
+ await page.route('**/study-rooms.js?*',async route=>{
+  roomModuleRequested();
+  await roomModuleGate;
+  await route.continue();
+ },{times:1});
+ await page.reload({waitUntil:'commit'});
+ await roomModuleIntercepted;
+ try{
+  await page.locator('#app').waitFor({state:'attached'});
+  assert.equal(await page.locator('#app').evaluate(app=>getComputedStyle(app).visibility),'hidden',
+   'the default dashboard shell must not paint while the room UI loads');
+  assert.equal(await page.locator('.ataturk-corner').count(),0);
+ }finally{releaseRoomModule();}
  await page.getByRole('heading',{name:'Doğrudan açılan oda'}).waitFor();
  assert.deepEqual(await page.evaluate(()=>window.__launchTitles),['Odalar']);
  assert.match(await page.locator('[data-sr-clock]').textContent(),/^00:02:/);
- assert.equal(await page.locator('[data-hakuna-boot-placeholder],.sr-loading').count(),0);
+ assert.equal(await page.locator('[data-hakuna-boot-placeholder],.sr-loading,.ataturk-corner').count(),0);
+ const roomNode=await page.locator('.sr-room').elementHandle();
+ await page.evaluate(()=>window.dispatchEvent(new Event('hakuna-local-state-updated')));
+ await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+ assert(await roomNode.evaluate(room=>room.isConnected),'a background data refresh preserves the open room');
+ assert.deepEqual(await page.evaluate(()=>window.__launchTitles),['Odalar']);
  await page.evaluate(()=>{
   const {user,entries}=window.HakunaOffline.roomLaunch();
   window.HakunaOffline.saveRoomLaunch(user,[...entries,{room:{...entries[0].room,id:'another-room',name:'İkinci etüt'}}]);

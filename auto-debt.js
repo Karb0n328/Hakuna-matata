@@ -101,7 +101,7 @@ export async function reconcilePastIncompleteBlocks(){
   return moved;
 }
 
-await reconcilePastIncompleteBlocks();
+if(await reconcilePastIncompleteBlocks())window.dispatchEvent(new Event('hakuna-local-state-updated'));
 
 let checking=false;
 async function liveCheck(){
@@ -109,7 +109,7 @@ async function liveCheck(){
   checking=true;
   try{
     const moved=await reconcilePastIncompleteBlocks();
-    if(moved>0)location.reload();
+    if(moved>0)window.dispatchEvent(new Event('hakuna-local-state-updated'));
   }finally{checking=false;}
 }
 

@@ -34,6 +34,8 @@ function page(){
 }
 function update(){
  const view=document.getElementById('view');if(!view)return;
+ const title=document.getElementById('pageTitle')?.textContent?.trim();
+ if(!title||title==='Odalar'){hero?.remove();hero=null;prev='';renderVersion++;return;}
  if(!hero){hero=document.createElement('section');hero.id='republic-day-banner';hero.className='republic-hero';hero.setAttribute('aria-label','29 Ekim Cumhuriyet Bayramı');view.before(hero)}
  const key=page();if(prev===key)return;prev=key;
  const version=++renderVersion;
