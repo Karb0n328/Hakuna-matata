@@ -51,7 +51,7 @@ body.sr-immersed .sx-room{padding-top:calc(env(safe-area-inset-top,0px) + 48px)!
 .sx-plant.sx-blooming { max-width:160px; }
 .sx-blooming .sx-flower { display:inline; }
 .sx-bloom-timer {
-  position:absolute;top:0;left:50%;transform:translateX(-50%);z-index:1;
+  position:absolute;top:-6px;left:50%;transform:translateX(-50%);z-index:1;
   padding:3px 7px;border:1px solid #fff3;border-radius:999px;
   background:#24313bd9;color:#fff1dc;font:600 10px/1.1 system-ui,sans-serif;
   font-variant-numeric:tabular-nums;white-space:nowrap;
