@@ -21,7 +21,7 @@ const fixture=[
   ' if(name==="study_room_create_v2"){s.room={id:"room-1",owner_id:"user-1",name:args.p_name,invite_code:"K7MP4X9R",focus_minutes:args.p_focus_minutes,break_minutes:args.p_break_minutes,mode:args.p_mode||"shared",phase:"idle",phase_started_at:null,is_active:true};return s.room.id;}',
   ' if(name==="study_room_join"){if(args.p_invite_code!==s.room?.invite_code)throw Error("Geçersiz kod");return s.room.id;}',
   ' if(name==="study_room_touch")return true;',
-  ' if(name==="study_room_snapshot"){if(!s.room)throw Error("Oda yok");return {room:{...s.room},members:[{user_id:"user-1",username:"Batu",look:s.look,seconds:s.seconds,today_seconds:s.seconds,studying:s.selfStudying,last_seen_at:new Date().toISOString(),active_started_at:s.startedAt||null,active_end_at:null,task_title:s.task||null},...(s.other?[{user_id:"user-2",username:"<img src=x onerror=alert(1)>",look:{top:"coogi",head:"fedora"},seconds:1200,today_seconds:1200,studying:!s.away,last_seen_at:new Date(Date.now()-(s.away?120000:0)).toISOString(),active_end_at:new Date(Date.now()+300000).toISOString()}]:[])],server_now:new Date().toISOString()};}',
+  ' if(name==="study_room_snapshot"){if(!s.room)throw Error("Oda yok");return {room:{...s.room},members:[{user_id:"user-1",username:"Batu",look:s.look,seconds:s.seconds,today_seconds:s.seconds,studying:s.selfStudying,last_seen_at:new Date().toISOString(),active_started_at:s.startedAt||null,active_end_at:null,task_title:s.task||null},...(s.other?[{user_id:"user-2",username:"<img src=x onerror=alert(1)>",look:{top:"coogi",head:"headphones",face:"aviators",neck:"pendant",hand:"watch"},seconds:1200,today_seconds:1200,studying:!s.away,last_seen_at:new Date(Date.now()-120000).toISOString(),active_end_at:new Date(Date.now()+300000).toISOString()}]:[])],server_now:new Date().toISOString()};}',
   ' if(name==="study_room_rename"){if(uid!==s.room.owner_id)throw Error("Not owner");s.room.name=args.p_name;return true;}',
   ' if(name==="study_room_configure"){s.room.focus_minutes=args.p_focus_minutes;s.room.break_minutes=args.p_break_minutes;s.room.mode=args.p_mode;return true;}',
   ' if(name==="study_room_set_phase"){s.room.phase=args.p_phase;s.room.phase_started_at=args.p_phase==="idle"?null:new Date(Date.now()+(args.p_phase==="focus"?3100:0)).toISOString();return true;}',
@@ -69,15 +69,16 @@ const server=createServer((req,res)=>{
     await wardrobe.waitFor();
     await wardrobe.locator('[name=top]').selectOption('les');
     await wardrobe.getByRole('button',{name:'Aksesuar'}).click();
-    await wardrobe.locator('[name=head]').selectOption('crown');
-    await wardrobe.locator('[name=hand]').selectOption('glove');
-    await wardrobe.locator('[name=face]').selectOption('shades');
-    await wardrobe.locator('[name=neck]').selectOption('rope');
+    await wardrobe.locator('[name=head]').selectOption('headphones');
+    await wardrobe.locator('[name=hand]').selectOption('watch');
+    await wardrobe.locator('[name=face]').selectOption('aviators');
+    await wardrobe.locator('[name=neck]').selectOption('pendant');
     await wardrobe.getByRole('button',{name:'Karakter'}).click();
     await wardrobe.locator('[name=hair]').selectOption('braids');
     await wardrobe.locator('[name=skin]').selectOption('deep');
     const preview=wardrobe.locator('.sr-wardrobe-preview');
-    assert.equal(await preview.locator('.sr-avatar-arm .sr-jeweled-glove').count(),1);
+    const accessories=['headphones','aviators','pendant','watch'];
+    for(const name of accessories)assert.equal(await preview.locator('[data-accessory='+name+']').count(),1);
     assert.equal(await preview.locator('.sr-avatar[data-hair=braids] .sr-accessory-art').count(),1);
     fs.mkdirSync('test-results',{recursive:true});
     await wardrobe.screenshot({path:'test-results/wardrobe-'+width+'.png'});
@@ -88,7 +89,7 @@ const server=createServer((req,res)=>{
     await page.locator('[data-sr-form=create] button[type=submit]').click();
     await page.locator('[data-sr-room-title]').getByText('Kütüphane Ekibi').waitFor();
     assert.equal(await page.locator('[data-sr-invite]').textContent(),'K7MP-4X9R');
-    assert.equal(await page.locator('.sr-roster .sr-jeweled-glove').count(),1);
+    for(const name of accessories)assert.equal(await page.locator('.sr-roster [data-accessory='+name+']').count(),1);
     assert.equal(await page.locator('[data-sr-action=wardrobe]').count(),0);
     const chair=page.locator('[data-sr-user="user-1"] [data-chair-level]');
     assert.equal(await chair.getAttribute('data-chair-level'),'0');
@@ -135,9 +136,13 @@ const server=createServer((req,res)=>{
     assert.deepEqual(await page.locator('.sr-person').evaluateAll(nodes=>nodes.map(n=>n.dataset.srUser)),['user-2','user-1'],'the highest room study total comes first');
     assert.equal(await page.locator('.sr-roster img').count(),0,'username must never inject HTML');
     assert((await page.locator('.sr-roster').textContent()).includes('<img src=x onerror=alert(1)>'));
+    const friend=page.locator('[data-sr-user="user-2"]');
+    assert.equal(await friend.locator('.sr-desk-working .sr-clothes-art').count(),1,'working peer outfit survives stale presence');
+    for(const name of accessories)assert.equal(await friend.locator('.sr-desk-working [data-accessory='+name+']').count(),1);
     await page.evaluate(()=>{window.__state.away=true;window.dispatchEvent(new Event('online'));});
     await page.locator('.sr-person-away').waitFor();
-    assert.equal(await page.locator('.sr-person-away .sr-clothes-art').count(),1,'away members keep their saved outfit visible');
+    assert.equal(await friend.locator('.sr-desk-away .sr-vacant').count(),1,'away peer has an empty desk');
+    assert.equal(await friend.locator('.sr-avatar').count(),0);
     await page.evaluate(()=>window.__state.away=false);
     await page.locator('[data-sr-action=stop]').click();
     assert(await page.locator('[data-sr-action=start]').isEnabled(),'resume after a personal break');

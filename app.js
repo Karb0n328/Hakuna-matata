@@ -854,7 +854,21 @@
   }
 
   function renderSettings(view,actions) {
-    view.innerHTML=`<div class="settings-grid"><section class="card settings-section"><div class="card-title">⚙️ Genel</div><div class="settings-row"><div><div class="settings-row-title">Ana ekrana ekle</div><div class="settings-row-desc">Safari → Paylaş → Ana Ekrana Ekle.</div></div><span>📲</span></div><div class="settings-row"><div><div class="settings-row-title">Veri yedeği</div><div class="settings-row-desc">Verilerini JSON olarak yedekleyebilirsin.</div></div><div style="display:flex;gap:6px"><button class="secondary-btn" data-backup>Yedekle</button><button class="secondary-btn" data-restore>Geri yükle</button><input id="restoreFile" type="file" accept="application/json" hidden></div></div><div class="settings-row"><div><div class="settings-row-title">Tüm veriyi sıfırla</div><div class="settings-row-desc">Bu cihazdaki Hakuna Matata kayıtlarını temizler.</div></div><button class="danger-btn" data-reset>Sil</button></div></section></div>`;
+    view.innerHTML=`<div class="settings-grid"><section class="card settings-section"><div class="card-title">⚙️ Genel</div><div class="settings-row"><div><div class="settings-row-title">Ana ekrana ekle</div><div class="settings-row-desc">Safari → Paylaş → Ana Ekrana Ekle.</div></div><span>📲</span></div><div class="settings-row"><div><div class="settings-row-title">Bildirimler</div><div class="settings-row-desc" data-notifications-status role="status"></div></div><button type="button" class="secondary-btn" data-enable-notifications>Bildirimleri aç</button></div><div class="settings-row"><div><div class="settings-row-title">Veri yedeği</div><div class="settings-row-desc">Verilerini JSON olarak yedekleyebilirsin.</div></div><div style="display:flex;gap:6px"><button class="secondary-btn" data-backup>Yedekle</button><button class="secondary-btn" data-restore>Geri yükle</button><input id="restoreFile" type="file" accept="application/json" hidden></div></div><div class="settings-row"><div><div class="settings-row-title">Tüm veriyi sıfırla</div><div class="settings-row-desc">Bu cihazdaki Hakuna Matata kayıtlarını temizler.</div></div><button class="danger-btn" data-reset>Sil</button></div></section></div>`;
+    const notificationButton=view.querySelector('[data-enable-notifications]');
+    const notificationStatus=view.querySelector('[data-notifications-status]');
+    notificationButton.onclick=async()=>{
+      notificationButton.disabled=true;
+      try{
+        if(!window.HakunaRoomNotifications)throw Error('Bildirimler hazırlanıyor. Birazdan tekrar dene.');
+        await window.HakunaRoomNotifications.enable();
+        notificationStatus.textContent='Bu cihazda bildirimler açık.';
+      }catch(error){
+        notificationStatus.textContent=error?.message||'Bildirimler açılamadı.';
+      }finally{
+        notificationButton.disabled=false;
+      }
+    };
     $('[data-backup]').onclick=backupData;
     $('[data-restore]').onclick=()=>$('#restoreFile').click();
     $('#restoreFile').onchange=restoreData;

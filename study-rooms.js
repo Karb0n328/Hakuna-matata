@@ -212,11 +212,10 @@
   function deskMarkup(m,working,online,level=0){
     const avatar=(m.user_id||m.username||'').split('').reduce((a,c)=>a+c.charCodeAt(0),0)%5;
     const state=online?(working?'working':'resting'):'away';
-    const hasLook=Object.keys(window.HakunaRoomWardrobe.normalize(m.look)).length>0;
     return '<div class="sr-desk-scene sr-desk-'+state+' sr-outfit-'+avatar+'" aria-hidden="true">'
       +'<span class="sr-scene-stars">✦</span><div class="sr-scene-window"><span></span><span></span></div>'
       +'<div class="sr-scene-chair" data-chair-level="'+level+'"></div>'
-      +(online||hasLook?window.HakunaRoomWardrobe.character(m.look):'<span class="sr-vacant">🪑</span>')
+      +(online?window.HakunaRoomWardrobe.character(m.look):'<span class="sr-vacant">🪑</span>')
       +'<div class="sr-scene-table"></div><div class="sr-scene-notebook"><i></i><i></i><i></i></div>'
       +'<div class="sr-scene-coffee"><span></span></div>'
       +'<div class="sr-scene-lamp"><i></i></div>'

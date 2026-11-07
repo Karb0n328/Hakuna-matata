@@ -323,3 +323,13 @@ html[data-hakuna-palette="republic"] .sr-desk-scene{filter:hue-rotate(323deg) sa
 }
 .sr-room-times { display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted); }
 .sr-room-times b { color:var(--ink);font-variant-numeric:tabular-nums; }
+
+.sr-metal-watch {
+  position:absolute;bottom:5px;right:-2px;width:12px;height:5px;border-radius:2px;
+  background:repeating-linear-gradient(90deg,#a6afbf 0 2px,#e9edf6 2px 3px);
+  box-shadow:0 1px 2px #21273388;
+}
+.sr-metal-watch::after {
+  content:"";position:absolute;left:4px;top:-1px;width:6px;height:7px;border-radius:2px;
+  background:linear-gradient(145deg,#536680,#222c41);border:1px solid #e7edf7;
+}

@@ -21,24 +21,27 @@
         crown: 'Dikenli taç',
         bandana: 'Bağlı bandana',
         bucket: 'Kırmızı bucket şapka',
-        fedora: 'Siyah fötr'
+        fedora: 'Siyah fötr',
+        headphones: 'Stüdyo kulaklığı'
       }
     },
     face: {
       label: 'Yüz',
       items: {
         patch: 'Taşlı göz bandı',
-        shades: 'Koyu gözlük'
+        shades: 'Koyu gözlük',
+        aviators: 'Kehribar pilot gözlüğü'
       }
     },
     neck: {
       label: 'Boyun',
       items: {
         clock: 'Saat kolye',
-        rope: 'Altın halat zincir'
+        rope: 'Altın halat zincir',
+        pendant: 'Gümüş yıldız kolye'
       }
     },
-    hand: {label: 'El', items: {glove: 'Taşlı eldiven'}},
+    hand: {label: 'El', items: {glove: 'Taşlı eldiven', watch: 'Metal saat'}},
     hair: {label: 'Saç', items: {fade:'Kısa', curls:'Kıvırcık', braids:'Örgülü'}},
     skin: {label: 'Ten tonu', items: {light:'Açık', medium:'Orta', deep:'Koyu'}}
   };
@@ -58,16 +61,19 @@
     kani: '<path d="m12 5 9 9 9-9M21 14v22M5 18h11v7H5zm21 0h11v7H26z" fill="none" stroke="#a5c2d1" stroke-width="1"/><path d="M22 19h1m-1 6h1m-1 6h1" stroke="#f2d0a1" stroke-width="2"/>'
   };
   const headArt = {
+    headphones: '<path d="M4 23V15a17 17 0 0 1 34 0v8" fill="none" stroke="#202332" stroke-width="4"/><path d="M9 8q12-9 24 0" fill="none" stroke="#a0a9c2" stroke-width="1.4"/><rect x="1" y="18" width="8" height="13" rx="3" fill="#252737" stroke="#8593af"/><rect x="34" y="18" width="7" height="13" rx="3" fill="#252737" stroke="#8593af"/>',
     crown: '<path d="M3 15 2 6l7 5 4-8 7 7 8-8 4 8 8-5-2 10Q20 20 3 15Z" fill="#b9bcc8" stroke="#545c76" stroke-width="1"/><path d="m7 12 2-2 2 2-2 2zm9 1 2-2 2 2-2 2zm9 0 2-2 2 2-2 2zm8-1 2-2 2 2-2 2z" fill="#fff"/><path d="M14 3v5m-2-2h4m15-3v4m-2-2h4" stroke="#fff" stroke-width="1"/>',
     bandana: '<path d="M4 12q17-4 34 0v8q-16-3-33 1z" fill="#9c303e"/><path d="m17 13-6-8q0-5 9 4l3 2q8-8 10-5l-7 9z" fill="#af3f51"/><path d="m7 16 3 1m5-2 3 1m6-1 3 1m6-1 3 1" stroke="#fff1df" stroke-width="1"/>',
     bucket: '<path d="M9 5q12-5 25 0l3 13q-15 6-32 0z" fill="#ad233c"/><path d="m5 15-4 6q20 5 40-1l-5-6z" fill="#c32b44"/><path d="M16 11q5-4 10 0l-2 2h-7z" fill="#f6e6d5"/>',
     fedora: '<path d="m10 15 2-11 9 2 10-2 3 12z" fill="#252630"/><path d="M10 12h24l1 4H9z" fill="#4d4246"/><ellipse cx="21" cy="17" rx="21" ry="4" fill="#23232c"/>'
   };
   const faceArt = {
+    aviators: '<path d="M7 23h28m-16 1q2-3 5 0M10 23h11v3q-1 5-6 5t-5-5zm12 0h11v3q0 5-5 5t-6-5z" fill="#ad7939" fill-opacity=".85" stroke="#efd79e" stroke-width="1"/>',
     patch: '<path d="m7 25 28-7" stroke="#24222d" stroke-width="2"/><path d="M11 23h12v5q-6 7-12 0z" fill="#252630" stroke="#e8d79e"/><circle cx="17" cy="26" r="1.3" fill="#fff"/>',
     shades: '<path d="M9 23h25v3H9z" fill="#22242d"/><rect x="10" y="23" width="10" height="7" rx="2" fill="#10131c" stroke="#706674"/><rect x="23" y="23" width="10" height="7" rx="2" fill="#10131c" stroke="#706674"/><path d="m12 26 4-2m9 2 4-2" stroke="#9ca7ba"/>'
   };
   const neckArt = {
+    pendant: '<path d="M10 40q11 22 22 0" fill="none" stroke="#dbdde8" stroke-width="1.4"/><path d="m21 48 2 4 5 1-4 3 1 5-4-3-4 3 1-5-4-3 5-1z" fill="#e9edf8" stroke="#7d8da8" stroke-width="1"/>',
     clock: '<path d="M12 40q9 17 18 0" fill="none" stroke="#e3ae55" stroke-width="2"/><circle cx="21" cy="53" r="7" fill="#f3e9cb" stroke="#c89849" stroke-width="2"/><path d="M21 49v4l3 2" stroke="#514134" fill="none"/>',
     rope: '<path d="M10 39q11 19 22 0" fill="none" stroke="#92663b" stroke-width="3.5"/><path d="M10 39q11 19 22 0" fill="none" stroke="#f7d47e" stroke-width="2.5" stroke-dasharray="1.4 1"/>'
   };
@@ -84,14 +90,18 @@
     return art ? '<svg class="'+css+'" viewBox="'+viewBox+'" aria-hidden="true">'+art+'</svg>' : '';
   }
 
+  function accessory(key, art) {
+    return key ? '<g data-accessory="'+key+'">'+art[key]+'</g>' : '';
+  }
+
   function character(look) {
     const {top, head, face, neck, hand, skin, hair} = normalize(look);
     const variables = [top && '--sr-shirt:'+tops[top], skin && '--sr-skin:'+skins[skin]].filter(Boolean).join(';');
     return '<div class="sr-avatar" style="'+variables+'"'+(hair?' data-hair="'+hair+'"':'')+'>'
       +'<div class="sr-avatar-hair"></div><div class="sr-avatar-head"><i></i><b></b></div>'
       +'<div class="sr-avatar-body">'+svg('sr-clothes-art','0 0 42 36',shirtArt[top])+'</div>'
-      +'<div class="sr-avatar-arm">'+(hand?'<span class="sr-jeweled-glove"></span>':'')+'</div>'
-      +svg('sr-accessory-art','0 0 42 67',(headArt[head]||'')+(faceArt[face]||'')+(neckArt[neck]||''))
+      +'<div class="sr-avatar-arm">'+(hand?'<span data-accessory="'+hand+'" class="'+(hand==='glove'?'sr-jeweled-glove':'sr-metal-watch')+'"></span>':'')+'</div>'
+      +svg('sr-accessory-art','0 0 42 67',accessory(head,headArt)+accessory(face,faceArt)+accessory(neck,neckArt))
       +'</div>';
   }
 

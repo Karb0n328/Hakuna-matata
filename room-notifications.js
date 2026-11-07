@@ -8,7 +8,7 @@
   const accountId = () => window.HakunaAccount?.info?.()?.id;
   const api = body => window.HakunaAccount.roomNotifications(body);
   let prompt;
-  let syncing = false;
+  let syncTask;
   let scheduledTimer;
   let syncAgain = false;
 
@@ -45,9 +45,7 @@
       allow.disabled = true;
       dismiss.disabled = true;
       try {
-        if (await Notification.requestPermission() === 'denied') {
-          localStorage.setItem(dismissedKey, '1');
-        }
+        await enable();
       } catch (error) {
         console.warn('Hakuna bildirim izni açılamadı', error);
       } finally {
@@ -56,7 +54,6 @@
           allow.disabled = false;
           dismiss.disabled = false;
         }
-        void sync();
       }
     });
     dismiss.addEventListener('click', decline);
@@ -75,16 +72,27 @@
     scheduledTimer = signature;
   }
 
-  async function sync(accountChanged = false) {
-    if (!supported) return;
-    if (syncing) {
+  function sync(accountChanged = false) {
+    if (!supported) return Promise.resolve();
+    if (syncTask) {
       syncAgain = true;
-      return;
+      return syncTask;
     }
     const user = accountId();
+    syncTask = syncOnce(user,accountChanged).finally(() => {
+      syncTask = null;
+      const accountSwitched = user !== accountId();
+      if (syncAgain || accountSwitched) {
+        syncAgain = false;
+        void sync(accountSwitched);
+      }
+    });
+    return syncTask;
+  }
+
+  async function syncOnce(user, accountChanged) {
     if (!user || Notification.permission !== 'default') hidePrompt();
     if (!user && !accountChanged) return;
-    syncing = true;
     try {
       const registration = await navigator.serviceWorker.ready;
       let subscription = await registration.pushManager.getSubscription();
@@ -125,13 +133,30 @@
       await scheduleTimer(subscription, user);
     } catch (error) {
       console.warn('Hakuna bildirim kaydı tamamlanamadı', error);
-    } finally {
-      syncing = false;
-      const accountSwitched = user !== accountId();
-      if (syncAgain || accountSwitched) {
-        syncAgain = false;
-        void sync(accountSwitched);
-      }
+    }
+  }
+
+  async function enable() {
+    if (!supported) throw Error('Bildirim için Hakuna’yı ana ekrana ekleyip oradan aç.');
+    const user = accountId();
+    if (!user) throw Error('Önce Hakuna hesabına giriş yap.');
+    if (!navigator.onLine) throw Error('İnternet bağlantısı gerekiyor.');
+    const permission = Notification.permission === 'default'
+      ? await Notification.requestPermission() : Notification.permission;
+    if (permission === 'denied') {
+      localStorage.setItem(dismissedKey, '1');
+      hidePrompt();
+      throw Error('Bildirim iznini cihazının veya tarayıcının ayarlarından aç.');
+    }
+    if (permission !== 'granted') throw Error('Bildirim izni verilmedi.');
+    hidePrompt();
+    await sync();
+    const registration = await navigator.serviceWorker.ready;
+    if (localStorage.getItem(ownerKey) !== user || !(await registration.pushManager.getSubscription())) {
+      await sync();
+    }
+    if (accountId() !== user || localStorage.getItem(ownerKey) !== user || !(await registration.pushManager.getSubscription())) {
+      throw Error('Bildirimler açılamadı. Tekrar dene.');
     }
   }
 
@@ -142,6 +167,6 @@
   });
   window.addEventListener('online', () => void sync());
   window.addEventListener('focus', () => void sync());
-  window.HakunaRoomNotifications = {close};
+  window.HakunaRoomNotifications = {close,enable};
   void sync();
 })();

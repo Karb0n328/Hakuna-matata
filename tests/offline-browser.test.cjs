@@ -9,6 +9,13 @@ try{
  await page.goto(base);await page.waitForSelector('[data-nav=plan]');
  await page.evaluate(async()=>{await navigator.serviceWorker.ready;});
  await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
+ await page.waitForFunction(()=>typeof window.HakunaRoomNotifications?.enable==='function');
+ await page.locator('#sidebarNav [data-nav=settings]').click();
+ await page.evaluate(()=>{window.HakunaRoomNotifications.enable=async()=>{window.__notificationsEnabled=true};});
+ await page.locator('[data-enable-notifications]').click();
+ await page.getByText('Bu cihazda bildirimler açık.',{exact:true}).waitFor();
+ assert(await page.evaluate(()=>window.__notificationsEnabled));
+
  await page.evaluate(async()=>{
   const today=new Date().toLocaleDateString('en-CA'),now=new Date().toISOString();
   function put(dbName,store,key,value){return new Promise((resolve,reject)=>{const req=indexedDB.open(dbName,1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(store))req.result.createObjectStore(store)};req.onsuccess=()=>{const db=req.result,tx=db.transaction(store,'readwrite');tx.objectStore(store).put(value,key);tx.oncomplete=()=>{db.close();resolve()};tx.onerror=()=>reject(tx.error)};req.onerror=()=>reject(req.error)});}
