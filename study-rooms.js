@@ -200,6 +200,7 @@
   function roomMarkup(){
     return '<div class="sr-shell sr-room" data-atmosphere="night">'
       +'<header class="sr-room-header"><button type="button" class="secondary-btn" data-sr-action="back">← Odalar</button>'
+      +'<button type="button" class="secondary-btn sr-room-new" data-sr-action="create-next" aria-label="Yeni oda oluştur">＋ Yeni oda</button>'
       +'<div class="sr-room-heading"><span class="sr-kicker" data-sr-room-mode>SESSİZ ODA</span><h2 data-sr-room-title>Oda açılıyor…</h2>'
       +'<div class="sr-room-sub" data-sr-room-meta></div></div>'
       +'<div class="sr-space-tools"><span class="sx-weather" data-sx-weather>Elazığ · Hava yükleniyor</span>'
@@ -510,6 +511,11 @@
     if(action==='entry-create'||action==='entry-join'){showEntry(action.slice(6));return;}
     if(action==='wardrobe'){void openWardrobe(button);return;}
     if(action==='back'){showLobby();return;}
+    if(action==='create-next'){
+      // Leaving the view never stops active sessions in the current room.
+      // Keep the creator in every room; open the new-room form directly.
+      showLobby();showEntry('create',false);return;
+    }
     if(action==='refresh'){void loadLobby();return;}
     if(action==='login'){window.HakunaAccount?.open?.('login');return;}
     if(action==='delete-room'){
