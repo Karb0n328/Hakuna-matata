@@ -507,7 +507,7 @@
   }
   async function act(action,button){
     if(busy)return;
-    if(bootOwner&&!accountId()&&!['back','open','copy','copy-code'].includes(action))return;
+    if(bootOwner&&!accountId()&&!['back','create-next','open','copy','copy-code'].includes(action))return;
     if(action==='entry-create'||action==='entry-join'){showEntry(action.slice(6));return;}
     if(action==='wardrobe'){void openWardrobe(button);return;}
     if(action==='back'){showLobby();return;}
