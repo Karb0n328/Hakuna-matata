@@ -11,25 +11,25 @@ const fixture=[
   '<main class="main-area"><h1 id="pageTitle">Odalar</h1><section class="ataturk-corner" aria-label="Atatürk Köşesi">Atatürk Köşesi</section><section class="republic-hero">Cumhuriyet</section><section id="view"></section></main>',
   '<script>',
   'window.__batuId='+JSON.stringify(batuId)+';window.__uid="user-1";localStorage.setItem("sb-zyrbbkbwrijnnykbgjvc-auth-token",JSON.stringify({user:{id:window.__uid}}));',
-  'window.__state={room:null,selfStudying:false,seconds:12,other:false};',
+  'window.__state={room:null,rooms:[],nextRoomId:1,studyingByRoom:{},startedByRoom:{},selfStudying:false,seconds:12,other:false};',
   'window.HakunaAccount={',
   'info:()=>({id:window.__uid}),open:()=>{window.__loginOpened=true},',
   'roomListen:()=>()=>{},roomLoadLook:async()=> (window.__uid===window.__batuId?window.__state.batuLook:window.__state.look)||{},roomSaveLook:async look=>{window.__state[window.__uid===window.__batuId?"batuLook":"look"]=look},',
   'roomRpc:async(name,args={})=>{',
   ' const s=window.__state,uid=window.__uid;',
   ' if(!uid)throw Error("Giriş gerekli");',
-  ' if(name==="study_room_overview")return {rooms:s.room?.is_active?[{...s.room,member_count:s.other?2:1,today_seconds:0,total_seconds:0,studying:s.selfStudying}]:[],total_seconds:s.seconds,today_seconds:s.seconds};',
-  ' if(name==="study_room_create_v2"){s.room={id:"room-1",owner_id:"user-1",name:args.p_name,invite_code:"K7MP4X9R",focus_minutes:args.p_focus_minutes,break_minutes:args.p_break_minutes,mode:args.p_mode||"shared",phase:"idle",phase_started_at:null,is_active:true};return s.room.id;}',
-  ' if(name==="study_room_join"){if(args.p_invite_code!==s.room?.invite_code)throw Error("Geçersiz kod");return s.room.id;}',
+  ' if(name==="study_room_overview")return {rooms:s.rooms.filter(r=>r.is_active).map(r=>({...r,member_count:s.other?2:1,today_seconds:0,total_seconds:0,studying:!!s.studyingByRoom[r.id]})),total_seconds:s.seconds,today_seconds:s.seconds};',
+  ' if(name==="study_room_create_v2"){const n=s.nextRoomId++;s.room={id:"room-"+n,owner_id:"user-1",name:args.p_name,invite_code:n===1?"K7MP4X9R":"K7MP4X"+String(n+70).slice(-2),focus_minutes:args.p_focus_minutes,break_minutes:args.p_break_minutes,mode:args.p_mode||"shared",phase:"idle",phase_started_at:null,is_active:true};s.rooms.push(s.room);s.selfStudying=false;s.startedAt=null;return s.room.id;}',
+  ' if(name==="study_room_join"){const found=s.rooms.find(r=>r.invite_code===args.p_invite_code&&r.is_active);if(!found)throw Error("Geçersiz kod");s.room=found;return s.room.id;}',
   ' if(name==="study_room_touch")return true;',
-  ' if(name==="study_room_snapshot"){if(!s.room)throw Error("Oda yok");return {room:{...s.room},members:[{user_id:"user-1",username:"Batu",look:s.look,seconds:s.seconds,today_seconds:s.seconds,studying:s.selfStudying,last_seen_at:new Date().toISOString(),active_started_at:s.startedAt||null,active_end_at:null,task_title:s.task||null},...(s.showBatu?[{user_id:window.__batuId,username:"Batu",look:s.batuLook,studying:true,seconds:40}]:[]),...(s.other?[{user_id:"user-2",username:"<img src=x onerror=alert(1)>",look:{top:"coogi",head:"headphones",face:"hoops",neck:"pendant",hand:"watch"},seconds:1200,today_seconds:1200,studying:!s.away,last_seen_at:new Date(Date.now()-120000).toISOString(),active_end_at:new Date(Date.now()+300000).toISOString()}]:[])],room_total_seconds:s.roomTotal,bloom_started_at:s.bloomStartedAt,server_now:new Date().toISOString()};}',
+  ' if(name==="study_room_snapshot"){const requested=s.rooms.find(r=>r.id===args.p_room_id);if(!requested)throw Error("Oda yok");s.room=requested;s.selfStudying=!!s.studyingByRoom[requested.id];s.startedAt=s.startedByRoom[requested.id]||null;return {room:{...s.room},members:[{user_id:"user-1",username:"Batu",look:s.look,seconds:s.seconds,today_seconds:s.seconds,studying:s.selfStudying,last_seen_at:new Date().toISOString(),active_started_at:s.startedAt||null,active_end_at:null,task_title:s.task||null},...(s.showBatu?[{user_id:window.__batuId,username:"Batu",look:s.batuLook,studying:true,seconds:40}]:[]),...(s.other?[{user_id:"user-2",username:"<img src=x onerror=alert(1)>",look:{top:"coogi",head:"headphones",face:"hoops",neck:"pendant",hand:"watch"},seconds:1200,today_seconds:1200,studying:!s.away,last_seen_at:new Date(Date.now()-120000).toISOString(),active_end_at:new Date(Date.now()+300000).toISOString()}]:[])],room_total_seconds:s.roomTotal,bloom_started_at:s.bloomStartedAt,server_now:new Date().toISOString()};}',
   ' if(name==="study_room_rename"){if(uid!==s.room.owner_id)throw Error("Not owner");s.room.name=args.p_name;return true;}',
   ' if(name==="study_room_configure"){s.room.focus_minutes=args.p_focus_minutes;s.room.break_minutes=args.p_break_minutes;s.room.mode=args.p_mode;return true;}',
   ' if(name==="study_room_set_phase"){s.room.phase=args.p_phase;s.room.phase_started_at=args.p_phase==="idle"?null:new Date(Date.now()+(args.p_phase==="focus"?3100:0)).toISOString();return true;}',
-  ' if(name==="study_room_start"){s.selfStudying=true;s.startedAt=s.startedAt||new Date().toISOString();s.task=args.p_task_title||null;return {started_at:s.startedAt,server_now:new Date().toISOString()};}',
-  ' if(name==="study_room_stop"){s.selfStudying=false;s.startedAt=null;s.seconds+=12;return 12;}',
-  ' if(name==="study_room_close"){s.room.is_active=false;s.selfStudying=false;return true;}',
-  ' if(name==="study_room_leave"){s.room=null;return true;}',
+  ' if(name==="study_room_start"){s.selfStudying=true;s.studyingByRoom[s.room.id]=true;s.startedAt=s.startedByRoom[s.room.id]||new Date().toISOString();s.startedByRoom[s.room.id]=s.startedAt;s.task=args.p_task_title||null;return {started_at:s.startedAt,server_now:new Date().toISOString()};}',
+  ' if(name==="study_room_stop"){s.selfStudying=false;s.studyingByRoom[s.room.id]=false;delete s.startedByRoom[s.room.id];s.startedAt=null;s.seconds+=12;return 12;}',
+  ' if(name==="study_room_close"){s.room.is_active=false;s.selfStudying=false;s.studyingByRoom[s.room.id]=false;delete s.startedByRoom[s.room.id];return true;}',
+  ' if(name==="study_room_leave"){s.rooms=s.rooms.filter(r=>r.id!==s.room?.id);s.room=null;return true;}',
   ' throw Error("Unknown RPC "+name);',
   '}};',
   '</script><script src="/offline-support.js"></script><script src="/room-weather.js"></script><script src="/room-experience.js"></script><script src="/room-wardrobe.js"></script><script src="/study-rooms.js"></script>',
@@ -278,6 +278,41 @@ const server=createServer((req,res)=>{
     await page.waitForFunction(()=>document.querySelector('.sr-room')?.dataset.weather==='unknown');
     assert(['dawn','day','sunset','night'].includes(await page.locator('.sr-room').getAttribute('data-dayphase')));
     assert((await page.locator('[data-sx-weather]').textContent()).includes('alınamıyor'));
+    // A user can create two rooms, run a focus session in both, and switch
+    // between their rooms without cancelling the other room's session.
+    await page.locator('[data-sr-action=start]').click();
+    await page.locator('[data-sr-action=stop]').waitFor();
+    const firstMultiRoom=await page.evaluate(()=>window.__state.room.id);
+    await page.locator('[data-sr-action=create-next]').click();
+    await page.locator('[data-sr-form=create]:visible').waitFor();
+    assert((await page.locator('[data-sr-list]').textContent()).includes('Çevrimdışı hava'));
+    assert((await page.locator('[data-sr-list]').textContent()).includes('Çalışıyorsun'));
+    await page.locator('[data-sr-form=create] [name=name]').fill('İkinci Kütüphane');
+    await page.locator('[data-sr-form=create] button[type=submit]').click();
+    await page.locator('[data-sr-room-title]').getByText('İkinci Kütüphane').waitFor();
+    const secondMultiRoom=await page.evaluate(()=>window.__state.room.id);
+    assert.notEqual(firstMultiRoom,secondMultiRoom,'second room must be independent');
+    await page.locator('[data-sr-action=start]').click();
+    await page.locator('[data-sr-action=stop]').waitFor();
+    assert.deepEqual(await page.evaluate(()=>Object.entries(window.__state.studyingByRoom)
+      .filter(([id,active])=>active).map(([id])=>id).sort()),[firstMultiRoom,secondMultiRoom].sort(),
+      'both independent room sessions must remain active');
+    await page.locator('[data-sr-action=back]').click();
+    await page.locator('[data-sr-action=open]').first().waitFor();
+    assert.equal(await page.locator('[data-sr-action=open]').count(),2,'both rooms are retained in the lobby');
+    await page.locator('[data-sr-action=open]').filter({hasText:'Çevrimdışı hava'}).click();
+    await page.locator('[data-sr-room-title]').getByText('Çevrimdışı hava').waitFor();
+    await page.locator('[data-sr-action=stop]').waitFor();
+    await page.locator('[data-sr-action=stop]').click();
+    assert.equal(await page.evaluate(id=>window.__state.studyingByRoom[id],secondMultiRoom),true,
+      'stopping one room must leave the other running');
+    await page.locator('[data-sr-action=back]').click();
+    await page.locator('[data-sr-action=open]').filter({hasText:'İkinci Kütüphane'}).click();
+    await page.locator('[data-sr-action=stop]').waitFor();
+    await page.locator('[data-sr-action=stop]').click();
+    assert.equal(await page.evaluate(()=>window.__state.rooms.filter(r=>r.is_active).length),2,
+      'two simultaneously joined rooms must remain active');
+
     assert.equal(errors.length,0,'Page errors: '+errors.join(', '));
     console.log('PASS '+label+': room creation, shared clock, timer, roster security, presets, close, responsive layout');
   }finally{await context.close();await browser.close();}
