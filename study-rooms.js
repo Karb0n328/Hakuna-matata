@@ -307,7 +307,7 @@
   }
 
   function showWardrobe(look,owner,ticket){
-    const {catalog,itemsFor,normalize}=window.HakunaRoomWardrobe;
+    const {catalog,itemsFor,normalize,featuredHead}=window.HakunaRoomWardrobe;
     const selected=normalize(look);
     const groups=[
       {label:'Kıyafet',slots:['top']},
@@ -320,10 +320,21 @@
     const choice=slot=>{
       const {label}=catalog[slot];
       const fallback=slot==='skin'||slot==='hair'?'Varsayılan':slot==='top'?'Sade':'Yok';
-      return '<label>'+E(label)+'<select name="'+slot+'"><option value="">'+fallback+'</option>'+
-        itemsFor(slot,owner).map(([key,name])=>
-          '<option value="'+key+'"'+(selected[slot]===key?' selected':'')+'>'+E(name)+'</option>'
-        ).join('')+'</select></label>';
+      const entries=itemsFor(slot,owner);
+      const special=slot==='head'?entries.find(([key])=>key===featuredHead):null;
+      const option=([key,name])=>'<option value="'+E(key)+'"'+(selected[slot]===key?' selected':'')+'>'+E(name)+'</option>';
+      const normal=entries.filter(([key])=>!special||key!==special[0]).map(option).join('');
+      const exclusive=special?'<optgroup label="✦ SANA ÖZEL"><option value="'+E(special[0])+'"'+
+        (selected[slot]===special[0]?' selected':'')+'>♥ '+E(special[1])+'</option></optgroup>':'';
+      const select='<label'+(special?' class="sr-wardrobe-head-label"':'')+'>'+E(label)+
+        '<select name="'+slot+'"><option value="">'+fallback+'</option>'+exclusive+normal+'</select></label>';
+      if(!special)return select;
+      return select+'<button type="button" class="sr-wardrobe-exclusive-card" data-wardrobe-featured-head="'+
+        E(special[0])+'" aria-pressed="'+(selected[slot]===special[0])+'">'+
+        '<span class="sr-wardrobe-exclusive-icon" aria-hidden="true">♡</span>'+
+        '<span class="sr-wardrobe-exclusive-copy"><strong>'+E(special[1])+'</strong>'+
+        '<small>✦ Sana özel · Deneme aksesuarı</small></span>'+
+        '<span class="sr-wardrobe-exclusive-cta">Seç</span></button>';
     };
     const tabs=groups.map(({label},i)=>'<button type="button" data-wardrobe-tab="'+i+'" aria-pressed="'+(i===0)+'">'+label+'</button>').join('');
     const panels=groups.map(({slots},i)=>'<div class="sr-wardrobe-fields" data-wardrobe-panel="'+i+'"'+(i?' hidden':'')+'>'+slots.map(choice).join('')+'</div>').join('');
@@ -337,7 +348,21 @@
     const preview=()=>{dialog.querySelector('.sr-wardrobe-preview').innerHTML=deskMarkup(
       {user_id:owner,look:readLook()},true,true
     );};
-    form.addEventListener('change',preview);
+    const featuredButton=dialog.querySelector('[data-wardrobe-featured-head]');
+    const syncFeatured=()=>{
+      if(!featuredButton)return;
+      const isSelected=form.elements.namedItem('head')?.value===featuredHead;
+      featuredButton.dataset.selected=String(isSelected);
+      featuredButton.setAttribute('aria-pressed',String(isSelected));
+      featuredButton.querySelector('.sr-wardrobe-exclusive-cta').textContent=isSelected?'Seçildi':'Seç';
+    };
+    if(featuredButton)featuredButton.addEventListener('click',()=>{
+      const select=form.elements.namedItem('head');
+      if(!select)return;
+      select.value=featuredHead;
+      select.dispatchEvent(new Event('change',{bubbles:true}));
+    });
+    form.addEventListener('change',()=>{syncFeatured();preview();});
     for(const tab of dialog.querySelectorAll('[data-wardrobe-tab]')){
       tab.addEventListener('click',()=>{
         for(const other of dialog.querySelectorAll('[data-wardrobe-tab]'))other.setAttribute('aria-pressed',String(other===tab));
@@ -362,6 +387,7 @@
     });
     host.append(dialog);
     preview();
+    syncFeatured();
     dialog.showModal();
   }
 
