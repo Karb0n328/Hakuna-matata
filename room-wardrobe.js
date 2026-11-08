@@ -122,7 +122,6 @@
       '<stop stop-color="#f0f1f3"/><stop offset=".35" stop-color="#8f959f"/><stop offset=".56" stop-color="#c7cbd2"/><stop offset="1" stop-color="#555e68"/></linearGradient>' +
       '<linearGradient id="'+spike+'" x1="0%" x2="100%" y1="0%" y2="12%">' +
       '<stop stop-color="#454b56"/><stop offset=".37" stop-color="#f2f3f5"/><stop offset=".62" stop-color="#adb3bf"/><stop offset="1" stop-color="#404650"/></linearGradient></defs>' +
-      '<path d="M3.6 13.4C5.5 7.4 12.1 9.5 19.7 9.1S35.1 7.5 38.5 12.5" fill="none" stroke="#59616b" stroke-width="1.12"/>' +
       '<g fill="url(#'+spike+')" stroke="#3b414a" stroke-width=".36" stroke-linejoin="round">' +
       '<path d="M5.3 12Q5.1 9.4 3 6.7Q6.9 9.3 7.9 12.4ZM11.4 13.2Q12.2 9.8 10.9 4.5Q14.1 8.1 14.4 14.1Z' +
       'M18.4 14.8Q19.5 12.5 19 7.3Q21.4 10.1 21.2 14.4ZM25.8 14Q27.3 10.8 27.1 5.8Q29.7 9.2 28.9 14.1Z' +
