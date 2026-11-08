@@ -32,7 +32,7 @@
       items: {
         crown: 'Dikenli taç',
         [THORN_CROWN]: 'Taşlı diken tacı',
-        [PLUSH_BUNNY]: 'Kalpli peluş tavşan şapkası',
+        [PLUSH_BUNNY]: 'Aybulutu peluş başlık',
         bandana: 'Bağlı bandana',
         bucket: 'Kırmızı bucket şapka',
         fedora: 'Siyah fötr',
@@ -136,48 +136,89 @@
       '<path d="M13.8 14.5h2.6m-1.3-1.25v2.5m16.4-.48h2m-1-1v2" stroke="#fff" stroke-width=".43" stroke-linecap="round"/></g>';
   }
 
-  // Soft plush headpiece: small-scale embroidered stitches, velvet ear linings and
-  // deterministic micro-fibers. Drawn as SVG so every room viewer sees the same item.
+  // Mooncloud: a face-hugging, embroidered plush hood, not a beanie.
+  // The face opening follows the shared 42x67 avatar anchors (eyes at y=25).
+  // Its fiber details are deterministic inline SVG, seen by every room member.
   let plushCount = 0;
   function plushBunnyHat() {
-    const id = 'sr-plush-' + ++plushCount;
-    const body = 'M4.4 16.5C4.8 8.8 10.8 4.2 20.9 4.3C31.4 4.3 37.4 9 37.7 16.5L37 20.6Q21 23.5 5.1 20.7Z';
-    const left = 'M8.1 12.3C5.2 8 1 2.5 4.2-2.2C6.1-5.2 9.3-4.5 11.6-.7Q14.3 4.2 14.5 11.3Z';
-    const right = 'M28.6 12.1Q29.1 3.2 33.1-2.9C35.5-6.2 39.7-3.7 39.4.8Q39.2 7.4 35.2 13.4Z';
-    const cuff = 'M3.9 16.6Q10.1 14.9 20.7 16.3Q30.5 14.7 38.5 16.6L37.9 21.8Q29.5 23.7 21.1 22.5Q12.5 23.4 4.1 21.8Z';
-    return '<g data-accessory="'+PLUSH_BUNNY+'" data-material="embroidered-plush"><defs>' +
-      '<linearGradient id="'+id+'-fur" x1="3" y1="3" x2="35" y2="24" gradientUnits="userSpaceOnUse">' +
-      '<stop stop-color="#fff9ef"/><stop offset=".34" stop-color="#f5e9db"/><stop offset=".71" stop-color="#e6d6c8"/><stop offset="1" stop-color="#b9aaa1"/></linearGradient>' +
-      '<linearGradient id="'+id+'-ear" x1="0" y1="-5" x2="13" y2="16" gradientUnits="userSpaceOnUse">' +
-      '<stop stop-color="#fffdf4"/><stop offset=".48" stop-color="#eee1d6"/><stop offset="1" stop-color="#b8aaa3"/></linearGradient>' +
-      '<linearGradient id="'+id+'-lining" x1="0" y1="0" x2="15" y2="12" gradientUnits="userSpaceOnUse">' +
-      '<stop stop-color="#f5c4c6"/><stop offset=".53" stop-color="#db9d9f"/><stop offset="1" stop-color="#ae7c83"/></linearGradient>' +
-      '<linearGradient id="'+id+'-trim" x1="3" y1="16" x2="37" y2="23" gradientUnits="userSpaceOnUse">' +
-      '<stop stop-color="#fffaf1"/><stop offset=".45" stop-color="#f2e6db"/><stop offset=".8" stop-color="#ddd0c4"/><stop offset="1" stop-color="#c2ada5"/></linearGradient>' +
-      '<pattern id="'+id+'-nap" width="2.4" height="2.4" patternUnits="userSpaceOnUse">' +
-      '<path d="M.3 1.1l.5-.4m1.1 1.5.35-.55" stroke="#9c8f89" stroke-width=".23" stroke-linecap="round" opacity=".56"/>' +
-      '<path d="M1.4.45l.5.18" stroke="#fff" stroke-width=".3" opacity=".8"/>' +
-      '<circle cx=".3" cy="2.1" r=".16" fill="#e6d0c7" opacity=".8"/></pattern></defs>' +
-      '<path d="'+left+'" fill="#766a69" opacity=".25" transform="translate(.45 .65)"/>' +
-      '<path d="'+right+'" fill="#766a69" opacity=".25" transform="translate(.4 .7)"/>' +
-      '<path d="'+left+'" fill="url(#'+id+'-ear)" stroke="#a89a91" stroke-width=".65" stroke-linejoin="round"/>' +
-      '<path d="M8.5 9.2C6.5 5.6 4.1 1.8 6.1-.2Q8-1.9 9.9 2Q11.8 5.8 12.3 10Z" fill="url(#'+id+'-lining)" opacity=".91"/>' +
-      '<path d="'+right+'" fill="url(#'+id+'-ear)" stroke="#a89a91" stroke-width=".65" stroke-linejoin="round"/>' +
-      '<path d="M30.5 10Q31.4 3.1 34.3-.4C36.4-2.7 37.6.1 37 3Q36.2 7.5 34 10.6Z" fill="url(#'+id+'-lining)" opacity=".9"/>' +
-      '<g fill="none" stroke="#fffaf3" stroke-width=".42" stroke-linecap="round" opacity=".82">' +
-      '<path d="M6-1L4.8-2.4M5 2.7l-1.9-.9M8 1.5l1.3-1.2M37.8-1l1.7-1.2M38.9 2l1.4-.5M35.4 0l-.6-2"/></g>' +
-      '<path d="'+body+'" fill="url(#'+id+'-fur)" stroke="#9f9189" stroke-width=".6"/>' +
-      '<path d="'+body+'" fill="url(#'+id+'-nap)" opacity=".58"/>' +
-      '<path d="M8 12.4Q12.5 6.7 21 6.9Q28.7 7 34 12.6" fill="none" stroke="#fffdf6" stroke-width=".78" opacity=".76"/>' +
-      '<path d="M20.9 12C19 9.8 16.7 11.3 17.5 13.3C18.1 14.9 20.9 16.6 20.9 16.6S23.6 14.9 24.3 13.3C25.1 11.3 22.8 9.8 20.9 12Z" fill="#d98291" stroke="#b36b7c" stroke-width=".33"/>' +
-      '<path d="M18 12.4q.6-1.4 1.6-.6m2.3.2q1.1-1 1.7.3" fill="none" stroke="#ffe6e6" stroke-width=".37" stroke-linecap="round"/>' +
-      '<path d="'+cuff+'" fill="#a69c98" opacity=".23" transform="translate(0 .55)"/>' +
-      '<path d="'+cuff+'" fill="url(#'+id+'-trim)" stroke="#b9a79e" stroke-width=".58"/>' +
-      '<path d="'+cuff+'" fill="url(#'+id+'-nap)" opacity=".66"/>' +
-      '<path d="M6 18.2q15 1.9 30 .1" fill="none" stroke="#fffdf5" stroke-width=".65" opacity=".8"/>' +
-      '<path d="M8.3 20.6l.6.23m5 .25.6-.24m5.8.5.65-.21m5.8-.1.55-.28m5.1-.5.58-.35" fill="none" stroke="#fff" stroke-width=".45" stroke-linecap="round" opacity=".86"/>' +
-      '<path d="M8 21.8l-.85 1.3m2.5-1 0 1.15m13-.3.3 1.2m8.7-2.2.8 1.15" fill="none" stroke="#f8efe6" stroke-width=".47" stroke-linecap="round"/>' +
-      '</g>';
+    const p = 'sr-mooncloud-' + ++plushCount;
+    return `<g data-accessory="${PLUSH_BUNNY}" data-material="embroidered-plush" data-fit="face-framing-hood" stroke-linejoin="round">
+      <defs>
+        <linearGradient id="${p}-fur" x1="5" y1="1" x2="39" y2="33" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#fffdf6"/><stop offset=".28" stop-color="#f8eced"/>
+          <stop offset=".6" stop-color="#e7d8e7"/><stop offset="1" stop-color="#b9adbd"/>
+        </linearGradient>
+        <linearGradient id="${p}-ear" x1="1" y1="-6" x2="13" y2="19" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#fffdf6"/><stop offset=".55" stop-color="#ecdeea"/>
+          <stop offset="1" stop-color="#ad9caf"/>
+        </linearGradient>
+        <linearGradient id="${p}-satin" x1="2" y1="0" x2="16" y2="18" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#ffdfdf"/><stop offset=".5" stop-color="#d998b3"/>
+          <stop offset="1" stop-color="#aa7a9e"/>
+        </linearGradient>
+        <linearGradient id="${p}-trim" x1="3" y1="15" x2="39" y2="30" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#c3a8ba"/><stop offset=".4" stop-color="#fff9ef"/>
+          <stop offset=".72" stop-color="#f4e3e9"/><stop offset="1" stop-color="#a98da5"/>
+        </linearGradient>
+        <radialGradient id="${p}-puff" cx=".3" cy=".2" r=".9">
+          <stop stop-color="#fff"/><stop offset=".52" stop-color="#fbf0f6"/>
+          <stop offset="1" stop-color="#dac3d2"/>
+        </radialGradient>
+        <linearGradient id="${p}-charm" x1="0" y1="0" x2="1" y2="1">
+          <stop stop-color="#fff1e7"/><stop offset=".45" stop-color="#f4b5c7"/>
+          <stop offset="1" stop-color="#b76a97"/>
+        </linearGradient>
+        <pattern id="${p}-fuzz" patternUnits="userSpaceOnUse" width="2.4" height="2.2">
+          <path d="M.3.2l.52.36m1.05.7l-.38.42m-.5-.5l-.25.18" stroke="#b39daf" stroke-width=".22" opacity=".58" stroke-linecap="round"/>
+          <path d="M1.05.2l-.22.28" stroke="#fff" stroke-width=".28" opacity=".85"/>
+        </pattern>
+      </defs>
+      <!-- two different ear silhouettes, with stitched velvet linings -->
+      <path d="M12.5 8.3Q7.2 2.5 3.3 3.3C-.6 4.2-1.5 10.1 2.2 15.3Q4.3 18.5 9.1 17.2L14.6 12.4Z"
+        fill="url(#${p}-ear)" stroke="#9d8fa4" stroke-width=".85"/>
+      <path d="M9.4 10Q5.1 5.2 3.8 7.1Q2.7 9.5 5.5 13.4Q8.3 15.8 11.9 12.3Z"
+        fill="url(#${p}-satin)" stroke="#c598ac" stroke-width=".34"/>
+      <path d="M2.7 9Q3.3 13.1 7.2 14.9M4.8 5.4l-.9 1.3"
+        stroke="#fff6f9" opacity=".65" fill="none" stroke-width=".65"/>
+      <path d="M29.2 10.2Q29.4 3.2 33.4-3.1Q36.7-7.7 40.3-4.8Q43.4-1.3 40.4 2.6L37 7.3L35.6 13.2Z"
+        fill="url(#${p}-ear)" stroke="#9d8fa4" stroke-width=".85"/>
+      <path d="M31.9 9.5Q32.2 2.5 35.8-3.5Q38-5.1 39-2.9Q40.1-1.2 38 1.4L35.4 6.1L34.2 10.6Z"
+        fill="url(#${p}-satin)" stroke="#b686a5" stroke-width=".37"/>
+      <path d="M37.2-3.8q2.5-.7 3.2.9m-5.5 1.1q-2 2.8-2.7 6.6"
+        stroke="#fff6fa" opacity=".8" stroke-width=".55" fill="none"/>
+      <!-- the curved hood surrounds the actual face; no flat cuff across it -->
+      <path d="M6.4 32.2C2.2 31.6 1.4 26.1 2.5 19.2C2.1 9.9 10.1 2 20.7 2.2C32.5 1.5 40.5 9.4 40.3 18.8C41.5 25.8 39.9 30.8 36.1 32.1Q32.6 31.2 33.6 27.5L34.2 19.1Q30.1 13.7 21.1 13.8Q12.3 13.8 8.5 19.2L9.5 27.4Q10.6 31.6 6.4 32.2Z"
+        fill="url(#${p}-fur)" stroke="#aa99ae" stroke-width=".85"/>
+      <path d="M6.4 32.2C2.2 31.6 1.4 26.1 2.5 19.2C2.1 9.9 10.1 2 20.7 2.2C32.5 1.5 40.5 9.4 40.3 18.8C41.5 25.8 39.9 30.8 36.1 32.1Q32.6 31.2 33.6 27.5L34.2 19.1Q30.1 13.7 21.1 13.8Q12.3 13.8 8.5 19.2L9.5 27.4Q10.6 31.6 6.4 32.2Z"
+        fill="url(#${p}-fuzz)" opacity=".67"/>
+      <path d="M7.6 19.4Q12.2 13.9 21.1 14.3Q29.7 14 34.3 19.4"
+        fill="none" stroke="#a68c9e" stroke-width="4.5" stroke-linecap="round"/>
+      <path d="M7.6 18.6Q12.2 13.2 21.1 13.6Q29.7 13.4 34.3 18.6"
+        fill="none" stroke="url(#${p}-trim)" stroke-width="4" stroke-linecap="round"/>
+      <path d="M8 17.5Q13.4 12.9 21 13.4Q29.7 13.2 34 17.4"
+        fill="none" stroke="#fffefd" stroke-width=".8" stroke-linecap="round" opacity=".85"/>
+      <ellipse cx="6.3" cy="25.4" rx="4.1" ry="6.2"
+        fill="url(#${p}-puff)" stroke="#beabba" stroke-width=".65" transform="rotate(-13 6.3 25.4)"/>
+      <ellipse cx="36.6" cy="25.4" rx="4.1" ry="6.2"
+        fill="url(#${p}-puff)" stroke="#beabba" stroke-width=".65" transform="rotate(12 36.6 25.4)"/>
+      <path d="M4 23.2q-.8 4.4 1.8 6.7M38.4 22.7q1 4.5-1.3 6.9"
+        fill="none" stroke="#fff" stroke-width=".67" opacity=".8" stroke-linecap="round"/>
+      <!-- embroidered moon and a tiny heart charm; gift theme is subtle -->
+      <path d="M23.5 5.4C19.1 5.2 17.1 9.8 20 12.3C21.4 13.7 23.1 13.5 24.5 12.6C21.4 12.5 19.7 8.9 23.5 5.4Z"
+        fill="#d79eb8" stroke="#aa7d98" stroke-width=".38"/>
+      <path d="M19 8.1q-.1 2.7 2.6 3.7" stroke="#fff2f8" stroke-width=".5" fill="none" stroke-linecap="round"/>
+      <path d="M14.8 8.9l.45 1.3 1.27.4-1.27.45-.45 1.4-.43-1.4-1.27-.45 1.27-.4Z" fill="#fffbf6" opacity=".9"/>
+      <circle cx="27.9" cy="9.8" r=".68" fill="#f5d2dd" opacity=".9"/>
+      <path d="M38.8 28.8q1.7 3.2-.2 5" stroke="#a99aaa" stroke-width=".95" fill="none" stroke-linecap="round"/>
+      <circle cx="38.4" cy="32.9" r=".9" fill="none" stroke="#cfb7c6" stroke-width=".72"/>
+      <path d="M38.5 34.3 C36.7 32.1 34.5 34.2 38.5 38.1 C42.1 34.2 40.3 32.2 38.5 34.3 Z"
+        fill="url(#${p}-charm)" stroke="#b27991" stroke-width=".52"/>
+      <path d="M37.6 35.1q.5-1 1.1-.3" stroke="#fff" opacity=".85" stroke-width=".45" fill="none"/>
+      <!-- micro-fur caught by light -->
+      <g stroke="#fff9fb" opacity=".87" stroke-width=".56" stroke-linecap="round" fill="none">
+        <path d="M6.5 10.7l-1.3-.9M10.4 6.6l-.6-1.5M15 4.6l-.1-1.3M25.9 3.8l.9-1.3M35.5 8.4l1.4-.7M39.1 18.1l1.1-.2M2.7 21.8l-1.3.2M6.1 29.4l-.7 1.6M35.5 30.7l1.2 1"/>
+      </g>
+    </g>`;
   }
 
   function itemsFor(slot, userId) {
@@ -203,7 +244,7 @@
   function character(look) {
     const {top, head, face, neck, hand, skin, hair} = normalize(look);
     const variables = [top && '--sr-shirt:'+tops[top], skin && '--sr-skin:'+skins[skin]].filter(Boolean).join(';');
-    return '<div class="sr-avatar" style="'+variables+'"'+(hair?' data-hair="'+hair+'"':'')+'>'
+    return '<div class="sr-avatar" style="'+variables+'"'+(hair?' data-hair="'+hair+'"':'')+(head===PLUSH_BUNNY?' data-head="'+PLUSH_BUNNY+'"':'')+'>'
       +'<div class="sr-avatar-hair"></div><div class="sr-avatar-head"><i></i><b></b></div>'
       +'<div class="sr-avatar-body">'+svg('sr-clothes-art','0 0 42 36',shirtArt[top])+'</div>'
       +'<div class="sr-avatar-arm">'+(hand?'<span data-accessory="'+hand+'" class="'+(hand==='glove'?'sr-jeweled-glove':'sr-metal-watch')+'"></span>':'')+'</div>'
