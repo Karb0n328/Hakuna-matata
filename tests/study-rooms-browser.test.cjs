@@ -2,6 +2,7 @@ const assert=require('node:assert/strict');
 const {createServer}=require('node:http');
 const fs=require('node:fs');
 const {chromium,webkit}=require('playwright');
+const batuId='8f2cf782-f4f2-4c85-a9e9-a560c623e6d5';
 const files={};
 for(const name of ['offline-support.js','styles.css','study-rooms.css','study-rooms-immersive.css','room-experience.css','room-experience.js','room-weather.js','room-wardrobe.js','study-rooms.js'])files[name]=fs.readFileSync(require('node:path').join(__dirname,'..',name),'utf8');
 const fixture=[
@@ -9,11 +10,11 @@ const fixture=[
   '<link href="/styles.css" rel="stylesheet"><link href="/study-rooms.css" rel="stylesheet"><link href="/study-rooms-immersive.css" rel="stylesheet"><link href="/room-experience.css" rel="stylesheet">',
   '<main class="main-area"><h1 id="pageTitle">Odalar</h1><section class="ataturk-corner" aria-label="Atatürk Köşesi">Atatürk Köşesi</section><section class="republic-hero">Cumhuriyet</section><section id="view"></section></main>',
   '<script>',
-  'window.__uid="user-1";localStorage.setItem("sb-zyrbbkbwrijnnykbgjvc-auth-token",JSON.stringify({user:{id:window.__uid}}));',
+  'window.__batuId='+JSON.stringify(batuId)+';window.__uid="user-1";localStorage.setItem("sb-zyrbbkbwrijnnykbgjvc-auth-token",JSON.stringify({user:{id:window.__uid}}));',
   'window.__state={room:null,selfStudying:false,seconds:12,other:false};',
   'window.HakunaAccount={',
   'info:()=>({id:window.__uid}),open:()=>{window.__loginOpened=true},',
-  'roomListen:()=>()=>{},roomLoadLook:async()=>window.__state.look||{},roomSaveLook:async look=>{window.__state.look=look},',
+  'roomListen:()=>()=>{},roomLoadLook:async()=> (window.__uid===window.__batuId?window.__state.batuLook:window.__state.look)||{},roomSaveLook:async look=>{window.__state[window.__uid===window.__batuId?"batuLook":"look"]=look},',
   'roomRpc:async(name,args={})=>{',
   ' const s=window.__state,uid=window.__uid;',
   ' if(!uid)throw Error("Giriş gerekli");',
@@ -21,7 +22,7 @@ const fixture=[
   ' if(name==="study_room_create_v2"){s.room={id:"room-1",owner_id:"user-1",name:args.p_name,invite_code:"K7MP4X9R",focus_minutes:args.p_focus_minutes,break_minutes:args.p_break_minutes,mode:args.p_mode||"shared",phase:"idle",phase_started_at:null,is_active:true};return s.room.id;}',
   ' if(name==="study_room_join"){if(args.p_invite_code!==s.room?.invite_code)throw Error("Geçersiz kod");return s.room.id;}',
   ' if(name==="study_room_touch")return true;',
-  ' if(name==="study_room_snapshot"){if(!s.room)throw Error("Oda yok");return {room:{...s.room},members:[{user_id:"user-1",username:"Batu",look:s.look,seconds:s.seconds,today_seconds:s.seconds,studying:s.selfStudying,last_seen_at:new Date().toISOString(),active_started_at:s.startedAt||null,active_end_at:null,task_title:s.task||null},...(s.other?[{user_id:"user-2",username:"<img src=x onerror=alert(1)>",look:{top:"coogi",head:"headphones",face:"hoops",neck:"pendant",hand:"watch"},seconds:1200,today_seconds:1200,studying:!s.away,last_seen_at:new Date(Date.now()-120000).toISOString(),active_end_at:new Date(Date.now()+300000).toISOString()}]:[])],room_total_seconds:s.roomTotal,bloom_started_at:s.bloomStartedAt,server_now:new Date().toISOString()};}',
+  ' if(name==="study_room_snapshot"){if(!s.room)throw Error("Oda yok");return {room:{...s.room},members:[{user_id:"user-1",username:"Batu",look:s.look,seconds:s.seconds,today_seconds:s.seconds,studying:s.selfStudying,last_seen_at:new Date().toISOString(),active_started_at:s.startedAt||null,active_end_at:null,task_title:s.task||null},...(s.showBatu?[{user_id:window.__batuId,username:"Batu",look:s.batuLook,studying:true,seconds:40}]:[]),...(s.other?[{user_id:"user-2",username:"<img src=x onerror=alert(1)>",look:{top:"coogi",head:"headphones",face:"hoops",neck:"pendant",hand:"watch"},seconds:1200,today_seconds:1200,studying:!s.away,last_seen_at:new Date(Date.now()-120000).toISOString(),active_end_at:new Date(Date.now()+300000).toISOString()}]:[])],room_total_seconds:s.roomTotal,bloom_started_at:s.bloomStartedAt,server_now:new Date().toISOString()};}',
   ' if(name==="study_room_rename"){if(uid!==s.room.owner_id)throw Error("Not owner");s.room.name=args.p_name;return true;}',
   ' if(name==="study_room_configure"){s.room.focus_minutes=args.p_focus_minutes;s.room.break_minutes=args.p_break_minutes;s.room.mode=args.p_mode;return true;}',
   ' if(name==="study_room_set_phase"){s.room.phase=args.p_phase;s.room.phase_started_at=args.p_phase==="idle"?null:new Date(Date.now()+(args.p_phase==="focus"?3100:0)).toISOString();return true;}',
@@ -67,6 +68,21 @@ const server=createServer((req,res)=>{
     await page.locator('[data-sr-action=wardrobe]').click();
     const wardrobe=page.locator('.sr-wardrobe');
     await wardrobe.waitFor();
+    assert.equal(await wardrobe.locator('[name=head] option[value=batu_thorn_crown]').count(),0);
+    await wardrobe.getByRole('button',{name:'Vazgeç'}).click();
+    await wardrobe.waitFor({state:'detached'});
+    await page.evaluate(()=>{window.__uid=window.__batuId;window.dispatchEvent(new Event('hakuna-account-changed'));});
+    await page.locator('[data-sr-action=wardrobe]').click();
+    await wardrobe.locator('[name=top]').selectOption('palm');
+    await wardrobe.getByRole('button',{name:'Aksesuar'}).click();
+    await wardrobe.locator('[name=head]').selectOption('batu_thorn_crown');
+    const crown=wardrobe.locator('[data-accessory=batu_thorn_crown]');
+    await crown.waitFor();
+    assert.equal(await crown.locator('linearGradient').count(),2);
+    await wardrobe.getByRole('button',{name:'Kaydet'}).click();
+    await wardrobe.waitFor({state:'detached'});
+    await page.evaluate(()=>{window.__uid='user-1';window.dispatchEvent(new Event('hakuna-account-changed'));});
+    await page.locator('[data-sr-action=wardrobe]').click();
     await wardrobe.locator('[name=top]').selectOption('velour');
     await wardrobe.getByRole('button',{name:'Aksesuar'}).click();
     await wardrobe.locator('[name=head]').selectOption('headphones');
@@ -91,6 +107,14 @@ const server=createServer((req,res)=>{
     assert.equal(await page.locator('[data-sr-invite]').textContent(),'K7MP-4X9R');
     for(const name of accessories)assert.equal(await page.locator('.sr-roster [data-accessory='+name+']').count(),1);
     assert.equal(await page.locator('[data-sr-action=wardrobe]').count(),0);
+    await page.evaluate(()=>{window.__state.showBatu=true;window.dispatchEvent(new Event('online'));});
+    const batuDesk=page.locator('[data-sr-user="'+batuId+'"] .sr-desk-scene');
+    await batuDesk.locator('[data-accessory=batu_thorn_crown]').waitFor();
+    assert.equal(await page.evaluate(()=>window.__uid),'user-1');
+    await batuDesk.screenshot({path:'test-results/thorn-crown-'+width+'.png'});
+    await page.evaluate(()=>{window.__state.showBatu=false;window.dispatchEvent(new Event('online'));});
+    await batuDesk.waitFor({state:'detached'});
+
     const chair=page.locator('[data-sr-user="user-1"] [data-chair-level]');
     assert.equal(await chair.getAttribute('data-chair-level'),'0');
     const initialHeight=(await chair.boundingBox()).height;

@@ -307,7 +307,7 @@
   }
 
   function showWardrobe(look,owner,ticket){
-    const {catalog,normalize}=window.HakunaRoomWardrobe;
+    const {catalog,itemsFor,normalize}=window.HakunaRoomWardrobe;
     const selected=normalize(look);
     const groups=[
       {label:'Kıyafet',slots:['top']},
@@ -318,10 +318,10 @@
     dialog.className='sr-wardrobe';
     dialog.setAttribute('aria-label','Gardırop');
     const choice=slot=>{
-      const {label,items}=catalog[slot];
+      const {label}=catalog[slot];
       const fallback=slot==='skin'||slot==='hair'?'Varsayılan':slot==='top'?'Sade':'Yok';
       return '<label>'+E(label)+'<select name="'+slot+'"><option value="">'+fallback+'</option>'+
-        Object.entries(items).map(([key,name])=>
+        itemsFor(slot,owner).map(([key,name])=>
           '<option value="'+key+'"'+(selected[slot]===key?' selected':'')+'>'+E(name)+'</option>'
         ).join('')+'</select></label>';
     };

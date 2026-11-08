@@ -2,6 +2,9 @@
 (() => {
   'use strict';
 
+  const BATU_USER_ID = '8f2cf782-f4f2-4c85-a9e9-a560c623e6d5';
+  const THORN_CROWN = 'batu_thorn_crown';
+
   const catalog = {
     top: {
       label: 'Kıyafet',
@@ -25,6 +28,7 @@
       label: 'Baş',
       items: {
         crown: 'Dikenli taç',
+        [THORN_CROWN]: 'Taşlı diken tacı',
         bandana: 'Bağlı bandana',
         bucket: 'Kırmızı bucket şapka',
         fedora: 'Siyah fötr',
@@ -98,6 +102,41 @@
     rope: '<path d="M10 39q11 19 22 0" fill="none" stroke="#92663b" stroke-width="3.5"/><path d="M10 39q11 19 22 0" fill="none" stroke="#f7d47e" stroke-width="2.5" stroke-dasharray="1.4 1"/>'
   };
 
+  // The two pavé bands cross over the forehead at the avatar's own scale.
+  let crownCount = 0;
+  function thornCrown() {
+    const prefix = 'sr-thorns-' + ++crownCount;
+    const metal = prefix + '-metal', spike = prefix + '-spike';
+    const ribbon = (path, width) =>
+      '<g fill="none" stroke-linecap="round">' +
+      '<path d="'+path+'" stroke="#333741" stroke-width="'+(width+.75)+'"/>' +
+      '<path d="'+path+'" stroke="url(#'+metal+')" stroke-width="'+width+'"/>' +
+      '<path d="'+path+'" stroke="#f5f6fa" stroke-width=".52" stroke-dasharray=".1 .96" opacity=".94"/>' +
+      '<path d="'+path+'" transform="translate(0 .65)" stroke="#212832" stroke-width=".46" stroke-dasharray=".08 1.19" opacity=".72"/>' +
+      '<path d="'+path+'" transform="translate(0 -.48)" stroke="#fff" stroke-width=".37" stroke-dasharray=".1 1.34" opacity=".79"/></g>';
+
+    const upper = 'M3.6 13.8Q4.5 11 8 11.8C15.2 12.7 18 19.8 25.5 17.3C30.1 15.8 33.6 11.9 38.4 12.3';
+    const lower = 'M3.8 13.9C8.6 16 12.2 16.8 17.6 14.8C24.2 12.2 27.3 12.7 31.9 15.2Q36.1 17.2 38.7 12.5';
+    return '<g data-accessory="'+THORN_CROWN+'"><defs>' +
+      '<linearGradient id="'+metal+'" x1="0" y1="11" x2="0" y2="19" gradientUnits="userSpaceOnUse">' +
+      '<stop stop-color="#f0f1f3"/><stop offset=".35" stop-color="#8f959f"/><stop offset=".56" stop-color="#c7cbd2"/><stop offset="1" stop-color="#555e68"/></linearGradient>' +
+      '<linearGradient id="'+spike+'" x1="0%" x2="100%" y1="0%" y2="12%">' +
+      '<stop stop-color="#454b56"/><stop offset=".37" stop-color="#f2f3f5"/><stop offset=".62" stop-color="#adb3bf"/><stop offset="1" stop-color="#404650"/></linearGradient></defs>' +
+      '<path d="M3.6 13.4C5.5 7.4 12.1 9.5 19.7 9.1S35.1 7.5 38.5 12.5" fill="none" stroke="#59616b" stroke-width="1.12"/>' +
+      '<g fill="url(#'+spike+')" stroke="#3b414a" stroke-width=".36" stroke-linejoin="round">' +
+      '<path d="M5.3 12Q5.1 9.4 3 6.7Q6.9 9.3 7.9 12.4ZM11.4 13.2Q12.2 9.8 10.9 4.5Q14.1 8.1 14.4 14.1Z' +
+      'M18.4 14.8Q19.5 12.5 19 7.3Q21.4 10.1 21.2 14.4ZM25.8 14Q27.3 10.8 27.1 5.8Q29.7 9.2 28.9 14.1Z' +
+      'M33.2 13.5Q35.5 10.6 36.2 7.1Q36.8 10.3 35.6 14.3ZM37.1 13.1Q39.1 11 40.1 8.7Q40.4 11.6 39.1 13.6Z' +
+      'M7.2 14.5Q7.5 17.2 6.1 20.1Q9.4 18.2 9.8 15.4ZM15.2 15.8Q15.3 18.3 13.8 21.3Q17.1 19.4 17.9 16.2Z' +
+      'M22.4 17.3Q23.1 19.6 25.4 22Q24.8 19.4 25.1 17.4ZM30.7 15.2Q32 18 34.2 19.9Q33.5 17.1 33.4 15.5Z"/></g>' +
+      ribbon(lower,2.35) + ribbon(upper,2.55) +
+      '<path d="M13.8 14.5h2.6m-1.3-1.25v2.5m16.4-.48h2m-1-1v2" stroke="#fff" stroke-width=".43" stroke-linecap="round"/></g>';
+  }
+
+  function itemsFor(slot, userId) {
+    return Object.entries(catalog[slot].items).filter(([key])=>key!==THORN_CROWN||userId===BATU_USER_ID);
+  }
+
   function normalize(look) {
     const result = {};
     for (const [slot, {items}] of Object.entries(catalog)) {
@@ -121,9 +160,9 @@
       +'<div class="sr-avatar-hair"></div><div class="sr-avatar-head"><i></i><b></b></div>'
       +'<div class="sr-avatar-body">'+svg('sr-clothes-art','0 0 42 36',shirtArt[top])+'</div>'
       +'<div class="sr-avatar-arm">'+(hand?'<span data-accessory="'+hand+'" class="'+(hand==='glove'?'sr-jeweled-glove':'sr-metal-watch')+'"></span>':'')+'</div>'
-      +svg('sr-accessory-art','0 0 42 67',accessory(head,headArt)+accessory(face,faceArt)+accessory(neck,neckArt))
+      +svg('sr-accessory-art','0 0 42 67',(head===THORN_CROWN?thornCrown():accessory(head,headArt))+accessory(face,faceArt)+accessory(neck,neckArt))
       +'</div>';
   }
 
-  window.HakunaRoomWardrobe = {catalog, normalize, character};
+  window.HakunaRoomWardrobe = {catalog, itemsFor, normalize, character};
 })();
