@@ -77,3 +77,23 @@ assert.equal(env.dateKey(Date.parse('2026-11-06T21:05:00Z')),'2026-11-07');
 const summer=Date.parse('2026-06-21T09:00:00Z'),winter=Date.parse('2026-12-21T09:00:00Z');
 assert(env.solar(summer,false)-env.solar(summer,true)>env.solar(winter,false)-env.solar(winter,true));
 console.log('PASS shared plant, Istanbul day boundaries, solar phases and weather codes');
+
+
+// The gift is an exclusive wardrobe choice, but its worn appearance is public
+// to room members regardless of who is looking at the avatar.
+vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname,'..','room-wardrobe.js'),'utf8'),{window:win});
+const wardrobe=win.HakunaRoomWardrobe;
+const gift=wardrobe.featuredHead;
+const batuId='8f2cf782-f4f2-4c85-a9e9-a560c623e6d5';
+assert.equal(gift,'batu_plush_heart_bunny');
+assert(wardrobe.itemsFor('head',batuId).some(([key])=>key===gift),'gift should be offered to Batu');
+assert(!wardrobe.itemsFor('head','another-room-member').some(([key])=>key===gift),'other accounts must not be offered the preview item');
+assert(!wardrobe.itemsFor('head','another-room-member').some(([key])=>key==='batu_thorn_crown'),'existing exclusive crown must stay private');
+const visibleToEveryone=wardrobe.character({head:gift,top:'velour',hair:'braids'});
+assert.match(visibleToEveryone,/data-accessory="batu_plush_heart_bunny"/);
+assert.match(visibleToEveryone,/data-material="embroidered-plush"/);
+assert.match(visibleToEveryone,/linearGradient/);
+assert.doesNotMatch(visibleToEveryone,/<img|\.png|data:image/i,'gift must be embedded vector material rather than pasted PNG');
+assert.match(wardrobe.character({head:'batu_thorn_crown'}),/data-accessory="batu_thorn_crown"/);
+assert.match(src,/optgroup label="✦ SANA ÖZEL"/,'special item should be differentiated inside the native chooser');
+console.log('PASS exclusive plush gift availability, remote rendering and crown compatibility');
