@@ -3,10 +3,11 @@
   'use strict';
 
   const BATU_USER_ID = '8f2cf782-f4f2-4c85-a9e9-a560c623e6d5';
+  const ESILA_USER_ID = '6c5b22a1-a671-4508-9f20-812a7139e785';
   const THORN_CROWN = 'batu_thorn_crown';
-  // Preview-only gift: move this owner ID only after the design is approved.
+  // Mooncloud is a gift for Esila; only its owner can select it, but all room members can see it.
   const PLUSH_BUNNY = 'batu_plush_heart_bunny';
-  const exclusiveOwners = {[THORN_CROWN]: BATU_USER_ID, [PLUSH_BUNNY]: BATU_USER_ID};
+  const exclusiveOwners = {[THORN_CROWN]: BATU_USER_ID, [PLUSH_BUNNY]: ESILA_USER_ID};
 
   const catalog = {
     top: {
@@ -203,10 +204,11 @@
         fill="url(#${p}-puff)" stroke="#beabba" stroke-width=".65" transform="rotate(12 36.6 25.4)"/>
       <path d="M4 23.2q-.8 4.4 1.8 6.7M38.4 22.7q1 4.5-1.3 6.9"
         fill="none" stroke="#fff" stroke-width=".67" opacity=".8" stroke-linecap="round"/>
-      <!-- embroidered moon and a tiny heart charm; gift theme is subtle -->
-      <path d="M23.5 5.4C19.1 5.2 17.1 9.8 20 12.3C21.4 13.7 23.1 13.5 24.5 12.6C21.4 12.5 19.7 8.9 23.5 5.4Z"
-        fill="#d79eb8" stroke="#aa7d98" stroke-width=".38"/>
-      <path d="M19 8.1q-.1 2.7 2.6 3.7" stroke="#fff2f8" stroke-width=".5" fill="none" stroke-linecap="round"/>
+      <!-- tiny red embroidered heart and a dangling heart charm; gift theme is subtle -->
+      <path d="M21.2 8.2C20.2 6.9 18.2 7.2 18.3 9C18.4 10.2 20 11.6 21.2 12.5C22.3 11.6 24 10.2 24.1 9C24.2 7.2 22.2 6.9 21.2 8.2Z"
+        fill="#da3049" stroke="#8f2036" stroke-width=".44"/>
+      <path d="M19.4 8.5q.5-.85 1.2-.2" stroke="#ffb7bf" stroke-width=".55" fill="none" stroke-linecap="round" opacity=".94"/>
+      <path d="M22 11.8q1.5-1.2 1.5-2.5" stroke="#a51f39" stroke-width=".25" fill="none" stroke-linecap="round" opacity=".85"/>
       <path d="M14.8 8.9l.45 1.3 1.27.4-1.27.45-.45 1.4-.43-1.4-1.27-.45 1.27-.4Z" fill="#fffbf6" opacity=".9"/>
       <circle cx="27.9" cy="9.8" r=".68" fill="#f5d2dd" opacity=".9"/>
       <path d="M38.8 28.8q1.7 3.2-.2 5" stroke="#a99aaa" stroke-width=".95" fill="none" stroke-linecap="round"/>
