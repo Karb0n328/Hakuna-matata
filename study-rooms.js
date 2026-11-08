@@ -324,16 +324,14 @@
       const special=slot==='head'?entries.find(([key])=>key===featuredHead):null;
       const option=([key,name])=>'<option value="'+E(key)+'"'+(selected[slot]===key?' selected':'')+'>'+E(name)+'</option>';
       const normal=entries.filter(([key])=>!special||key!==special[0]).map(option).join('');
-      const exclusive=special?'<optgroup label="✦ SANA ÖZEL"><option value="'+E(special[0])+'"'+
-        (selected[slot]===special[0]?' selected':'')+'>♥ '+E(special[1])+'</option></optgroup>':'';
+      const exclusive=special?option(special):'';
       const select='<label'+(special?' class="sr-wardrobe-head-label"':'')+'>'+E(label)+
         '<select name="'+slot+'"><option value="">'+fallback+'</option>'+exclusive+normal+'</select></label>';
       if(!special)return select;
       return select+'<button type="button" class="sr-wardrobe-exclusive-card" data-wardrobe-featured-head="'+
         E(special[0])+'" aria-pressed="'+(selected[slot]===special[0])+'">'+
         '<span class="sr-wardrobe-exclusive-icon" aria-hidden="true">♡</span>'+
-        '<span class="sr-wardrobe-exclusive-copy"><strong>'+E(special[1])+'</strong>'+
-        '<small>✦ Sana özel · Deneme aksesuarı</small></span>'+
+        '<span class="sr-wardrobe-exclusive-copy"><strong>'+E(special[1])+'</strong></span>'+
         '<span class="sr-wardrobe-exclusive-cta">Seç</span></button>';
     };
     const tabs=groups.map(({label},i)=>'<button type="button" data-wardrobe-tab="'+i+'" aria-pressed="'+(i===0)+'">'+label+'</button>').join('');
