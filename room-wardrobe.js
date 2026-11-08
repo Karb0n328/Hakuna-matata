@@ -4,6 +4,9 @@
 
   const BATU_USER_ID = '8f2cf782-f4f2-4c85-a9e9-a560c623e6d5';
   const THORN_CROWN = 'batu_thorn_crown';
+  // Preview-only gift: move this owner ID only after the design is approved.
+  const PLUSH_BUNNY = 'batu_plush_heart_bunny';
+  const exclusiveOwners = {[THORN_CROWN]: BATU_USER_ID, [PLUSH_BUNNY]: BATU_USER_ID};
 
   const catalog = {
     top: {
@@ -29,6 +32,7 @@
       items: {
         crown: 'Dikenli taç',
         [THORN_CROWN]: 'Taşlı diken tacı',
+        [PLUSH_BUNNY]: 'Kalpli peluş tavşan şapkası',
         bandana: 'Bağlı bandana',
         bucket: 'Kırmızı bucket şapka',
         fedora: 'Siyah fötr',
@@ -132,8 +136,52 @@
       '<path d="M13.8 14.5h2.6m-1.3-1.25v2.5m16.4-.48h2m-1-1v2" stroke="#fff" stroke-width=".43" stroke-linecap="round"/></g>';
   }
 
+  // Soft plush headpiece: small-scale embroidered stitches, velvet ear linings and
+  // deterministic micro-fibers. Drawn as SVG so every room viewer sees the same item.
+  let plushCount = 0;
+  function plushBunnyHat() {
+    const id = 'sr-plush-' + ++plushCount;
+    const body = 'M4.4 16.5C4.8 8.8 10.8 4.2 20.9 4.3C31.4 4.3 37.4 9 37.7 16.5L37 20.6Q21 23.5 5.1 20.7Z';
+    const left = 'M8.1 12.3C5.2 8 1 2.5 4.2-2.2C6.1-5.2 9.3-4.5 11.6-.7Q14.3 4.2 14.5 11.3Z';
+    const right = 'M28.6 12.1Q29.1 3.2 33.1-2.9C35.5-6.2 39.7-3.7 39.4.8Q39.2 7.4 35.2 13.4Z';
+    const cuff = 'M3.9 16.6Q10.1 14.9 20.7 16.3Q30.5 14.7 38.5 16.6L37.9 21.8Q29.5 23.7 21.1 22.5Q12.5 23.4 4.1 21.8Z';
+    return '<g data-accessory="'+PLUSH_BUNNY+'" data-material="embroidered-plush"><defs>' +
+      '<linearGradient id="'+id+'-fur" x1="3" y1="3" x2="35" y2="24" gradientUnits="userSpaceOnUse">' +
+      '<stop stop-color="#fff9ef"/><stop offset=".34" stop-color="#f5e9db"/><stop offset=".71" stop-color="#e6d6c8"/><stop offset="1" stop-color="#b9aaa1"/></linearGradient>' +
+      '<linearGradient id="'+id+'-ear" x1="0" y1="-5" x2="13" y2="16" gradientUnits="userSpaceOnUse">' +
+      '<stop stop-color="#fffdf4"/><stop offset=".48" stop-color="#eee1d6"/><stop offset="1" stop-color="#b8aaa3"/></linearGradient>' +
+      '<linearGradient id="'+id+'-lining" x1="0" y1="0" x2="15" y2="12" gradientUnits="userSpaceOnUse">' +
+      '<stop stop-color="#f5c4c6"/><stop offset=".53" stop-color="#db9d9f"/><stop offset="1" stop-color="#ae7c83"/></linearGradient>' +
+      '<linearGradient id="'+id+'-trim" x1="3" y1="16" x2="37" y2="23" gradientUnits="userSpaceOnUse">' +
+      '<stop stop-color="#fffaf1"/><stop offset=".45" stop-color="#f2e6db"/><stop offset=".8" stop-color="#ddd0c4"/><stop offset="1" stop-color="#c2ada5"/></linearGradient>' +
+      '<pattern id="'+id+'-nap" width="2.4" height="2.4" patternUnits="userSpaceOnUse">' +
+      '<path d="M.3 1.1l.5-.4m1.1 1.5.35-.55" stroke="#9c8f89" stroke-width=".23" stroke-linecap="round" opacity=".56"/>' +
+      '<path d="M1.4.45l.5.18" stroke="#fff" stroke-width=".3" opacity=".8"/>' +
+      '<circle cx=".3" cy="2.1" r=".16" fill="#e6d0c7" opacity=".8"/></pattern></defs>' +
+      '<path d="'+left+'" fill="#766a69" opacity=".25" transform="translate(.45 .65)"/>' +
+      '<path d="'+right+'" fill="#766a69" opacity=".25" transform="translate(.4 .7)"/>' +
+      '<path d="'+left+'" fill="url(#'+id+'-ear)" stroke="#a89a91" stroke-width=".65" stroke-linejoin="round"/>' +
+      '<path d="M8.5 9.2C6.5 5.6 4.1 1.8 6.1-.2Q8-1.9 9.9 2Q11.8 5.8 12.3 10Z" fill="url(#'+id+'-lining)" opacity=".91"/>' +
+      '<path d="'+right+'" fill="url(#'+id+'-ear)" stroke="#a89a91" stroke-width=".65" stroke-linejoin="round"/>' +
+      '<path d="M30.5 10Q31.4 3.1 34.3-.4C36.4-2.7 37.6.1 37 3Q36.2 7.5 34 10.6Z" fill="url(#'+id+'-lining)" opacity=".9"/>' +
+      '<g fill="none" stroke="#fffaf3" stroke-width=".42" stroke-linecap="round" opacity=".82">' +
+      '<path d="M6-1L4.8-2.4M5 2.7l-1.9-.9M8 1.5l1.3-1.2M37.8-1l1.7-1.2M38.9 2l1.4-.5M35.4 0l-.6-2"/></g>' +
+      '<path d="'+body+'" fill="url(#'+id+'-fur)" stroke="#9f9189" stroke-width=".6"/>' +
+      '<path d="'+body+'" fill="url(#'+id+'-nap)" opacity=".58"/>' +
+      '<path d="M8 12.4Q12.5 6.7 21 6.9Q28.7 7 34 12.6" fill="none" stroke="#fffdf6" stroke-width=".78" opacity=".76"/>' +
+      '<path d="M20.9 12C19 9.8 16.7 11.3 17.5 13.3C18.1 14.9 20.9 16.6 20.9 16.6S23.6 14.9 24.3 13.3C25.1 11.3 22.8 9.8 20.9 12Z" fill="#d98291" stroke="#b36b7c" stroke-width=".33"/>' +
+      '<path d="M18 12.4q.6-1.4 1.6-.6m2.3.2q1.1-1 1.7.3" fill="none" stroke="#ffe6e6" stroke-width=".37" stroke-linecap="round"/>' +
+      '<path d="'+cuff+'" fill="#a69c98" opacity=".23" transform="translate(0 .55)"/>' +
+      '<path d="'+cuff+'" fill="url(#'+id+'-trim)" stroke="#b9a79e" stroke-width=".58"/>' +
+      '<path d="'+cuff+'" fill="url(#'+id+'-nap)" opacity=".66"/>' +
+      '<path d="M6 18.2q15 1.9 30 .1" fill="none" stroke="#fffdf5" stroke-width=".65" opacity=".8"/>' +
+      '<path d="M8.3 20.6l.6.23m5 .25.6-.24m5.8.5.65-.21m5.8-.1.55-.28m5.1-.5.58-.35" fill="none" stroke="#fff" stroke-width=".45" stroke-linecap="round" opacity=".86"/>' +
+      '<path d="M8 21.8l-.85 1.3m2.5-1 0 1.15m13-.3.3 1.2m8.7-2.2.8 1.15" fill="none" stroke="#f8efe6" stroke-width=".47" stroke-linecap="round"/>' +
+      '</g>';
+  }
+
   function itemsFor(slot, userId) {
-    return Object.entries(catalog[slot].items).filter(([key])=>key!==THORN_CROWN||userId===BATU_USER_ID);
+    return Object.entries(catalog[slot].items).filter(([key])=>!exclusiveOwners[key]||exclusiveOwners[key]===userId);
   }
 
   function normalize(look) {
@@ -159,9 +207,9 @@
       +'<div class="sr-avatar-hair"></div><div class="sr-avatar-head"><i></i><b></b></div>'
       +'<div class="sr-avatar-body">'+svg('sr-clothes-art','0 0 42 36',shirtArt[top])+'</div>'
       +'<div class="sr-avatar-arm">'+(hand?'<span data-accessory="'+hand+'" class="'+(hand==='glove'?'sr-jeweled-glove':'sr-metal-watch')+'"></span>':'')+'</div>'
-      +svg('sr-accessory-art','0 0 42 67',(head===THORN_CROWN?thornCrown():accessory(head,headArt))+accessory(face,faceArt)+accessory(neck,neckArt))
+      +svg('sr-accessory-art','0 0 42 67',(head===THORN_CROWN?thornCrown():head===PLUSH_BUNNY?plushBunnyHat():accessory(head,headArt))+accessory(face,faceArt)+accessory(neck,neckArt))
       +'</div>';
   }
 
-  window.HakunaRoomWardrobe = {catalog, itemsFor, normalize, character};
+  window.HakunaRoomWardrobe = {catalog, itemsFor, normalize, character, featuredHead: PLUSH_BUNNY};
 })();
