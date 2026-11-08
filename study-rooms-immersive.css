@@ -43,6 +43,9 @@ body.sr-immersed #toastRoot{z-index:1400}
 .sr-room[data-atmosphere="dawn"]:after{background:radial-gradient(ellipse at top,rgba(255,229,167,.35),transparent 70%)}
 .sr-room-header{border:0;background:transparent;box-shadow:none;border-radius:0;padding:0;gap:16px;align-items:start;position:relative;z-index:1}
 .sr-room-header>.secondary-btn{background:transparent!important;color:var(--muted)!important;border:1px solid var(--line)!important;border-radius:999px;padding:10px 15px;box-shadow:none;flex:none}
+/* One understated shortcut to create another room, without stopping this room's timer. */
+.sr-room-header>.sr-room-new{font-size:12px;font-weight:720;white-space:nowrap;border-color:var(--sr-accent)!important;color:var(--ink)!important}
+.sr-room-header>.sr-room-new:hover{background:rgba(132,144,160,.10)!important}
 .sr-room-heading{flex:1 1 220px;align-self:center;gap:8px}
 .sr-room .sr-kicker{color:var(--sr-accent);font-size:10px;font-weight:750;letter-spacing:.24em}
 .sr-room-heading h2{font-weight:660;font-size:clamp(27px,3.3vw,42px);letter-spacing:-.055em;line-height:1.12}
@@ -128,6 +131,7 @@ body.sr-immersed #toastRoot{z-index:1400}
  .sr-room{padding:calc(20px + env(safe-area-inset-top)) 15px calc(26px + env(safe-area-inset-bottom));gap:23px}
  .sr-room-header{display:flex;flex-wrap:wrap;gap:12px}
  .sr-room-header>.secondary-btn{order:0;padding:9px 12px}
+ .sr-room-header>.sr-room-new{padding:9px 10px;font-size:11px}
  .sr-room-heading{order:2;flex:1 1 100%;gap:5px}
  .sr-room-heading h2{font-size:32px}
  .sr-space-tools{order:1;margin-left:auto}
