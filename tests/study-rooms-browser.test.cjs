@@ -3,6 +3,18 @@ const {createServer}=require('node:http');
 const fs=require('node:fs');
 const {chromium,webkit}=require('playwright');
 const batuId='8f2cf782-f4f2-4c85-a9e9-a560c623e6d5';
+async function checkCoffeeOnTable(page,label){
+  const g=await page.locator('.sr-roster .sr-desk-scene').first().evaluate(scene=>{
+    const cup=scene.querySelector('.sr-scene-coffee').getBoundingClientRect();
+    const table=scene.querySelector('.sr-scene-table').getBoundingClientRect();
+    return {cupLeft:cup.left,cupRight:cup.right,cupBottom:cup.bottom,
+      tableLeft:table.left,tableRight:table.right,tableTop:table.top};
+  });
+  assert(g.cupLeft>=g.tableLeft+1 && g.cupRight<=g.tableRight-1,
+    label+': the cup must be entirely over the tabletop: '+JSON.stringify(g));
+  assert(Math.abs(g.cupBottom-g.tableTop)<=3,
+    label+': the cup must rest on the tabletop, not float: '+JSON.stringify(g));
+}
 const files={};
 for(const name of ['offline-support.js','styles.css','study-rooms.css','study-rooms-immersive.css','room-experience.css','room-experience.js','room-weather.js','room-wardrobe.js','study-rooms.js'])files[name]=fs.readFileSync(require('node:path').join(__dirname,'..',name),'utf8');
 const fixture=[
@@ -105,6 +117,7 @@ const server=createServer((req,res)=>{
     await page.locator('[data-sr-form=create] button[type=submit]').click();
     await page.locator('[data-sr-room-title]').getByText('Kütüphane Ekibi').waitFor();
     assert.equal(await page.locator('[data-sr-invite]').textContent(),'K7MP-4X9R');
+    await checkCoffeeOnTable(page,label+' shared room');
     for(const name of accessories)assert.equal(await page.locator('.sr-roster [data-accessory='+name+']').count(),1);
     assert.equal(await page.locator('[data-sr-action=wardrobe]').count(),0);
     await page.evaluate(()=>{window.__state.showBatu=true;window.dispatchEvent(new Event('online'));});
@@ -200,6 +213,7 @@ const server=createServer((req,res)=>{
     assert.equal(await page.locator('.sr-person').first().getAttribute('data-sr-user'),'user-1','ranks update when a member takes the lead');
     await page.locator('[data-sx=desk]').click();
     assert.equal(await page.locator('.sx-my-desk .sx-self').count(),1);
+    await checkCoffeeOnTable(page,label+' zoomed desk');
     fs.mkdirSync('test-results',{recursive:true});
     await page.screenshot({path:'test-results/desk-'+width+'.png',fullPage:true});
     await page.locator('[data-sx=desk]').click();
