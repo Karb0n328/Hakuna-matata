@@ -1,0 +1,161 @@
+/* 10 Kasım 2026 • editorial remembrance for normal pages ONLY.
+   Never styles the Rooms lobby or immersive room. Everything is opt-in
+   through .tk10-active and the tribute's own class names. */
+.tk10-tribute {
+  --tk-scarlet:#bc3441;
+  --tk-ivory:#f4eee6;
+  position:relative;isolation:isolate;overflow:hidden;
+  width:100%;min-height:424px;margin:0 0 24px;
+  border:1px solid rgba(235,224,208,.16);border-radius:24px;
+  background:
+    radial-gradient(ellipse at 78% 28%,rgba(145,146,143,.19),transparent 44%),
+    radial-gradient(ellipse at 0% 85%,rgba(117,26,39,.22),transparent 49%),
+    linear-gradient(117deg,#101215 0%,#1a1b1e 53%,#111214 100%);
+  box-shadow:0 24px 56px rgba(15,15,18,.16),inset 0 1px rgba(255,255,255,.08);
+  color:var(--tk-ivory);
+  display:flex;align-items:center;
+  -webkit-font-smoothing:antialiased;
+}
+.tk10-tribute,.tk10-tribute *{box-sizing:border-box}
+.tk10-tribute:before {
+  content:"";position:absolute;left:0;top:0;bottom:0;width:4px;z-index:5;
+  background:linear-gradient(#641d28,#cf5261 46%,#80232b);
+  box-shadow:2px 0 20px rgba(195,42,60,.2);
+}
+.tk10-tribute:after {
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:1;
+  border-radius:inherit;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.025),inset 0 -60px 85px rgba(0,0,0,.1);
+}
+.tk10-film {
+  position:absolute;inset:0;pointer-events:none;z-index:2;opacity:.3;
+  background-image:repeating-linear-gradient(0deg,transparent 0 4px,rgba(255,255,255,.017) 5px 6px),
+    repeating-linear-gradient(93deg,transparent 0 35px,rgba(255,255,255,.018) 36px 37px);
+  mix-blend-mode:screen;
+}
+.tk10-image-stage {
+  position:absolute;inset:0 0 0 auto;width:58%;overflow:hidden;
+  pointer-events:none;z-index:0;
+}
+.tk10-image-aura {
+  position:absolute;width:90%;height:115%;right:1%;bottom:-20%;border-radius:50%;
+  background:radial-gradient(ellipse,rgba(246,235,215,.17),transparent 65%);
+}
+.tk10-photo {
+  position:absolute;right:4%;bottom:-18%;width:91%;height:136%;
+  object-fit:contain;object-position:right bottom;
+  filter:grayscale(1) contrast(1.18) brightness(.9);
+  opacity:0;transition:opacity .95s ease;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 23%,#000 90%,transparent 100%);
+  mask-image:linear-gradient(90deg,transparent 0%,#000 23%,#000 90%,transparent 100%);
+}
+.tk10-photo-ready .tk10-photo{opacity:.8}
+.tk10-image-fade {
+  position:absolute;inset:0;
+  background:linear-gradient(90deg,#151619 0%,rgba(19,20,23,.68) 16%,transparent 59%),
+    linear-gradient(0deg,#101113 0%,transparent 32%);
+}
+.tk10-portrait-year {
+  position:absolute;bottom:24px;right:33px;color:rgba(255,255,255,.48);
+  font-size:10px;letter-spacing:.26em;font-weight:650;
+}
+.tk10-portrait-year span{color:var(--tk-scarlet);margin:0 6px}
+.tk10-body {position:relative;z-index:3;min-width:0;width:66%;padding:35px clamp(25px,4.1vw,68px) 34px;display:flex;flex-direction:column;align-items:flex-start}
+.tk10-eyebrow {
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  letter-spacing:.18em;font-size:10px;font-weight:760;color:#e1cbc8;
+}
+.tk10-thread{width:21px;height:2px;background:var(--tk-scarlet);border-radius:2px;box-shadow:0 0 8px rgba(233,73,91,.24)}
+.tk10-dot{display:block;width:3px;height:3px;border-radius:50%;background:#cfaeab}
+.tk10-time {
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:clamp(66px,8.8vw,120px);
+  font-weight:400;line-height:.98;letter-spacing:-.105em;
+  color:#e7e1da;margin:22px 0 14px;font-variant-numeric:lining-nums;
+  text-shadow:0 8px 20px rgba(0,0,0,.14);
+}
+.tk10-time span{color:var(--tk-scarlet);padding-right:.05em}
+.tk10-overline{font-size:10px;font-weight:780;letter-spacing:.29em;color:#c1b7b2;margin:2px 0 2px}
+.tk10-title {
+  display:flex;gap:17px;align-items:center;margin:0;
+  font-size:clamp(32px,4vw,56px);line-height:1.07;font-weight:790;letter-spacing:-.06em;
+  color:#fffaf4;
+}
+.tk10-title-rule{display:block;height:1px;flex:1;max-width:95px;background:linear-gradient(90deg,#be5360,transparent)}
+.tk10-statement{font-family:Georgia,"Times New Roman",serif;font-size:clamp(16px,1.8vw,22px);margin:17px 0 0;color:#e8d9d3}
+.tk10-statement em{font-weight:400;color:#d9838b}
+.tk10-message{max-width:45ch;font-size:12.5px;line-height:1.82;color:#c1bdba;margin:11px 0 0;font-weight:420}
+.tk10-baseline{margin-top:26px;display:flex;gap:12px;align-items:center;width:100%;max-width:420px;color:#ac9e9a;font-size:9px;font-weight:700;letter-spacing:.16em}
+.tk10-redmark{width:8px;height:8px;border:1px solid var(--tk-scarlet);transform:rotate(45deg);flex:none}
+.tk10-baseline-stroke{height:1px;flex:1;background:linear-gradient(90deg,#83656b,transparent)}
+.tk10-photo-credit {
+  position:absolute;bottom:10px;right:30px;z-index:4;
+  font-size:8px;letter-spacing:.04em;color:rgba(245,236,228,.5);
+  text-decoration:none;
+}
+.tk10-photo-credit:hover,.tk10-photo-credit:focus-visible{color:#fff;text-decoration:underline}
+/* Small companion cover on all normal pages besides the Today dashboard. */
+.tk10-compact {min-height:220px;margin-bottom:20px}
+.tk10-compact .tk10-body{padding-top:24px;padding-bottom:24px;width:70%}
+.tk10-compact .tk10-time{font-size:clamp(47px,5vw,66px);margin:10px 0 5px}
+.tk10-compact .tk10-title{font-size:clamp(25px,3vw,34px)}
+.tk10-compact .tk10-statement{font-size:17px;margin-top:8px}
+.tk10-compact .tk10-overline{font-size:9px}
+.tk10-compact .tk10-message{font-size:11px;max-width:56ch;margin-top:7px}
+.tk10-compact .tk10-baseline{display:none}
+.tk10-compact .tk10-photo{height:160%;bottom:-31%}
+.tk10-compact .tk10-portrait-year{display:none}
+/* A restrained black ribbon on the standard navigation, never in Rooms. */
+body.tk10-active:not(.sr-immersed) .sidebar {
+  background:linear-gradient(163deg,#16191e,#202126 55%,#111217)!important;
+}
+body.tk10-active:not(.sr-immersed) .sidebar .nav-button.active {
+  box-shadow:inset 3px 0 0 #c3525c;
+  background:rgba(178,68,83,.19)!important;
+}
+body.tk10-active:not(.sr-immersed) .bottom-nav button.active{color:#a53d4b}
+body.tk10-active:not(.sr-immersed) .ataturk-corner{display:none!important}
+@media(max-width:950px){
+  .tk10-tribute{min-height:365px}
+  .tk10-body{padding:30px 31px;width:73%}
+  .tk10-image-stage{width:61%}
+  .tk10-photo{right:-6%;width:100%;opacity:0}
+  .tk10-photo-ready .tk10-photo{opacity:.58}
+  .tk10-compact{min-height:210px}
+}
+@media(max-width:620px){
+  .tk10-tribute{min-height:405px;margin-bottom:19px;border-radius:18px}
+  .tk10-tribute:before{width:3px}
+  .tk10-body{width:100%;min-height:405px;padding:29px 22px 31px;justify-content:center}
+  .tk10-image-stage{width:77%}
+  .tk10-photo{bottom:-10%;right:-38%;height:124%;width:135%}
+  .tk10-photo-ready .tk10-photo{opacity:.27}
+  .tk10-image-fade{background:linear-gradient(90deg,#141519 0%,rgba(20,21,24,.84) 37%,transparent 100%),linear-gradient(0deg,#111214 0%,transparent 45%)}
+  .tk10-time{font-size:78px;margin:25px 0 18px}
+  .tk10-overline{font-size:9px}
+  .tk10-title{font-size:clamp(32px,8vw,44px)}
+  .tk10-statement{font-size:19px;margin-top:19px}
+  .tk10-message{font-size:12px;line-height:1.75;max-width:37ch}
+  .tk10-baseline{margin-top:28px;font-size:8px}
+  .tk10-portrait-year{bottom:14px;right:18px;font-size:8px}
+  .tk10-photo-credit{bottom:5px;right:18px;font-size:7px}
+  .tk10-compact{min-height:235px}
+  .tk10-compact .tk10-body{min-height:235px;padding:22px;width:100%}
+  .tk10-compact .tk10-eyebrow{font-size:8px}
+  .tk10-compact .tk10-time{font-size:54px;margin:7px 0 6px}
+  .tk10-compact .tk10-title{font-size:30px}
+  .tk10-compact .tk10-statement{font-size:16px;margin-top:7px}
+  .tk10-compact .tk10-message{display:none}
+  .tk10-compact .tk10-photo{height:150%;bottom:-28%}
+}
+@media(max-width:375px){
+  .tk10-tribute{min-height:397px}
+  .tk10-body{min-height:397px;padding:25px 17px}
+  .tk10-eyebrow{gap:8px;font-size:9px}
+  .tk10-time{font-size:69px}
+  .tk10-title{font-size:31px}
+  .tk10-portrait-year{display:none}
+  .tk10-compact{min-height:225px}
+  .tk10-compact .tk10-body{min-height:225px}
+}
+@media(prefers-reduced-motion:reduce){.tk10-tribute *{transition:none!important;animation:none!important}}
