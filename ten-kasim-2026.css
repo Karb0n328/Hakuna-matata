@@ -231,7 +231,7 @@ body.tk10-active:not(.sr-immersed) .ataturk-corner{display:none!important}
   -webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 16%,#000 93%,transparent 100%);
   mask-image:linear-gradient(90deg,transparent 0%,#000 16%,#000 93%,transparent 100%);
 }
-.tk10-home .tk10-photo-ready .tk10-photo{opacity:.87}
+.tk10-home.tk10-photo-ready .tk10-photo{opacity:.87}
 @media(max-width:1000px) {
   .tk10-story{grid-template-columns:minmax(0,1.28fr) minmax(215px,.75fr);min-height:350px}
   .tk10-story-copy{padding:23px 25px 20px}
