@@ -40,7 +40,7 @@
         '<div class="tk10-overline">GAZİ MUSTAFA KEMAL</div>',
         '<h2 class="tk10-title">ATATÜRK<span class="tk10-title-rule" aria-hidden="true"></span></h2>',
         '<p class="tk10-statement">Bir ömür. <em>Sonsuz iz.</em></p>',
-        '<p class="tk10-message">Fikirleriyle yolumuzu aydınlatan Gazi Mustafa Kemal Atatürk’ü,',
+        '<p class="tk10-message">Fikirleriyle yolumuzu aydınlatan Gazi Mustafa Kemal Paşa’yı,',
           ' aramızdan ayrılışının 88. yılında saygı, özlem ve minnetle anıyoruz.</p>',
         '<div class="tk10-baseline"><span class="tk10-redmark" aria-hidden="true"></span>',
           '<span>SAYGIYLA, ÖZLEMLE, MİNNETLE</span><span class="tk10-baseline-stroke" aria-hidden="true"></span></div>',
