@@ -134,7 +134,7 @@ assert.match(src,/commons\.wikimedia\.org/);
 assert.match(src,/insideOpenedRoom/);
 assert.match(src,/observer\.observe\(document\.body, \{attributes: true/);
 assert.match(html,/ten-kasim-2026\.css\?v=1-memorial/);
-assert.match(html,/ten-kasim-2026\.js\?v=1-memorial/);
+assert.match(html,/ten-kasim-2026\.js\?v=2-rooms-lobby/);
 assert.match(css,/body\.tk10-active:not\(\.sr-immersed\) \.ataturk-corner/);
 assert.doesNotMatch(css,/\.sr-room-header|\.sr-room-grid|\.sr-desk-scene|\.sx-room\s*\{/);
 assert.match(sw,/ten-kasim-2026\.js\?v=1-memorial/);
