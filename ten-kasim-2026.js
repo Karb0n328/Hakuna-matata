@@ -21,9 +21,11 @@
     "lead": "Her şeyin ağırlaştığı gün",
     "text": "Paşa’nın rahatsızlığı artık hepimizin içinde büyüyen bir endişeydi. 8 Kasım’da ikinci ağır komaya girdi. Sarayın kapısından her geçişimde onca yılın hatırası da benimle yürüyordu. Onu bir subayken tanımış, bütün ömrüm boyunca yanında bulunmuştum. Şimdi en güç vazifem, beklemekti.",
     "end": "Ve ardından, bitmek bilmeyecek bir gece başladı.",
-    "photo": "Mustafa Kemal Atatürk (1936).jpg",
-    "caption": "Gazi Mustafa Kemal Paşa · 1936 tarihli arşiv fotoğrafı",
-    "source": "https://ata.msb.gov.tr/Sayfa/SayfaGoster/ataturk-kronolojisi"
+    "photo": "Dolmabahçe Sarayı6.jpg",
+    "caption": "Atatürk’ün son günlerini geçirdiği Dolmabahçe odası · 2008’de fotoğraflandı",
+    "source": "https://ata.msb.gov.tr/Sayfa/SayfaGoster/ataturk-kronolojisi",
+    "credit": "Sitomon · CC BY-SA · Wikimedia Commons",
+    "photoContext": "Bu oda fotoğrafı vefat gününde değil, yıllar sonra çekilmiştir."
   },
   {
     "page": "Görevler",
@@ -32,9 +34,11 @@
     "lead": "Dolmabahçe’de son uzun gün",
     "text": "Hekimlerin gayretini, sarayda süren bekleyişi hatırlıyorum. Ama doğrusu, o günlerin her ayrıntısını kaydedebilecek hâlde değildim. Hatıralarımda da anlattığım gibi, saraya neredeyse uykuda yürürcesine gelip gidiyordum. Bir haberin değişmesini beklemekten başka elimden bir şey gelmiyordu.",
     "end": "Gece çöktüğünde bekleyiş daha da ağırlaştı.",
-    "photo": "Ataturk1930s.jpg",
-    "caption": "Gazi Mustafa Kemal Paşa · 1930’lu yıllardan arşiv portresi",
-    "source": "https://gazetekadikoy.com.tr/edebiyat-hayatindan-hatirlamalar/salih-bozok-yaveri-atatrk-anlatiyor"
+    "photo": "Ataturk deathbed Dolmabahce March 2008pano.jpg",
+    "caption": "Dolmabahçe Sarayı’nda Atatürk’ün vefat ettiği oda · 2008 fotoğrafı",
+    "source": "https://gazetekadikoy.com.tr/edebiyat-hayatindan-hatirlamalar/salih-bozok-yaveri-atatrk-anlatiyor",
+    "credit": "Gryffindor · CC BY-SA 4.0 · Wikimedia Commons",
+    "photoContext": "Fotoğraf 1938’e ait değildir; Atatürk’ün son günlerini geçirdiği gerçek odayı gösterir."
   },
   {
     "page": "Denemeler",
@@ -43,9 +47,11 @@
     "lead": "Umutla endişe arasında",
     "text": "Gece yarısından sonra Paşa’nın durumu daha da ağırlaştı. Başucunda bulunan hekimler görevlerinin başındaydı. Benim içinse geçen saatler bildiğim hiçbir zamana benzemiyordu. Bir zamanlar beraber aştığımız bütün yollar sanki birden gözlerimin önüne geliyordu.",
     "end": "Sabah yaklaşırken kelimeler de yetersiz kalıyordu.",
-    "photo": "Atatürk in white tie.jpg",
-    "caption": "Gazi Mustafa Kemal Paşa · önceki yıllardan arşiv fotoğrafı",
-    "source": "https://ataturkansiklopedisi.gov.tr/detay/4899"
+    "photo": "Dolmabahçe palace Atatürk's deathbed in 1993 032.jpg",
+    "caption": "Dolmabahçe’de Atatürk’ün son odası · 1993’te fotoğraflandı",
+    "source": "https://ataturkansiklopedisi.gov.tr/detay/4899",
+    "credit": "Dosseman · CC BY-SA 4.0 · Wikimedia Commons",
+    "photoContext": "1993 yılında fotoğraflanan korunmuş tarihî oda."
   },
   {
     "page": "Sorular",
@@ -54,9 +60,11 @@
     "lead": "Dolmabahçe Sarayı, İstanbul",
     "text": "10 Kasım 1938 sabahı saat dokuzu beş geçe Paşa’yı kaybettik. Hekimlerin tutanağı bu acı anı tarihe kaydetti. Benim içinse o dakikayı anlatacak hiçbir cümle yeterli değildi. Selanik’ten başlayan dostluğumuzun bu dünyadaki son gününe gelmiştik.",
     "end": "Odanın kapısı açıldığında, artık hiçbir şey eskisi gibi değildi.",
-    "photo": "Mustafa Kemal Atatürk.png",
-    "caption": "Atatürk · önceki yıllardan arşiv portresi; 09.05 anına ait değildir",
-    "source": "https://meb.gov.tr/ataturk/Hayati/Kronoloji"
+    "photo": "Atatürk's death.jpg",
+    "caption": "Atatürk’ün vefatına ilişkin resmî arşiv fotoğrafı · 10 Kasım 1938",
+    "source": "https://meb.gov.tr/ataturk/Hayati/Kronoloji",
+    "credit": "Türkiye Cumhuriyeti Basın ve Yayın Genel Müdürlüğü · Wikimedia Commons",
+    "photoContext": "10 Kasım 1938 tarihli resmî arşiv görseli."
   },
   {
     "page": "Soru Kitaplığım",
@@ -65,9 +73,11 @@
     "lead": "Acı haberin ardından",
     "text": "Hekimler Paşa’nın odasından çıktığında yüzümün ne hâlde olduğunu bilmiyorum. Operatör Mim Kemal Bey nereye gittiğimi sordu. Ağzımdan yalnızca şu sözler döküldü: “Gidiyorum, işim bitti artık…” Beni kolumdan tutup aşağıya indirdi. Hâlâ o anın ağırlığını kelimelere sığdıramıyorum.",
     "end": "Derken, hatırlayabildiğim şeyler de birbirine karıştı.",
-    "photo": "Mustafa Kemal & Salih.jpg",
-    "caption": "Mustafa Kemal Paşa ve Salih Bozok · 1921 arşiv fotoğrafı",
-    "source": "https://www.odatv.com/guncel/allahim-ya-ataturku-kurtar-yahut-benim-canimi-al-172198"
+    "photo": "Akşam, 10 Kasım 1938.png",
+    "caption": "Akşam gazetesi · 10 Kasım 1938 tarihli vefat haberi",
+    "source": "https://www.odatv.com/guncel/allahim-ya-ataturku-kurtar-yahut-benim-canimi-al-172198",
+    "credit": "Akşam gazetesi / TBMM derlemesi · Wikimedia Commons",
+    "photoContext": "Vefat haberinin yayımlandığı gün basılmış tarihî belge."
   },
   {
     "page": "Odalar",
@@ -76,9 +86,11 @@
     "lead": "Salih Bozok’un tanıklığı",
     "text": "Ne ağlayabiliyor ne konuşabiliyordum. Söylenenleri duysam da anlamıyordum. Paşa’yla geçirdiğimiz yıllar, acının ağırlığı altında tek bir ana dönüşmüştü. Bir devlet adamından önce, çocukluk yıllarımdan beri yanımda olan dostumu kaybetmiştim.",
     "end": "O sabahın ardından hafızamda büyük bir boşluk kaldı.",
-    "photo": "Bozok, Adatepe, Gürer, Atatürk, and Kılıç.jpg",
-    "caption": "Atatürk ve silah arkadaşları · daha eski tarihli arşiv fotoğrafı",
-    "source": "https://ataturkansiklopedisi.gov.tr/detay/217/Salih-Bozok-(1881--1941)"
+    "photo": "Kurun, 10 Kasım 1938.png",
+    "caption": "Kurun gazetesi · 10 Kasım 1938 tarihli tarihî ilk sayfa",
+    "source": "https://ataturkansiklopedisi.gov.tr/detay/217/Salih-Bozok-(1881--1941)",
+    "credit": "Kurun gazetesi / TBMM derlemesi · Wikimedia Commons",
+    "photoContext": "Vefat haberinin yayımlandığı gün basılmış tarihî belge."
   },
   {
     "page": "Analiz",
@@ -87,9 +99,11 @@
     "lead": "Sarsıntı ve hayatta kalış",
     "text": "O büyük kaybın ardından derin bir ruhsal sarsıntı yaşadım; hayatıma son vermeye kalkıştım, fakat hayatta kaldım. Sonrasında olup bitenleri tam olarak hatırlayamıyordum. Gözlerimi yeniden açtığımda hastanedeydim. Atatürk’e duyduğum sevgi, yaşadığım acıyı tarif etmek için yeterli değildi.",
     "end": "Benim sustuğum saatlerde bütün ülke onun ardından ağlıyordu.",
-    "photo": "Salih Bozok (1935).jpg",
-    "caption": "Salih Bozok · 1935 tarihli arşiv portresi",
-    "source": "https://ataturkansiklopedisi.gov.tr/detay/217/Salih-Bozok-(1881--1941)"
+    "photo": "Haber, 10 Kasım 1938.png",
+    "caption": "Haber gazetesi · 10 Kasım 1938 tarihli vefat duyurusu",
+    "source": "https://ataturkansiklopedisi.gov.tr/detay/217/Salih-Bozok-(1881--1941)",
+    "credit": "Haber gazetesi / TBMM derlemesi · Wikimedia Commons",
+    "photoContext": "Vefat haberinin yayımlandığı gün basılmış tarihî belge."
   },
   {
     "page": "Rehberlik",
@@ -232,9 +246,11 @@
         '<img class="tk10-story-image-fill" alt="" aria-hidden="true">',
         '<img class="tk10-story-image-main" alt="',escapeHTML(chapter.caption),'" decoding="async" referrerpolicy="no-referrer">',
         '<div class="tk10-story-photo-overlay" aria-hidden="true"></div>',
-        '<div class="tk10-story-caption">',escapeHTML(chapter.caption),'</div>',
+        '<div class="tk10-story-caption">',escapeHTML(chapter.caption),
+          chapter.photoContext ? '<small class="tk10-story-context">'+escapeHTML(chapter.photoContext)+'</small>' : '',
+          '</div>',
         '<a class="tk10-story-photo-source" href="',photoDetail(chapter.photo),
-          '" rel="noopener noreferrer" target="_blank">Fotoğraf: Wikimedia Commons</a>',
+          '" rel="noopener noreferrer" target="_blank">',escapeHTML(chapter.credit || 'Fotoğraf: Wikimedia Commons'),'</a>',
       '</div>'
     ].join('');
     const main = node.querySelector('.tk10-story-image-main');
@@ -246,7 +262,9 @@
     main.addEventListener('error', () => {
       if (!fallback) {
         fallback = true;
-        const safe = storyPhoto('Ataturk1930s.jpg');
+        // Context-accurate fallback rather than an unrelated portrait.
+        const safe = storyPhoto(index < 3 ? 'Dolmabahçe Sarayı6.jpg'
+          : index < 7 ? "Atatürk's death.jpg" : 'Ataturk-1938-funeral-public.jpg');
         main.src = safe; fill.src = safe;
         node.classList.add('tk10-story-photo-fallback');
       } else {
