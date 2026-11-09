@@ -50,14 +50,19 @@ const document = {
   getElementById(id) {return id==='view'?view:id==='pageTitle'?pageTitle:null;},
   createElement(tag) {
     assert.equal(tag, 'section');
-    return {
-      attrs:{},
-      classList:new Tokens(),
-      isConnected:false,
+    const node = {
+      attrs:{}, dataset:{}, classList:new Tokens(), isConnected:false, innerHTML:'',
       setAttribute(key,val){this.attrs[key]=val;},
-      querySelector(key){assert.equal(key,'.tk10-photo');return photo;},
+      querySelector(key){
+        assert(['.tk10-photo','.tk10-story-image-main','.tk10-story-image-fill'].includes(key));
+        return photo;
+      },
       remove(){this.isConnected=false;if(inserted===this)inserted=null;}
     };
+    Object.defineProperty(node,'className',{set(value){
+      for(const key of String(value).split(/\s+/))if(key)node.classList.add(key);
+    }});
+    return node;
   },
   addEventListener(name,cb){this.events[name]=cb;}
 };
@@ -89,7 +94,8 @@ for (const [when,expected] of [
 
 // The Rooms landing page displays the compact tribute.
 document.events.DOMContentLoaded();
-assert(inserted&&inserted.classList.contains('tk10-compact'),'Rooms lobby must display the tribute');
+assert(inserted&&inserted.classList.contains('tk10-story'),'Rooms lobby must display chapter VI');
+assert.equal(inserted.dataset.chapter,'6');
 assert(body.classList.contains('tk10-active'));
 assert.equal(typeof observerCallback,'function');
 
@@ -106,7 +112,8 @@ assert.equal(inserted,null,'actual room markup also blocks the tribute');
 
 // Returning to the Rooms lobby, with no page title change, restores it.
 roomMarkupPresent=false;observerCallback();
-assert(inserted&&inserted.classList.contains('tk10-compact'),'back to lobby restores tribute');
+assert(inserted&&inserted.classList.contains('tk10-story'),'back to lobby restores chapter VI');
+assert.equal(inserted.dataset.chapter,'6');
 
 // The user navigates to Today: full-size tribute appears before #view.
 page='Bugün';observerCallback();
@@ -114,12 +121,21 @@ assert(inserted&&inserted.classList.contains('tk10-home'));
 assert.equal(inserted.attrs['aria-label'],'10 Kasım 2026, Gazi Mustafa Kemal Atatürk anması');
 assert(body.classList.contains('tk10-active'));
 
-// Other normal pages and the Rooms lobby use the compact treatment.
-page='Plan';observerCallback();
-assert(inserted.classList.contains('tk10-compact'));
-assert.equal(inserted.classList.contains('tk10-home'),false);
+// Ten ordinary non-home pages advance the same story in sidebar order.
+const expectedOrder=['Plan','Görevler','Denemeler','Sorular','Soru Kitaplığım',
+  'Odalar','Analiz','Rehberlik','Öneriler','Ayarlar'];
+assert.deepEqual(Array.from(window.HakunaTenKasim2026.chapters.map(c=>c.page)),expectedOrder);
+for(let i=0;i<expectedOrder.length;i++){
+  page=expectedOrder[i];observerCallback();
+  assert(inserted.classList.contains('tk10-story'),page+' must show a chapter');
+  assert.equal(inserted.dataset.chapter,String(i+1),page+' chronology index');
+  assert.match(inserted.innerHTML,/Salih Bozok/);
+  assert.match(inserted.innerHTML,/Fotoğraf: Wikimedia Commons/);
+  assert.match(inserted.innerHTML,/Hatırat/);
+  assert.equal(inserted.classList.contains('tk10-home'),false);
+}
 page='Odalar';observerCallback();
-assert(inserted.classList.contains('tk10-compact'));
+assert.equal(inserted.dataset.chapter,'6');
 
 // Midnight Istanbul: the effect disappears automatically via the interval.
 page='Bugün';observerCallback();
@@ -136,7 +152,9 @@ assert.match(src,/observer\.observe\(document\.body, \{attributes: true/);
 assert.match(html,/ten-kasim-2026\.css\?v=1-memorial/);
 assert.match(html,/ten-kasim-2026\.js\?v=3-pasa-wording/);
 assert.match(css,/body\.tk10-active:not\(\.sr-immersed\) \.ataturk-corner/);
+assert.match(css,/\.tk10-story-image-main\s*\{[\s\S]*?object-fit:contain/);
+assert.match(css,/\.tk10-home \.tk10-photo\s*\{[\s\S]*?object-fit:contain/);
 assert.doesNotMatch(css,/\.sr-room-header|\.sr-room-grid|\.sr-desk-scene|\.sx-room\s*\{/);
 assert.match(sw,/ten-kasim-2026\.js\?v=1-memorial/);
 assert.match(sw,/ten-kasim-2026\.css\?v=1-memorial/);
-console.log('PASS 10 November boundaries, Rooms lobby visibility, opened-room isolation, automatic lobby return, midnight removal and offline assets');
+console.log('PASS 10 Kasım home tribute, ten chronologically linked Bozok stories, image framing, Rooms lobby isolation and midnight removal');
