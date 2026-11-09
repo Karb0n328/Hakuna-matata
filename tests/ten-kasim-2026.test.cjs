@@ -130,12 +130,28 @@ for(let i=0;i<expectedOrder.length;i++){
   assert(inserted.classList.contains('tk10-story'),page+' must show a chapter');
   assert.equal(inserted.dataset.chapter,String(i+1),page+' chronology index');
   assert.match(inserted.innerHTML,/Salih Bozok/);
-  assert.match(inserted.innerHTML,/Fotoğraf: Wikimedia Commons/);
+  assert.match(inserted.innerHTML,/tk10-story-photo-source/);
+  if(i<3) assert.match(inserted.innerHTML,/2008|1993/,'historic room photos must be correctly dated');
+  if(i>=4&&i<=6) assert.match(inserted.innerHTML,/gazetesi/,'10 Kasım newspapers must be labeled');
   assert.match(inserted.innerHTML,/Hatırat/);
   assert.equal(inserted.classList.contains('tk10-home'),false);
 }
 page='Odalar';observerCallback();
 assert.equal(inserted.dataset.chapter,'6');
+// Early photos must document the actual last days; remove irrelevant Bozok portrait.
+const firstSeven = [
+  'Dolmabahçe Sarayı6.jpg',
+  'Ataturk deathbed Dolmabahce March 2008pano.jpg',
+  "Dolmabahçe palace Atatürk's deathbed in 1993 032.jpg",
+  "Atatürk's death.jpg",
+  'Akşam, 10 Kasım 1938.png',
+  'Kurun, 10 Kasım 1938.png',
+  'Haber, 10 Kasım 1938.png'
+];
+const chosen=firstSeven.map(name=>src.includes(JSON.stringify(name)));
+assert(chosen.every(Boolean),'all seven verified historical images should appear in the source');
+assert(!src.includes('Salih Bozok (1935).jpg'),'unrelated Salih Bozok portrait removed');
+assert(!src.includes('Bozok, Adatepe, Gürer, Atatürk, and Kılıç.jpg'),'unrelated old group photo removed');
 
 // Midnight Istanbul: the effect disappears automatically via the interval.
 page='Bugün';observerCallback();
