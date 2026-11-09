@@ -48,7 +48,12 @@ const server=createServer((req,res)=>{
       const context=await browser.newContext({viewport:{width,height:880},isMobile:width<1000,hasTouch:width<1000});
       const page=await context.newPage(),errors=[];
       page.on('pageerror',e=>errors.push(e.message));
-      await page.route('https://commons.wikimedia.org/**',route=>route.abort());
+      // Serve one portrait-oriented archive-photo fixture; ensure photos fit instead
+      // of overflowing or cropping regardless of the remote source's aspect ratio.
+      await page.route('https://commons.wikimedia.org/**',route=>route.fulfill({
+        status:200, contentType:'image/svg+xml',
+        body:'<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900"><rect width="600" height="900" fill="#444"/><ellipse cx="300" cy="290" rx="145" ry="185" fill="#ccc"/><rect x="130" y="460" width="340" height="500" rx="120" fill="#8a8a8a"/></svg>'
+      }));
       try{
         await page.goto(base,{waitUntil:'domcontentloaded'});
         const tribute=page.locator('.tk10-tribute');
@@ -68,12 +73,15 @@ const server=createServer((req,res)=>{
         assert(geometry.documentWidth<=geometry.viewport+2, label+' no horizontal overflow '+JSON.stringify(geometry));
         await tribute.screenshot({path:'test-results/ten-kasim-'+label+'.png',timeout:20000});
 
-        // The Rooms landing/lobby must show the compact memorial.
+        // The home page retains its large general memorial and a contained portrait.
+        assert.equal(await page.locator('.tk10-home .tk10-photo').evaluate(el=>getComputedStyle(el).objectFit),'contain');
+        // The Rooms landing/lobby shows its chronological chapter, not the generic hero.
         await page.evaluate(()=>{
           document.getElementById('pageTitle').textContent='Odalar';
           document.getElementById('view').innerHTML='<div class="sr-shell sr-lobby">Odalarım</div>';
         });
-        await page.locator('.tk10-tribute.tk10-compact').waitFor();
+        await page.locator('.tk10-story[data-chapter="6"]').waitFor();
+        assert.equal(await page.locator('.tk10-story-title').textContent(),'Dostumu Kaybettim');
         assert.equal(await page.locator('.ataturk-corner').isVisible(),false);
         assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('tk10-active')),true);
 
@@ -97,14 +105,47 @@ const server=createServer((req,res)=>{
           document.body.classList.add('sr-immersed');
           document.body.classList.remove('sr-immersed');
         });
-        await page.locator('.tk10-tribute.tk10-compact').waitFor();
+        await page.locator('.tk10-story[data-chapter="6"]').waitFor();
         assert.equal(await page.locator('.sr-lobby').count(),1);
         assert.equal(await page.locator('.ataturk-corner').isVisible(),false);
 
-        // On normal subpages a smaller memorial is used instead.
-        await page.evaluate(()=>{document.getElementById('pageTitle').textContent='Plan';});
-        await page.locator('.tk10-compact').waitFor();
-        assert.equal(await page.locator('.tk10-tribute').count(),1);
+        // The story connects in fixed navigation order and each chapter has
+        // its own named archival photograph with an unclipped, contain-fitted face.
+        const chapterPages=[
+          'Plan','Görevler','Denemeler','Sorular','Soru Kitaplığım',
+          'Odalar','Analiz','Rehberlik','Öneriler','Ayarlar'
+        ];
+        const photoNames=new Set();
+        for(let i=0;i<chapterPages.length;i++){
+          await page.evaluate(name=>{document.getElementById('pageTitle').textContent=name;},chapterPages[i]);
+          const card=page.locator('.tk10-story[data-chapter="'+(i+1)+'"]');
+          await card.waitFor();
+          const title=await card.locator('.tk10-story-title').textContent();
+          assert(title?.trim().length>3,chapterPages[i]+' has a story title');
+          assert.match(await card.locator('.tk10-story-method').textContent(),/edebî uyarlamadır/);
+          const photo=card.locator('.tk10-story-image-main');
+          await photo.waitFor();
+          const fit=await photo.evaluate(el=>({
+            fit:getComputedStyle(el).objectFit,
+            position:getComputedStyle(el).objectPosition,
+            complete:el.complete,
+            naturalWidth:el.naturalWidth,
+            width:el.getBoundingClientRect().width,
+            container:el.parentElement.getBoundingClientRect().width,
+            src:el.getAttribute('src')
+          }));
+          assert.equal(fit.fit,'contain',chapterPages[i]+' preserves the photo without cropping');
+          assert(fit.width<=fit.container+2,chapterPages[i]+' photo remains inside its frame');
+          assert(fit.complete&&fit.naturalWidth>0,chapterPages[i]+' photo decodes');
+          photoNames.add(fit.src);
+          if([0,5,9].includes(i)) await card.screenshot({
+            path:'test-results/ten-kasim-story-'+String(i+1).padStart(2,'0')+'-'+label+'.png',
+            timeout:20000
+          });
+          assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),true,
+            chapterPages[i]+' has no horizontal overflow at '+width);
+        }
+        assert.equal(photoNames.size,10,'every story chapter uses a distinct archival photo');
 
         // A phone left running through Istanbul midnight loses the tribute.
         await page.evaluate(()=>{
@@ -114,7 +155,7 @@ const server=createServer((req,res)=>{
         await page.waitForFunction(()=>!document.querySelector('.tk10-tribute'));
         assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('tk10-active')),false);
         assert.equal(errors.length,0,label+' browser errors: '+errors.join(', '));
-        console.log('PASS '+label+' 10 Kasım tribute, Rooms lobby display, immersive isolation, lobby return and midnight removal');
+        console.log('PASS '+label+' general memorial, ten Bozok chapters, photo fitting, Rooms lobby isolation and midnight removal');
       } finally{
         await context.close();await browser.close();
       }
