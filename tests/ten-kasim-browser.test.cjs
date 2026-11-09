@@ -68,11 +68,38 @@ const server=createServer((req,res)=>{
         assert(geometry.documentWidth<=geometry.viewport+2, label+' no horizontal overflow '+JSON.stringify(geometry));
         await tribute.screenshot({path:'test-results/ten-kasim-'+label+'.png',timeout:20000});
 
-        // The entire Rooms lobby and immersive UI must remain untouched.
-        await page.evaluate(()=>{document.getElementById('pageTitle').textContent='Odalar';});
+        // The Rooms landing/lobby must show the compact memorial.
+        await page.evaluate(()=>{
+          document.getElementById('pageTitle').textContent='Odalar';
+          document.getElementById('view').innerHTML='<div class="sr-shell sr-lobby">Odalarım</div>';
+        });
+        await page.locator('.tk10-tribute.tk10-compact').waitFor();
+        assert.equal(await page.locator('.ataturk-corner').isVisible(),false);
+        assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('tk10-active')),true);
+
+        // Open a study room without changing the 'Odalar' title.
+        await page.evaluate(()=>{
+          document.getElementById('view').innerHTML='<div class="sr-shell sr-room"><h2>Çalışma odası</h2></div>';
+          document.body.classList.add('sr-immersed');
+        });
         await page.waitForFunction(()=>!document.querySelector('.tk10-tribute'));
         assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('tk10-active')),false);
-        assert.equal(await page.locator('.ataturk-corner').isVisible(),true);
+        assert.equal(await page.locator('.sr-room').count(),1,'opened room remains intact');
+
+        // Defensive guard even if CSS immersion is removed while room markup is still present.
+        await page.evaluate(()=>document.body.classList.remove('sr-immersed'));
+        await page.evaluate(()=>window.HakunaTenKasim2026.refresh());
+        assert.equal(await page.locator('.tk10-tribute').count(),0);
+
+        // Return to the lobby with the same page title: observer restores tribute automatically.
+        await page.evaluate(()=>{
+          document.getElementById('view').innerHTML='<div class="sr-shell sr-lobby">Odalarım</div>';
+          document.body.classList.add('sr-immersed');
+          document.body.classList.remove('sr-immersed');
+        });
+        await page.locator('.tk10-tribute.tk10-compact').waitFor();
+        assert.equal(await page.locator('.sr-lobby').count(),1);
+        assert.equal(await page.locator('.ataturk-corner').isVisible(),false);
 
         // On normal subpages a smaller memorial is used instead.
         await page.evaluate(()=>{document.getElementById('pageTitle').textContent='Plan';});
@@ -87,7 +114,7 @@ const server=createServer((req,res)=>{
         await page.waitForFunction(()=>!document.querySelector('.tk10-tribute'));
         assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('tk10-active')),false);
         assert.equal(errors.length,0,label+' browser errors: '+errors.join(', '));
-        console.log('PASS '+label+' 10 Kasım tribute, responsive fit, room isolation, next-day removal');
+        console.log('PASS '+label+' 10 Kasım tribute, Rooms lobby display, immersive isolation, lobby return and midnight removal');
       } finally{
         await context.close();await browser.close();
       }
