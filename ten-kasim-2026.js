@@ -1,4 +1,4 @@
-/* 10 November 2026 tribute: isolated from study rooms and persistent account data. */
+/* 10 November 2026 tribute: shown in the Rooms lobby, never inside an opened study room. */
 (() => {
   'use strict';
   const DAY = {year: 2026, month: 11, day: 10};
@@ -71,12 +71,15 @@
   function refresh() {
     const view = document.getElementById('view');
     const title = document.getElementById('pageTitle')?.textContent?.trim();
-    const isRoom = title === 'Odalar' || document.body.classList.contains('sr-immersed');
-    const visible = Boolean(view && title && !isRoom && isActiveAt(new Date()));
+    // The Rooms *tab/lobby* gets the tribute. Only an opened study room is isolated.
+    // Checking the actual room markup as well protects transitions before sr-immersed toggles.
+    const insideOpenedRoom = document.body.classList.contains('sr-immersed') ||
+      Boolean(view?.querySelector?.('.sr-room'));
+    const visible = Boolean(view && title && !insideOpenedRoom && isActiveAt(new Date()));
     if (!visible) {
       if (tribute) tribute.remove();
       tribute = null;
-      document.body.classList.remove('tk10-active');
+      if (document.body.classList.contains('tk10-active')) document.body.classList.remove('tk10-active');
       return;
     }
 
@@ -87,7 +90,7 @@
     const home = title === 'Bugün';
     tribute.classList.toggle('tk10-home', home);
     tribute.classList.toggle('tk10-compact', !home);
-    document.body.classList.add('tk10-active');
+    if (!document.body.classList.contains('tk10-active')) document.body.classList.add('tk10-active');
   }
 
   function boot() {
@@ -96,6 +99,9 @@
     if (title && !observer) {
       observer = new MutationObserver(refresh);
       observer.observe(title, {childList: true, characterData: true, subtree: true});
+      // Page title stays 'Odalar' when entering/leaving a study room, so watch
+      // immersion on the body as well, without observing any room internals.
+      observer.observe(document.body, {attributes: true, attributeFilter: ['class']});
     }
     document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
     window.addEventListener('pageshow', refresh);
