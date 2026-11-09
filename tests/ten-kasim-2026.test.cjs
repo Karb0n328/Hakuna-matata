@@ -29,6 +29,7 @@ let inserted = null;
 let page = 'Odalar';
 let observerCallback = null;
 let clockTick = null;
+let roomMarkupPresent = false;
 const photo = {
   events:{},
   naturalWidth:0,
@@ -36,7 +37,8 @@ const photo = {
   removeAttribute(){}
 };
 const view = {
-  before(node) { inserted = node; node.isConnected = true; }
+  before(node) { inserted = node; node.isConnected = true; },
+  querySelector(selector) {assert.equal(selector,'.sr-room');return roomMarkupPresent?{}:null;}
 };
 const body = {classList:new Tokens()};
 const pageTitle = {get textContent(){return page;}};
@@ -67,8 +69,10 @@ const window = {
 class MutationObserver {
   constructor(cb){observerCallback=cb;}
   observe(element,flags){
-    assert.equal(element,pageTitle);
-    assert.equal(flags.childList,true);
+    if(element===pageTitle){assert.equal(flags.childList,true);return;}
+    assert.equal(element,body);
+    assert.equal(flags.attributes,true);
+    assert.deepEqual(Array.from(flags.attributeFilter),['class']);
   }
 }
 vm.runInNewContext(src,{window,document,Date:ClockDate,Intl,MutationObserver}, {filename:'ten-kasim-2026.js'});
@@ -83,33 +87,39 @@ for (const [when,expected] of [
   ['2027-11-09T21:00:00Z',false]   // One-time 2026 event
 ]) assert.equal(isActive(new Date(when)),expected,when);
 
-// The page initially opens directly into Rooms: no banner or theme allowed.
+// The Rooms landing page displays the compact tribute.
 document.events.DOMContentLoaded();
-assert.equal(inserted,null,'Rooms lobby stays entirely unchanged');
-assert.equal(body.classList.contains('tk10-active'),false);
+assert(inserted&&inserted.classList.contains('tk10-compact'),'Rooms lobby must display the tribute');
+assert(body.classList.contains('tk10-active'));
 assert.equal(typeof observerCallback,'function');
 
-// The user navigates to Today: tribute appears before #view.
+// A room opening keeps the page title 'Odalar', but hides the tribute
+// immediately on immersion without touching study-room content.
+body.classList.add('sr-immersed');observerCallback();
+assert.equal(inserted,null,'opened room must not show tribute');
+assert.equal(body.classList.contains('tk10-active'),false);
+
+// Even without the immersion class, the opened-room markup protects isolation.
+body.classList.remove('sr-immersed');
+roomMarkupPresent=true;observerCallback();
+assert.equal(inserted,null,'actual room markup also blocks the tribute');
+
+// Returning to the Rooms lobby, with no page title change, restores it.
+roomMarkupPresent=false;observerCallback();
+assert(inserted&&inserted.classList.contains('tk10-compact'),'back to lobby restores tribute');
+
+// The user navigates to Today: full-size tribute appears before #view.
 page='Bugün';observerCallback();
 assert(inserted&&inserted.classList.contains('tk10-home'));
 assert.equal(inserted.attrs['aria-label'],'10 Kasım 2026, Gazi Mustafa Kemal Atatürk anması');
 assert(body.classList.contains('tk10-active'));
 
-// Normal subpages render a compact memorial.
+// Other normal pages and the Rooms lobby use the compact treatment.
 page='Plan';observerCallback();
 assert(inserted.classList.contains('tk10-compact'));
 assert.equal(inserted.classList.contains('tk10-home'),false);
-
-// Immersive mode is immune even if page title momentarily remains stale.
-body.classList.add('sr-immersed');observerCallback();
-assert.equal(inserted,null);
-assert.equal(body.classList.contains('tk10-active'),false);
-body.classList.remove('sr-immersed');
-
-// Switching into Rooms removes the banner, not the room view.
 page='Odalar';observerCallback();
-assert.equal(inserted,null);
-assert.equal(body.classList.contains('tk10-active'),false);
+assert(inserted.classList.contains('tk10-compact'));
 
 // Midnight Istanbul: the effect disappears automatically via the interval.
 page='Bugün';observerCallback();
@@ -121,11 +131,12 @@ assert.equal(body.classList.contains('tk10-active'),false);
 
 // The photo and both styles are loaded only via dedicated non-room assets.
 assert.match(src,/commons\.wikimedia\.org/);
-assert.match(src,/title === 'Odalar'/);
+assert.match(src,/insideOpenedRoom/);
+assert.match(src,/observer\.observe\(document\.body, \{attributes: true/);
 assert.match(html,/ten-kasim-2026\.css\?v=1-memorial/);
 assert.match(html,/ten-kasim-2026\.js\?v=1-memorial/);
 assert.match(css,/body\.tk10-active:not\(\.sr-immersed\) \.ataturk-corner/);
 assert.doesNotMatch(css,/\.sr-room-header|\.sr-room-grid|\.sr-desk-scene|\.sx-room\s*\{/);
 assert.match(sw,/ten-kasim-2026\.js\?v=1-memorial/);
 assert.match(sw,/ten-kasim-2026\.css\?v=1-memorial/);
-console.log('PASS 10 November Istanbul midnight boundaries, one-day visibility, isolated Rooms screen, compact layout and offline asset wiring');
+console.log('PASS 10 November boundaries, Rooms lobby visibility, opened-room isolation, automatic lobby return, midnight removal and offline assets');
