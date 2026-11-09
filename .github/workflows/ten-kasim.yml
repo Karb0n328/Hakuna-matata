@@ -1,0 +1,41 @@
+name: 10 Kasim 2026 memorial verification
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ten-kasim-2026.js'
+      - 'ten-kasim-2026.css'
+      - 'tests/ten-kasim-2026.test.cjs'
+      - 'tests/ten-kasim-browser.test.cjs'
+      - 'index.html'
+      - 'sw.js'
+      - '.github/workflows/ten-kasim.yml'
+  workflow_dispatch:
+
+jobs:
+  tribute:
+    runs-on: ubuntu-latest
+    container: mcr.microsoft.com/playwright:v1.56.1-noble
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and Istanbul date checks
+        run: |
+          node --check ten-kasim-2026.js
+          node --check tests/ten-kasim-2026.test.cjs
+          node --check tests/ten-kasim-browser.test.cjs
+          node tests/ten-kasim-2026.test.cjs
+      - name: Install browser test driver
+        run: npm install --no-save --ignore-scripts playwright@1.56.1
+      - name: Check desktop, iPad, iPhone and room isolation
+        run: node tests/ten-kasim-browser.test.cjs
+      - name: Keep mobile and desktop preview captures
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ten-kasim-memorial-previews
+          path: test-results/ten-kasim-*.png
+          if-no-files-found: ignore
