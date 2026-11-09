@@ -125,6 +125,7 @@ const server=createServer((req,res)=>{
           assert.match(await card.locator('.tk10-story-method').textContent(),/edebî uyarlamadır/);
           const photo=card.locator('.tk10-story-image-main');
           await photo.waitFor();
+          await page.waitForFunction(()=>{const img=document.querySelector('.tk10-story-image-main');return img?.complete&&img.naturalWidth>0;});
           const fit=await photo.evaluate(el=>({
             fit:getComputedStyle(el).objectFit,
             position:getComputedStyle(el).objectPosition,
