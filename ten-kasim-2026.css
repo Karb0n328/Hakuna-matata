@@ -1,5 +1,5 @@
-/* 10 Kasım 2026 • editorial remembrance for normal pages ONLY.
-   Never styles the Rooms lobby or immersive room. Everything is opt-in
+/* 10 Kasım 2026 • memorial visible on normal pages and the Rooms lobby.
+   Never styles an opened immersive room. Everything is opt-in
    through .tk10-active and the tribute's own class names. */
 .tk10-tribute {
   --tk-scarlet:#bc3441;
@@ -159,3 +159,108 @@ body.tk10-active:not(.sr-immersed) .ataturk-corner{display:none!important}
   .tk10-compact .tk10-body{min-height:225px}
 }
 @media(prefers-reduced-motion:reduce){.tk10-tribute *{transition:none!important;animation:none!important}}
+
+
+/* 10-page archival narrative — independent of all study-room internals. */
+.tk10-story {
+  min-height:332px;display:grid;align-items:stretch;
+  grid-template-columns:minmax(0,1.32fr) minmax(245px,.82fr);
+  border-radius:22px;
+  background:linear-gradient(111deg,#151619,#202125 65%,#17181b);
+  box-shadow:0 17px 44px rgba(8,9,13,.18),inset 0 1px rgba(255,255,255,.06);
+}
+.tk10-story-shimmer{
+  position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse at 75% 35%,rgba(178,105,104,.11),transparent 52%),
+    linear-gradient(0deg,rgba(0,0,0,.17),transparent 62%);
+}
+.tk10-story-copy{
+  position:relative;z-index:2;min-width:0;display:flex;align-items:flex-start;
+  flex-direction:column;padding:27px clamp(24px,3vw,46px) 22px;
+}
+.tk10-story-topline{display:flex;gap:10px;align-items:center;width:100%;font-size:9px;letter-spacing:.15em;font-weight:760;color:#c4b5b1}
+.tk10-story-redline{width:19px;height:2px;background:#c94a55;flex:none}
+.tk10-story-count{font-size:10px;white-space:nowrap;color:#e3bdc0;margin-left:auto;font-variant-numeric:tabular-nums;letter-spacing:.12em}
+.tk10-story-date{font-size:9px;font-weight:750;letter-spacing:.18em;color:#c8747b;margin-top:20px}
+.tk10-story-title{font-size:clamp(27px,3.3vw,39px);font-weight:720;letter-spacing:-.055em;line-height:1.08;color:#f9f6f1;margin:7px 0 0}
+.tk10-story-lead{font-family:Georgia,"Times New Roman",serif;font-style:italic;font-size:15px;color:#c8b5ac;margin:9px 0 0}
+.tk10-story-text{font-size:clamp(12px,1.06vw,13.5px);line-height:1.7;letter-spacing:.005em;color:#e2ded8;margin:13px 0 0;max-width:68ch}
+.tk10-story-ending{font-family:Georgia,"Times New Roman",serif;font-style:italic;font-size:13px;line-height:1.5;margin:13px 0 0;color:#deb2b1}
+.tk10-story-progress{height:2px;border-radius:2px;background:rgba(249,232,217,.16);width:100%;margin-top:20px;overflow:hidden}
+.tk10-story-progress>span{display:block;height:100%;background:linear-gradient(90deg,#8a2836,#db7278);border-radius:2px}
+.tk10-story-foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px 16px;color:#aba6a3;margin-top:8px;font-size:10px}
+.tk10-story-method{font-size:9.5px;line-height:1.55;color:#aaa09e;margin-top:15px;max-width:72ch}
+.tk10-story-method a{color:#e9c2be;text-underline-offset:3px}
+.tk10-story-image{
+  position:relative;overflow:hidden;min-height:332px;isolation:isolate;
+  background:radial-gradient(ellipse at 60% 27%,#4e4948 0%,#242427 52%,#18191c 100%);
+  border-left:1px solid rgba(245,228,212,.065);
+}
+.tk10-story-image:before{content:"";position:absolute;inset:13px;z-index:3;pointer-events:none;
+  border:1px solid rgba(251,233,211,.11);border-radius:150px 150px 7px 7px}
+.tk10-story-image:after{content:"";position:absolute;z-index:3;pointer-events:none;
+  top:20px;right:19px;width:22px;height:2px;background:#c14e5a;box-shadow:-9px 5px rgba(255,240,225,.17)}
+.tk10-story-image-fill,.tk10-story-image-main{position:absolute;inset:0;width:100%;height:100%;display:block}
+.tk10-story-image-fill{object-fit:cover;object-position:center;
+  filter:grayscale(1) blur(20px) brightness(.42) contrast(1.05);transform:scale(1.16);opacity:.65}
+.tk10-story-image-main{
+  object-fit:contain;object-position:center center;
+  padding:13px 15px 48px;filter:grayscale(1) contrast(1.16) brightness(.94);
+  opacity:0;transition:opacity .6s ease;
+  -webkit-mask-image:linear-gradient(0deg,transparent 0%,#000 13%,#000 89%,transparent 100%);
+  mask-image:linear-gradient(0deg,transparent 0%,#000 13%,#000 89%,transparent 100%);
+}
+.tk10-story-photo-ready .tk10-story-image-main{opacity:1}
+.tk10-story-photo-missing .tk10-story-image{background:radial-gradient(ellipse at center,#494044,#191a1d 75%)}
+.tk10-story-photo-overlay{position:absolute;inset:0;pointer-events:none;z-index:1;
+  background:linear-gradient(90deg,#1e1f23 0%,transparent 17%),
+  linear-gradient(0deg,#151518 0%,transparent 30%)}
+.tk10-story-caption{position:absolute;z-index:4;bottom:23px;left:24px;right:20px;
+  color:#f0eae6;font-size:10px;line-height:1.3;text-shadow:0 2px 8px #000;letter-spacing:.02em}
+.tk10-story-photo-source{position:absolute;z-index:4;bottom:9px;left:24px;
+  font-size:8px;letter-spacing:.03em;color:#c9b3ae;text-decoration:none}
+.tk10-story-photo-source:hover,.tk10-story-photo-source:focus-visible{text-decoration:underline;color:#fff}
+
+/* Correct the general 10 Kasım portrait: no clipped forehead, squeezed face
+   or offstage cutout, including narrow iOS portrait mode. */
+.tk10-home .tk10-image-stage{width:53%;right:0;top:0;bottom:0}
+.tk10-home .tk10-photo{
+  inset:0;right:0;bottom:0;width:100%;height:100%;
+  object-fit:contain;object-position:center bottom;
+  filter:grayscale(1) contrast(1.1) brightness(.86);
+  -webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 16%,#000 93%,transparent 100%);
+  mask-image:linear-gradient(90deg,transparent 0%,#000 16%,#000 93%,transparent 100%);
+}
+.tk10-home .tk10-photo-ready .tk10-photo{opacity:.87}
+@media(max-width:1000px) {
+  .tk10-story{grid-template-columns:minmax(0,1.28fr) minmax(215px,.75fr);min-height:350px}
+  .tk10-story-copy{padding:23px 25px 20px}
+  .tk10-story-image{min-height:350px}
+  .tk10-story-text{font-size:12px}
+}
+@media(max-width:700px){
+  .tk10-story{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 235px;border-radius:18px;min-height:0}
+  .tk10-story-copy{padding:23px 21px 22px;min-height:0}
+  .tk10-story-date{margin-top:15px}
+  .tk10-story-title{font-size:32px}
+  .tk10-story-text{font-size:12.5px;line-height:1.65}
+  .tk10-story-ending{font-size:13px}
+  .tk10-story-image{min-height:235px;border-left:0;border-top:1px solid rgba(245,228,212,.065)}
+  .tk10-story-image:before{inset:10px 14px 15px;border-radius:100px 100px 7px 7px}
+  .tk10-story-image-main{padding:10px 16px 43px}
+  .tk10-story-photo-overlay{background:linear-gradient(0deg,#151518 0%,transparent 36%)}
+  .tk10-story-caption{left:21px;right:15px;bottom:21px}
+  .tk10-story-photo-source{left:21px}
+  .tk10-story-method{font-size:9px}
+  .tk10-home .tk10-image-stage{width:76%;right:0}
+  .tk10-home .tk10-photo{inset:0;width:100%;height:100%;object-fit:contain;object-position:center bottom}
+  .tk10-home.tk10-photo-ready .tk10-photo{opacity:.38}
+}
+@media(max-width:375px){
+  .tk10-story-title{font-size:29px}
+  .tk10-story-copy{padding:22px 17px}
+  .tk10-story-image{min-height:210px}
+  .tk10-story{grid-template-rows:auto 210px}
+  .tk10-story-foot{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){.tk10-story-image-main{transition:none!important}}
