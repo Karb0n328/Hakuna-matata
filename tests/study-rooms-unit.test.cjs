@@ -37,9 +37,17 @@ assert.ok(app.includes("window.HakunaStudyRooms?.leaveView?.()"),'page navigatio
 assert.match(app,/window\.HakunaRoomPreferences = Object\.freeze/,'settings expose a shared read-only preference');
 assert.match(app,/roomsStartTogether === true/,'auto start is opt-in, never enabled by default');
 assert.match(app,/roomsStartTogether: false/,'new accounts default to independent rooms');
-assert.match(app,/settingsRoomHeading[^]*?Tüm odalarda başlat[^]*?Molalar ayrı/,'Settings > Odalar shows concise explanation');
+assert.match(app,/settingsRoomHeading[^]*?Tüm odaları birlikte yönet[^]*?Birinde başlat veya mola ver; hepsine uygula/,'Settings > Odalar describes both actions briefly');
 assert.match(app,/roomStartTogether\.onchange=async/,'room preference toggle persists its changes');
 assert.match(src,/async function startInOtherRooms\(primaryRoom,owner\)/,'room start mirrors only when enabled');
+assert.match(src,/async function stopInOtherRooms\(primaryRoom,owner\)/,
+  'group pause is available only with the same opt-in setting');
+assert.match(src,/if\(multiStartPending\)await multiStartPending/,
+  'group pause waits for any ongoing group start to finish');
+assert.match(src,/room\.id!==primaryRoom&&room\.is_active!==false&&room\.studying/,
+  'group pause skips inactive or already-paused rooms');
+assert.match(src,/await rpc\('study_room_stop',\{p_room_id:target\.id\}\)/,
+  'group pause ends each other active room with its own server session');
 assert.match(src,/room\.id!==primaryRoom&&room\.is_active!==false&&!room\.studying/,
   'secondary starts skip the current and already-running rooms');
 assert.match(src,/if\(user===accountId\(\)&&window\.HakunaRoomPreferences\?\.startAll\?\.\(\)\)/,
