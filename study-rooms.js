@@ -480,6 +480,40 @@
     host.classList.remove('sr-timer-ended');
   }
 
+  async function startInOtherRooms(primaryRoom,owner){
+    if(!owner||!window.HakunaRoomPreferences?.startAll?.())return;
+    let overview;
+    try{
+      overview=await rpc('study_room_overview');
+    }catch(error){
+      console.warn('Other room overview',error);
+      if(owner===accountId()&&roomId===primaryRoom&&active())notice('Diğer odalar başlatılamadı.',true);
+      return;
+    }
+    if(owner!==accountId()||!window.HakunaRoomPreferences?.startAll?.())return;
+    const targets=(Array.isArray(overview.rooms)?overview.rooms:[])
+      .filter(room=>room.id&&room.id!==primaryRoom&&room.is_active!==false&&!room.studying);
+    let started=0,failed=0;
+    for(const target of targets){
+      // The preference and account can change while other rooms are starting.
+      if(owner!==accountId()||!window.HakunaRoomPreferences?.startAll?.())break;
+      try{
+        await rpc('study_room_start',{p_room_id:target.id});
+        started++;
+      }catch(error){
+        failed++;
+        console.warn('Other room start',target.id,error);
+      }
+    }
+    if(owner!==accountId())return;
+    // The overview cache also feeds offline launch and room-switching state.
+    if(started)refreshLaunch();
+    if(roomId===primaryRoom&&active()){
+      if(failed)notice(failed+' odada başlatılamadı. Diğer odalarını kontrol et.',true);
+      else if(started)notice(started+' diğer odada da çalışman başladı ✓');
+    }
+  }
+
   async function startWithCountdown(button){
     if(starting||busy||!snapshot||!roomId)return;
     const ticket=epoch,room=roomId;
@@ -495,6 +529,11 @@
       await rpc('study_room_start',{p_room_id:room});
       if(user===id())window.HakunaRoomNotifications?.started?.(room,code);
       if(ticket===epoch&&room===roomId&&active())await loadRoom();
+      // Start the remaining joined rooms only when the user has opted in.
+      // Never restart sessions already running; stopping remains room-specific.
+      if(user===accountId()&&window.HakunaRoomPreferences?.startAll?.()){
+        void startInOtherRooms(room,user);
+      }
     }catch(error){
       if(ticket===epoch&&room===roomId&&active())notice(error?.message||'Etüt başlatılamadı.',true);
     }finally{
