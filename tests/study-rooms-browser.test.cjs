@@ -23,7 +23,7 @@ const fixture=[
   '<main class="main-area"><h1 id="pageTitle">Odalar</h1><section class="ataturk-corner" aria-label="Atatürk Köşesi">Atatürk Köşesi</section><section class="republic-hero">Cumhuriyet</section><section id="view"></section></main>',
   '<script>',
   'window.__batuId='+JSON.stringify(batuId)+';window.__uid="user-1";localStorage.setItem("sb-zyrbbkbwrijnnykbgjvc-auth-token",JSON.stringify({user:{id:window.__uid}}));',
-  'window.__state={room:null,rooms:[],nextRoomId:1,studyingByRoom:{},startedByRoom:{},startCalls:{},selfStudying:false,seconds:12,other:false};window.__multiStart=false;window.HakunaRoomPreferences={startAll:()=>window.__multiStart};',
+  'window.__state={room:null,rooms:[],nextRoomId:1,studyingByRoom:{},startedByRoom:{},startCalls:{},stopCalls:{},selfStudying:false,seconds:12,other:false};window.__multiStart=false;window.HakunaRoomPreferences={startAll:()=>window.__multiStart};',
   'window.HakunaAccount={',
   'info:()=>({id:window.__uid}),open:()=>{window.__loginOpened=true},',
   'roomListen:()=>()=>{},roomLoadLook:async()=> (window.__uid===window.__batuId?window.__state.batuLook:window.__state.look)||{},roomSaveLook:async look=>{window.__state[window.__uid===window.__batuId?"batuLook":"look"]=look},',
@@ -39,7 +39,7 @@ const fixture=[
   ' if(name==="study_room_configure"){s.room.focus_minutes=args.p_focus_minutes;s.room.break_minutes=args.p_break_minutes;s.room.mode=args.p_mode;return true;}',
   ' if(name==="study_room_set_phase"){s.room.phase=args.p_phase;s.room.phase_started_at=args.p_phase==="idle"?null:new Date(Date.now()+(args.p_phase==="focus"?3100:0)).toISOString();return true;}',
   ' if(name==="study_room_start"){const target=args.p_room_id; if(!s.rooms.some(r=>r.id===target&&r.is_active))throw Error("Oda yok");s.startCalls[target]=(s.startCalls[target]||0)+1;s.studyingByRoom[target]=true;const began=s.startedByRoom[target]||new Date().toISOString();s.startedByRoom[target]=began;if(s.room?.id===target){s.selfStudying=true;s.startedAt=began;s.task=args.p_task_title||null;}return {started_at:began,server_now:new Date().toISOString()};}',
-  ' if(name==="study_room_stop"){s.selfStudying=false;s.studyingByRoom[s.room.id]=false;delete s.startedByRoom[s.room.id];s.startedAt=null;s.seconds+=12;return 12;}',
+  ' if(name==="study_room_stop"){const target=args.p_room_id;s.stopCalls[target]=(s.stopCalls[target]||0)+1;s.studyingByRoom[target]=false;delete s.startedByRoom[target];if(s.room?.id===target){s.selfStudying=false;s.startedAt=null;}s.seconds+=12;return 12;}',
   ' if(name==="study_room_close"){s.room.is_active=false;s.selfStudying=false;s.studyingByRoom[s.room.id]=false;delete s.startedByRoom[s.room.id];return true;}',
   ' if(name==="study_room_leave"){s.rooms=s.rooms.filter(r=>r.id!==s.room?.id);s.room=null;return true;}',
   ' throw Error("Unknown RPC "+name);',
@@ -337,39 +337,63 @@ const server=createServer((req,res)=>{
     await page.locator('[data-sr-action=stop]').click();
     await page.locator('[data-sr-action=start]').waitFor();
 
-    // ON: starting one room starts every other joined room automatically.
+    // ON: a start in one room begins all joined rooms.
     await page.evaluate(()=>{window.__multiStart=true;});
     await page.locator('[data-sr-action=start]').click();
     await page.waitForFunction(([a,b])=>
       window.__state.studyingByRoom[a]&&window.__state.studyingByRoom[b],
       [firstMultiRoom,secondMultiRoom]);
-    const countWhenAlreadyRunning=await page.evaluate(id=>window.__state.startCalls[id],secondMultiRoom);
-    await page.locator('[data-sr-action=stop]').click(); // Stop second; first is untouched
-    assert.equal(await page.evaluate(id=>window.__state.studyingByRoom[id],firstMultiRoom),true,
-      'stopping the source room does not stop the other');
 
-    // Start second again: the first active room must not be restarted.
-    await page.locator('[data-sr-action=start]').waitFor();
+    // ON: pausing one must stop both active sessions, including the other room.
+    await page.locator('[data-sr-action=stop]').click();
+    await page.waitForFunction(([a,b])=>
+      window.__state.studyingByRoom[a]===false&&window.__state.studyingByRoom[b]===false,
+      [firstMultiRoom,secondMultiRoom]);
+
+    // Already-running rooms must never be restarted on group start.
+    await page.evaluate(id=>{
+      window.__state.studyingByRoom[id]=true;
+      window.__state.startedByRoom[id]=new Date().toISOString();
+    },firstMultiRoom);
     const firstCountBefore=await page.evaluate(id=>window.__state.startCalls[id],firstMultiRoom);
+    await page.locator('[data-sr-action=start]').waitFor();
     await page.locator('[data-sr-action=start]').click();
     await page.locator('[data-sr-action=stop]').waitFor();
-    // Allow room overview / fan-out to complete.
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(250);
     assert.equal(await page.evaluate(id=>window.__state.startCalls[id],firstMultiRoom),firstCountBefore,
-      'already-running rooms must not restart');
-    assert(await page.evaluate(id=>window.__state.startCalls[id],secondMultiRoom)>countWhenAlreadyRunning);
-
-    // Toggling off restores independent starts.
+      'group start must not restart already working rooms');
     await page.locator('[data-sr-action=stop]').click();
+    await page.waitForFunction(([a,b])=>
+      window.__state.studyingByRoom[a]===false&&window.__state.studyingByRoom[b]===false,
+      [firstMultiRoom,secondMultiRoom]);
+
+    // A rapid pause immediately after starting must not leave late-started rooms running.
+    await page.locator('[data-sr-action=start]').waitFor();
+    await page.locator('[data-sr-action=start]').click();
+    await page.locator('[data-sr-action=stop]').waitFor();
+    await page.locator('[data-sr-action=stop]').click();
+    await page.waitForFunction(([a,b])=>
+      window.__state.studyingByRoom[a]===false&&window.__state.studyingByRoom[b]===false,
+      [firstMultiRoom,secondMultiRoom]);
+
+    // Turning the switch off restores independent start AND stop.
+    await page.locator('[data-sr-action=start]').waitFor();
+    await page.locator('[data-sr-action=start]').click();
+    await page.waitForFunction(([a,b])=>
+      window.__state.studyingByRoom[a]&&window.__state.studyingByRoom[b],
+      [firstMultiRoom,secondMultiRoom]);
+    await page.evaluate(()=>{window.__multiStart=false;});
+    await page.locator('[data-sr-action=stop]').click();
+    await page.locator('[data-sr-action=start]').waitFor();
+    assert.equal(await page.evaluate(id=>window.__state.studyingByRoom[id],firstMultiRoom),true,
+      'with the setting OFF, pausing the current room leaves the other running');
     await page.locator('[data-sr-action=back]').click();
     await page.locator('[data-sr-action=open]').filter({hasText:'Çevrimdışı hava'}).click();
     await page.locator('[data-sr-action=stop]').waitFor();
     await page.locator('[data-sr-action=stop]').click();
-    await page.evaluate(()=>{window.__multiStart=false;});
-    await page.locator('[data-sr-action=start]').click();
-    await page.locator('[data-sr-action=stop]').waitFor();
+    await page.locator('[data-sr-action=start]').waitFor();
     assert.equal(await page.evaluate(id=>window.__state.studyingByRoom[id],secondMultiRoom),false,
-      'switch OFF should disable simultaneous starts again');
+      'the second room remains stopped with the switch OFF');
 
     assert.equal(errors.length,0,'Page errors: '+errors.join(', '));
     console.log('PASS '+label+': room creation, shared clock, timer, roster security, presets, close, responsive layout');
