@@ -38,6 +38,25 @@ try{
  await page.getByText('Bu cihazda bildirimler açık.',{exact:true}).waitFor();
  assert(await page.evaluate(()=>window.__notificationsEnabled));
 
+ // Settings > Odalar is a compact, persisted, opt-in room preference.
+ const roomToggle=page.locator('#settingsRoomStartTogether');
+ await roomToggle.waitFor();
+ assert.equal(await roomToggle.isChecked(),false,'other rooms must not auto-start by default');
+ assert.equal(await page.evaluate(()=>window.HakunaRoomPreferences.startAll()),false);
+ await roomToggle.check();
+ assert.equal(await page.evaluate(()=>window.HakunaRoomPreferences.startAll()),true);
+ await page.locator('#sidebarNav [data-nav=tasks]').click();
+ await page.locator('#sidebarNav [data-nav=settings]').click();
+ assert.equal(await page.locator('#settingsRoomStartTogether').isChecked(),true,
+   'settings switch remains on when navigating away');
+ await page.reload();
+ await page.locator('#sidebarNav [data-nav=settings]').click();
+ assert.equal(await page.locator('#settingsRoomStartTogether').isChecked(),true,
+   'settings preference persists across reload');
+ await page.locator('#settingsRoomStartTogether').uncheck();
+ assert.equal(await page.evaluate(()=>window.HakunaRoomPreferences.startAll()),false,
+   'turning the setting off immediately restores independent rooms');
+
  // Isolate startup from the real worker's cached auth dependencies.
  resumeContext=await browser.newContext({serviceWorkers:'block'});
  await resumeContext.route('https://**/*',r=>r.abort());
