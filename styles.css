@@ -446,3 +446,23 @@ html[data-batu-theme="dark"] .question-top-notice-mark {
 .hm-notification-permission h2 { margin: 0 0 20px; font-size: 1.2rem; }
 .hm-notification-permission div { display: flex; gap: 10px; }
 .hm-notification-permission button { flex: 1; min-height: 44px; }
+
+
+/* Settings > Odalar: compact, accessible, account-synced opt-in. */
+.settings-room-card .settings-room-row{margin-top:8px;padding:11px 0 3px;cursor:pointer}
+.settings-room-card .settings-room-row>span{min-width:0;flex:1}
+.settings-room-card .settings-room-row .settings-row-desc{display:block;line-height:1.55}
+.settings-room-row input[type="checkbox"]{
+  appearance:none;-webkit-appearance:none;position:relative;flex:0 0 42px;
+  width:42px;height:24px;margin:0;border:1px solid var(--line,#d8dce3);
+  border-radius:999px;background:#b4bdc7;cursor:pointer;transition:background .15s ease,border-color .15s ease
+}
+.settings-room-row input[type="checkbox"]::before{
+  content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;
+  border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.22);
+  transition:transform .15s ease
+}
+.settings-room-row input[type="checkbox"]:checked{background:var(--blue,#5688c4);border-color:var(--blue,#5688c4)}
+.settings-room-row input[type="checkbox"]:checked::before{transform:translateX(18px)}
+.settings-room-row input[type="checkbox"]:focus-visible{outline:3px solid var(--blue,#5688c4);outline-offset:3px}
+@media(prefers-reduced-motion:reduce){.settings-room-row input[type="checkbox"],.settings-room-row input[type="checkbox"]::before{transition:none}}
