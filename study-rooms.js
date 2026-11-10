@@ -4,6 +4,7 @@
   let host=null,roomId=null,snapshot=null,unsubscribe=null,poll=null,clock=null;
   let loading=false,busy=false,epoch=0,skewMs=0,lastUser=null,realtimeDelay=null;
   let heartbeat=null,starting=false,countdownTimeout=null,countdownResolve=null;
+  let multiStartPending=null;
   let lastRosterKey='',lastPersonalKey='';
   const E=(value='')=>String(value==null?'':value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let bootOwner=null,cacheRevision=0,refreshTask=null;
@@ -514,6 +515,35 @@
     }
   }
 
+  async function stopInOtherRooms(primaryRoom,owner){
+    if(!owner||!window.HakunaRoomPreferences?.startAll?.())return {stopped:0,failed:0};
+    // A rapid stop after start must never leave a late-started room running.
+    if(multiStartPending)await multiStartPending;
+    if(owner!==accountId()||!window.HakunaRoomPreferences?.startAll?.())return {stopped:0,failed:0};
+    let overview;
+    try{overview=await rpc('study_room_overview');}
+    catch(error){
+      console.warn('Other room overview for stop',error);
+      return {stopped:0,failed:1};
+    }
+    if(owner!==accountId()||!window.HakunaRoomPreferences?.startAll?.())return {stopped:0,failed:0};
+    const targets=(Array.isArray(overview.rooms)?overview.rooms:[])
+      .filter(room=>room.id&&room.id!==primaryRoom&&room.is_active!==false&&room.studying);
+    let stopped=0,failed=0;
+    for(const target of targets){
+      if(owner!==accountId()||!window.HakunaRoomPreferences?.startAll?.())break;
+      try{
+        await rpc('study_room_stop',{p_room_id:target.id});
+        stopped++;
+      }catch(error){
+        failed++;
+        console.warn('Other room stop',target.id,error);
+      }
+    }
+    if(owner===accountId()&&stopped)refreshLaunch();
+    return {stopped,failed};
+  }
+
   async function startWithCountdown(button){
     if(starting||busy||!snapshot||!roomId)return;
     const ticket=epoch,room=roomId;
@@ -529,10 +559,12 @@
       await rpc('study_room_start',{p_room_id:room});
       if(user===id())window.HakunaRoomNotifications?.started?.(room,code);
       if(ticket===epoch&&room===roomId&&active())await loadRoom();
-      // Start the remaining joined rooms only when the user has opted in.
-      // Never restart sessions already running; stopping remains room-specific.
+      // Start all joined rooms only on opt-in. Keep the fan-out promise so a
+      // quick 'Mola ver' can wait for every start before stopping them all.
       if(user===accountId()&&window.HakunaRoomPreferences?.startAll?.()){
-        void startInOtherRooms(room,user);
+        const pending=startInOtherRooms(room,user).catch(error=>console.warn('Other room start',error));
+        multiStartPending=pending;
+        void pending.then(()=>{if(multiStartPending===pending)multiStartPending=null;});
       }
     }catch(error){
       if(ticket===epoch&&room===roomId&&active())notice(error?.message||'Etüt başlatılamadı.',true);
@@ -582,9 +614,20 @@
     if(!name)return;
     busy=true;button.disabled=true;notice('İşlem kaydediliyor…');
     try{
+      const stopTogether=action==='stop'&&window.HakunaRoomPreferences?.startAll?.();
+      const sourceRoom=roomId,sourceUser=accountId();
       await rpc(name,args);
+      const otherStops=stopTogether&&sourceUser===accountId()
+        ?await stopInOtherRooms(sourceRoom,sourceUser):null;
       if(action==='leave'||action==='close')showLobby();
-      else {await loadRoom();if(action==='stop')window.HakunaRoomExperience?.finish();}
+      else {
+        await loadRoom();
+        if(action==='stop'){
+          window.HakunaRoomExperience?.finish();
+          if(otherStops?.failed)notice(otherStops.failed+' odada mola verilemedi. Odalarını kontrol et.',true);
+          else if(otherStops?.stopped)notice(otherStops.stopped+' diğer odada da mola başladı ✓');
+        }
+      }
     }catch(error){notice(error?.message||'İşlem tamamlanamadı.',true);}
     finally{busy=false;if(button.isConnected)button.disabled=false;}
   }
