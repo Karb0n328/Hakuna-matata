@@ -99,9 +99,10 @@ const planItem=id=>({id,week_start:'2026-11-09',weekday:1,sort_order:0,subject:'
 
     // 6. Older, slower weekly queries must not replace a newer result.
     scenario='race';planCount=0;
-    await page.evaluate(()=>window.HakunaWeekly.render(document.querySelector('#view'),'guidance',[],true));
-    await page.waitForRequest(req=>req.url().includes('/guidance_weekly_plan?'));
-    await page.evaluate(()=>window.HakunaWeekly.render(document.querySelector('#view'),'guidance',[],true));
+    const firstWeekly=page.waitForRequest(req=>req.url().includes('/guidance_weekly_plan?'));
+    await page.evaluate(()=>{void window.HakunaWeekly.render(document.querySelector('#view'),'guidance',[],true)});
+    await firstWeekly;
+    await page.evaluate(()=>{void window.HakunaWeekly.render(document.querySelector('#view'),'guidance',[],true)});
     await page.locator('[data-plan-id="latest"]').waitFor();
     await sleep(750);
     assert.equal(await page.locator('[data-plan-id="obsolete"]').count(),0,'old weekly response must be ignored');
