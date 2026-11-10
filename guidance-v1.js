@@ -46,11 +46,26 @@ function bindForm(view,mentor,item){
  };
  f.querySelector('[data-cancel-edit]')?.addEventListener('click',()=>draw(view,'guidance'));
 }
+const renderEpochs=new WeakMap();
 async function draw(view,page){
- const r=role();if(!r)return;const mentor=r==='mentor';document.body.classList.toggle('ayzos-kid-mode',!mentor);view.innerHTML='<div class="gd-loading">Ödevler yükleniyor…</div>';
+ const r=role();if(!r||!view?.isConnected)return;
+ const mentor=r==='mentor';
+ // A guidance request owns only its own mounted element, never the shared #view.
+ // Late cloud responses must not repaint a different page or an older render.
+ const epoch=(renderEpochs.get(view)||0)+1;
+ renderEpochs.set(view,epoch);
+ const isCurrent=()=>view.isConnected&&renderEpochs.get(view)===epoch&&role()===r;
+ document.body.classList.toggle('ayzos-kid-mode',!mentor);
+ view.innerHTML='<div class="gd-loading">Ödevler yükleniyor…</div>';
  try{
  const items=await fetchAll();
- if(window.HakunaWeekly){await window.HakunaWeekly.render(view,page,items,mentor);if(navigator.onLine===false){const note=document.createElement('p');note.textContent='Cihaza kaydedilmiş program · Değişiklik için internet bağlantısı gerekiyor.';view.prepend(note);}return;}
+ if(!isCurrent())return;
+ if(window.HakunaWeekly){
+   await window.HakunaWeekly.render(view,page,items,mentor);
+   if(!isCurrent())return;
+   if(navigator.onLine===false){const note=document.createElement('p');note.textContent='Cihaza kaydedilmiş program · Değişiklik için internet bağlantısı gerekiyor.';view.prepend(note);}
+   return;
+ }
  const today=date(),todays=items.filter(x=>!x.due_date||x.due_date<=today);
  const list=page==='today'?todays:page==='plan'?items:items;
  const title=mentor?'Ayzos · Rehberlik':page==='today'?'Bugünkü maceram 🌈':page==='plan'?'Görev haritam 🗺️':'Görevlerim 🚀';
@@ -63,7 +78,22 @@ async function draw(view,page){
  view.querySelectorAll('[data-complete]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{const t=items.find(x=>x.id===b.dataset.complete);await rpc(t.id,!t.completed);await draw(view,page)}catch(err){alert(err.message);b.disabled=false}});
  view.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{if(!mentor)return;const item=items.find(x=>x.id===b.dataset.edit);const side=view.querySelector('.gd-side');side.innerHTML='<h3>✎ Ödevi düzenle</h3><p class="gd-edit-hint">Değişikliklerini yapıp Kaydet butonuna bas.</p>'+form(item);side.classList.add('gd-editing');bindForm(view,mentor,item);side.scrollIntoView({behavior:'smooth',block:'start'});side.querySelector('[name=title]')?.focus({preventScroll:true})});
  view.querySelectorAll('[data-delete]').forEach(b=>b.onclick=async()=>{if(!mentor||!confirm('Bu ödev silinsin mi?'))return;b.disabled=true;try{await api('guidance_homework?id=eq.'+encodeURIComponent(b.dataset.delete),'DELETE');await draw(view,page)}catch(err){alert(err.message);b.disabled=false}});
- }catch(err){view.innerHTML='<div class="card"><div class="card-body">Ödevler yüklenemedi: '+esc(err.message)+' <button class="secondary-btn" data-retry>Yeniden dene</button></div></div>';view.querySelector('[data-retry]').onclick=()=>draw(view,page)}
+ }catch(err){
+   if(!isCurrent())return;
+   view.innerHTML='<div class="card"><div class="card-body">Ödevler yüklenemedi: '+esc(err.message)+' <button class="secondary-btn" data-retry>Yeniden dene</button></div></div>';
+   view.querySelector('[data-retry]').onclick=()=>draw(view,page);
+ }
 }
-window.HakunaGuidance={role,render:(view,page)=>{void draw(view,page)},getCached:()=>cached,lastFetch:()=>lastFetch};
+function render(view,page){
+ if(!view)return;
+ const currentRole=role();
+ if(!currentRole||(currentRole==='mentor'&&page!=='guidance')||
+   (currentRole==='student'&&!['today','plan','tasks'].includes(page)))return;
+ const panel=document.createElement('div');
+ panel.className='gd-route-scope';
+ // Detaches prior requests on navigation, including concurrent weekly fetches.
+ view.replaceChildren(panel);
+ void draw(panel,page);
+}
+window.HakunaGuidance={role,render,getCached:()=>cached,lastFetch:()=>lastFetch};
 })();
