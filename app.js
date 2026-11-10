@@ -21,6 +21,11 @@
 
   let db;
   let state;
+  // Account-synced preference: other modules read it without reaching into app internals.
+  // It is deliberately off unless a user enables it in Settings > Odalar.
+  window.HakunaRoomPreferences = Object.freeze({
+    startAll: () => state?.settings?.roomsStartTogether === true
+  });
   let currentPage = 'today';
   let taskTab = 'tasks';
   let questionFilter = 'Tümü';
@@ -72,7 +77,7 @@
       debts: [],
       exams: [],
       questions: [],
-      settings: { firstRun: true }
+      settings: { firstRun: true, roomsStartTogether: false }
     };
   }
 
@@ -854,7 +859,19 @@
   }
 
   function renderSettings(view,actions) {
-    view.innerHTML=`<div class="settings-grid"><section class="card settings-section"><div class="card-title">⚙️ Genel</div><div class="settings-row"><div><div class="settings-row-title">Ana ekrana ekle</div><div class="settings-row-desc">Safari → Paylaş → Ana Ekrana Ekle.</div></div><span>📲</span></div><div class="settings-row"><div><div class="settings-row-title">Bildirimler</div><div class="settings-row-desc" data-notifications-status role="status"></div></div><button type="button" class="secondary-btn" data-enable-notifications>Bildirimleri aç</button></div><div class="settings-row"><div><div class="settings-row-title">Veri yedeği</div><div class="settings-row-desc">Verilerini JSON olarak yedekleyebilirsin.</div></div><div style="display:flex;gap:6px"><button class="secondary-btn" data-backup>Yedekle</button><button class="secondary-btn" data-restore>Geri yükle</button><input id="restoreFile" type="file" accept="application/json" hidden></div></div><div class="settings-row"><div><div class="settings-row-title">Tüm veriyi sıfırla</div><div class="settings-row-desc">Bu cihazdaki Hakuna Matata kayıtlarını temizler.</div></div><button class="danger-btn" data-reset>Sil</button></div></section></div>`;
+    view.innerHTML=`<div class="settings-grid"><section class="card settings-section"><div class="card-title">⚙️ Genel</div><div class="settings-row"><div><div class="settings-row-title">Ana ekrana ekle</div><div class="settings-row-desc">Safari → Paylaş → Ana Ekrana Ekle.</div></div><span>📲</span></div><div class="settings-row"><div><div class="settings-row-title">Bildirimler</div><div class="settings-row-desc" data-notifications-status role="status"></div></div><button type="button" class="secondary-btn" data-enable-notifications>Bildirimleri aç</button></div><div class="settings-row"><div><div class="settings-row-title">Veri yedeği</div><div class="settings-row-desc">Verilerini JSON olarak yedekleyebilirsin.</div></div><div style="display:flex;gap:6px"><button class="secondary-btn" data-backup>Yedekle</button><button class="secondary-btn" data-restore>Geri yükle</button><input id="restoreFile" type="file" accept="application/json" hidden></div></div><div class="settings-row"><div><div class="settings-row-title">Tüm veriyi sıfırla</div><div class="settings-row-desc">Bu cihazdaki Hakuna Matata kayıtlarını temizler.</div></div><button class="danger-btn" data-reset>Sil</button></div></section><section class="card settings-section settings-room-card" aria-labelledby="settingsRoomHeading"><div class="card-title" id="settingsRoomHeading">🫂 Odalar</div><label class="settings-row settings-room-row" for="settingsRoomStartTogether"><span><span class="settings-row-title">Tüm odalarda başlat</span><span class="settings-row-desc">Birinde başlayınca diğerlerinde de başlar. Molalar ayrı.</span></span><input id="settingsRoomStartTogether" type="checkbox" role="switch" aria-label="Tüm odalarda başlat" ${state.settings?.roomsStartTogether === true ? 'checked' : ''}></label></section></div>`;
+    const roomStartTogether=view.querySelector('#settingsRoomStartTogether');
+    roomStartTogether.onchange=async()=>{
+      const oldValue=state.settings?.roomsStartTogether === true;
+      state.settings={...(state.settings||{}),roomsStartTogether:roomStartTogether.checked};
+      try {
+        await save();
+      } catch(error) {
+        state.settings.roomsStartTogether=oldValue;
+        roomStartTogether.checked=oldValue;
+        toast('Oda ayarı kaydedilemedi.');
+      }
+    };
     const notificationButton=view.querySelector('[data-enable-notifications]');
     const notificationStatus=view.querySelector('[data-notifications-status]');
     notificationButton.onclick=async()=>{
