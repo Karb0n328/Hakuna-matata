@@ -21,6 +21,7 @@ permissions:
 jobs:
   browser-tests:
     runs-on: ubuntu-latest
+    container: mcr.microsoft.com/playwright:v1.56.1-noble
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -29,7 +30,6 @@ jobs:
           node-version: '22'
       - run: node --check guidance-weekly.js && node --check guidance-v1.js && node --check tests/guidance-page-isolation.test.cjs
       - run: npm install --no-save --ignore-scripts playwright@1.56.1
-      - run: npx playwright install --with-deps chromium webkit
       - run: node tests/guidance-weekly.test.cjs
       - run: node tests/guidance-page-isolation.test.cjs
       - uses: actions/upload-artifact@v4
