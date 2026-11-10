@@ -14,7 +14,7 @@ function loadRoomUi(){
     import('./room-weather.js?v=2'),
     import('./room-experience.js?v=7-bloom'),
     import('./room-wardrobe.js?v=8-esila-heart'),
-    import('./study-rooms.js?v=24-multiroom')
+    import('./study-rooms.js?v=25-auto-start')
   ]);
   return roomUi;
 }
@@ -29,7 +29,7 @@ if(launch?.entries.length){
 }
 
 try{
-  await import('./app.js?v=room-first-frame-v1');
+  await import('./app.js?v=settings-room-auto-start-v2');
 }catch(error){
   showBootError(error);
 }
