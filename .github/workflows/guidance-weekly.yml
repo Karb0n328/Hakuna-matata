@@ -3,13 +3,17 @@ on:
   push:
     paths:
       - guidance-weekly.js
+      - guidance-v1.js
       - guidance-weekly-v4.css
+      - tests/guidance-page-isolation.test.cjs
       - tests/guidance-weekly.test.cjs
       - .github/workflows/guidance-weekly.yml
   pull_request:
     paths:
       - guidance-weekly.js
+      - guidance-v1.js
       - guidance-weekly-v4.css
+      - tests/guidance-page-isolation.test.cjs
       - tests/guidance-weekly.test.cjs
       - .github/workflows/guidance-weekly.yml
 permissions:
@@ -23,10 +27,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --check guidance-weekly.js
+      - run: node --check guidance-weekly.js && node --check guidance-v1.js && node --check tests/guidance-page-isolation.test.cjs
       - run: npm install --no-save --ignore-scripts playwright@1.56.1
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium webkit
       - run: node tests/guidance-weekly.test.cjs
+      - run: node tests/guidance-page-isolation.test.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
