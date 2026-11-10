@@ -12,6 +12,7 @@ const shift=(s,n)=>{let d=parse(s);d.setDate(d.getDate()+n);return date(d)};
 const monday=()=>{let d=new Date(),dow=(d.getDay()+6)%7;d.setDate(d.getDate()-dow);return date(d)};
 const dow=()=> (new Date().getDay()+6)%7;
 let selectedWeek=monday();
+const renderEpochs=new WeakMap();
 function headers(){let s;try{s=JSON.parse(localStorage.getItem(STORE)||'null')}catch{}if(!s?.access_token)throw Error('Oturum bulunamadı. Yeniden giriş yap.');return {'apikey':KEY,'Authorization':'Bearer '+s.access_token,'Content-Type':'application/json'}}
 async function request(path,method='GET',data){
  if(method==='GET'&&window.HakunaOffline)return window.HakunaOffline.read(path,()=>requestOnline(path,method,data));
@@ -157,12 +158,21 @@ function bindPlanner(view,plan,week,onEdit,onDelete){
 
 }
 async function render(view,page,adHoc,mentor){
+ if(!view?.isConnected)return;
+ const epoch=(renderEpochs.get(view)||0)+1;
+ renderEpochs.set(view,epoch);
  view.innerHTML='<div class="gd-loading">Haftalık program yükleniyor…</div>';
+ const loading=view.firstElementChild;
+ // Every request is tied to its own loading placeholder. If the user
+ // navigates elsewhere or triggers a newer render, stale results are discarded.
+ const isCurrent=()=>view.isConnected&&renderEpochs.get(view)===epoch&&view.firstElementChild===loading;
  try{
  const week=mentor?selectedWeek:monday(),end=shift(week,6);
  const plan=await request('guidance_weekly_plan?select=*&week_start=eq.'+week+'&order=weekday.asc,sort_order.asc,created_at.asc');
+ if(!isCurrent())return;
  // Fetch only the current week's completion records, scoped by the plan ids.
  const doneRows=plan.length?await request('guidance_weekly_done?select=plan_id&plan_id=in.('+plan.map(p=>p.id).join(',')+')'):[];
+ if(!isCurrent())return;
  const done=new Set(doneRows.map(x=>x.plan_id));
  const total=plan.length,completed=plan.filter(x=>done.has(x.id)).length;
  if(mentor){
@@ -184,7 +194,11 @@ async function render(view,page,adHoc,mentor){
  view.querySelectorAll('[data-check]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{const id=b.dataset.check;if(done.has(id))await request('guidance_weekly_done?plan_id=eq.'+id,'DELETE');else await request('guidance_weekly_done','POST',{plan_id:id});render(view,page,adHoc,mentor)}catch(e){alert(e.message);b.disabled=false}});
  view.querySelectorAll('[data-adhoc-check]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{window.HakunaOffline?.requireOnline();const r=await fetch(URL+'rpc/guidance_set_completion',{method:'POST',headers:headers(),body:JSON.stringify({p_id:b.dataset.adhocCheck,p_completed:true})});if(!r.ok)throw Error('Tamamlanamadı');const t=adHoc.find(x=>x.id===b.dataset.adhocCheck);if(t)t.completed=true;render(view,page,adHoc,mentor)}catch(e){alert(e.message);b.disabled=false}});
  }
- }catch(err){view.innerHTML='<div class="card"><div class="card-body">Program yüklenemedi: '+esc(err.message)+' <button data-retry class="secondary-btn">Yeniden dene</button></div></div>';view.querySelector('[data-retry]').onclick=()=>render(view,page,adHoc,mentor)}
+ }catch(err){
+  if(!isCurrent())return;
+  view.innerHTML='<div class="card"><div class="card-body">Program yüklenemedi: '+esc(err.message)+' <button data-retry class="secondary-btn">Yeniden dene</button></div></div>';
+  view.querySelector('[data-retry]').onclick=()=>render(view,page,adHoc,mentor);
+ }
 }
 window.HakunaWeekly={render};
 })();
