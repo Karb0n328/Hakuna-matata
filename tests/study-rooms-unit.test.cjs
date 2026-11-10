@@ -34,6 +34,16 @@ const sw=fs.readFileSync(require('node:path').join(__dirname,'..','sw.js'),'utf8
 assert.ok(app.includes("['rooms','🫂','Odalar']"),'desktop navigation should expose rooms');
 assert.ok(app.includes("currentPage==='rooms'"),'router should render study rooms');
 assert.ok(app.includes("window.HakunaStudyRooms?.leaveView?.()"),'page navigation should stop room listeners');
+assert.match(app,/window\.HakunaRoomPreferences = Object\.freeze/,'settings expose a shared read-only preference');
+assert.match(app,/roomsStartTogether === true/,'auto start is opt-in, never enabled by default');
+assert.match(app,/roomsStartTogether: false/,'new accounts default to independent rooms');
+assert.match(app,/settingsRoomHeading[^]*?Tüm odalarda başlat[^]*?Molalar ayrı/,'Settings > Odalar shows concise explanation');
+assert.match(app,/roomStartTogether\.onchange=async/,'room preference toggle persists its changes');
+assert.match(src,/async function startInOtherRooms\(primaryRoom,owner\)/,'room start mirrors only when enabled');
+assert.match(src,/room\.id!==primaryRoom&&room\.is_active!==false&&!room\.studying/,
+  'secondary starts skip the current and already-running rooms');
+assert.match(src,/if\(user===accountId\(\)&&window\.HakunaRoomPreferences\?\.startAll\?\.\(\)\)/,
+  'automatic starts apply only to the same signed-in account');
 assert.ok(html.includes('study-rooms.css'),'page should load room CSS');
 assert.ok(html.includes('study-rooms-immersive.css'),'page should load isolated room CSS');
 const assets=JSON.parse(sw.match(/const ASSETS=(.*);/)[1]);
