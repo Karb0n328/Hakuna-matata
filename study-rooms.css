@@ -415,21 +415,20 @@ html[data-hakuna-palette="republic"] .sr-desk-scene{filter:hue-rotate(323deg) sa
   --chair-finish:radial-gradient(circle,#f2c883 1px,transparent 2px) 2px 3px/11px 11px,linear-gradient(150deg,#543766,#24192f);
 }
 
-/* Closed hardback appears only for paused/AFK desks.
-   Intrinsic SVG dimensions and inline placement are deliberate:
-   older installed APK/PWA styles cannot leave an unstyled 300x150 SVG. */
-.sr-desk-scene > svg.sr-closed-book {
+/* Book is anchored to the actual 118px tabletop, not the room scene.
+   Only idle/away desks render it; focused desks retain the original open notebook. */
+.sr-scene-table > svg.sr-closed-book{
   display:block;
   position:absolute;
-  left:52px;
-  bottom:18px;
-  width:44px;
-  height:27px;
+  left:50px;
+  bottom:6px;
+  width:40px;
+  height:18px;
   max-width:none;
   max-height:none;
-  z-index:8;
   overflow:visible;
   pointer-events:none;
-  filter:drop-shadow(1px 1px 1px rgba(35,40,45,.18));
+  z-index:1;
+  filter:drop-shadow(0 1px 1px rgba(40,32,26,.23));
 }
-.sr-desk-away > svg.sr-closed-book{opacity:.86}
+.sr-desk-away .sr-scene-table > svg.sr-closed-book{opacity:.86}
