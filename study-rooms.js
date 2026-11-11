@@ -285,7 +285,11 @@
     const state=online?(working?'working':'resting'):'away';
     return '<div class="sr-desk-scene sr-desk-'+state+' sr-outfit-'+avatar+'" aria-hidden="true">'
       +'<span class="sr-scene-stars">✦</span><div class="sr-scene-window"><span></span><span></span></div>'
-      +'<div class="sr-scene-chair" data-chair-level="'+level+'"></div>'
+      +'<div class="sr-scene-chair" data-chair-level="'+level+'">'
+        +'<i class="sr-chair-wing sr-chair-wing-left"></i><i class="sr-chair-wing sr-chair-wing-right"></i>'
+        +'<i class="sr-chair-back-panel"></i><i class="sr-chair-seams"></i>'
+        +'<i class="sr-chair-seat"></i><i class="sr-chair-arm sr-chair-arm-left"></i>'
+        +'<i class="sr-chair-arm sr-chair-arm-right"></i><i class="sr-chair-crest"></i></div>'
       +(online?window.HakunaRoomWardrobe.character(m.look):'')
       +'<div class="sr-scene-table"></div><div class="sr-scene-notebook"><i></i><i></i><i></i></div>'
       +'<div class="sr-scene-coffee"><span></span></div>'
