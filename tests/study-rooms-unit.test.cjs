@@ -55,27 +55,29 @@ assert.match(src,/if\(user===accountId\(\)&&window\.HakunaRoomPreferences\?\.sta
 assert.ok(html.includes('study-rooms.css'),'page should load room CSS');
 assert.ok(html.includes('study-rooms-immersive.css'),'page should load isolated room CSS');
 
-assert.ok(html.includes('room-chairs.css?v=2-sculpted-crest'),
-  'chair silhouette stylesheet must be loaded in both installed and browser apps');
+assert.ok(html.includes('room-chairs.css?v=3-fantasy-runes'),
+  'fantasy thrones stylesheet must load on mobile and desktop');
 const chairStyles=fs.readFileSync(require('node:path').join(__dirname,'..','room-chairs.css'),'utf8');
-const chairMarkupClasses=['sr-chair-back-panel','sr-chair-seams','sr-chair-seat','sr-chair-arm-left',
- 'sr-chair-arm-right','sr-chair-wing-left','sr-chair-wing-right','sr-chair-crest'];
-for(const cls of chairMarkupClasses){
- assert(src.includes('class="'+cls+'"')||src.includes('sr-chair-arm '+cls)||
-   src.includes('sr-chair-wing '+cls),'chair silhouette includes '+cls);
-}
-for(let i=0;i<12;i++){
- assert(chairStyles.includes('[data-chair-level="'+i+'"]'),
-   'each existing chair tier has a separate sculpted design: '+i);
-}
-assert.match(chairStyles,/--ch-shoulders:1/,'progressively shaped wings are added');
-assert.match(chairStyles,/--ch-arms:1/,'structural armrests are added');
-assert.match(chairStyles,/clip-path:polygon/,'imperial crown is a geometric shape');
-assert.match(chairStyles,/prefers-reduced-motion/,'chair animation respects accessibility setting');
+const models=JSON.parse(src.match(/const fantasySeats=(\[[^\n]+\]);/)[1]);
+assert.equal(models.length,12,'all original 12 study-hour tiers remain');
+assert.equal(new Set(models.map(item=>item.form)).size,12,'all tiers have distinct outlines');
+assert.equal(new Set(models.map(item=>item.crown)).size,12,'all tiers have distinct ornaments');
+assert.equal(new Set(models.map(item=>item.colors.join(','))).size,12,'each tier has a coordinated material palette');
+assert.match(src,/function fantasyChairArt\(level\)/,'fantasy chair renderer exists');
+assert.match(src,/data-seat-part="back"/,'fantasy chairs include curved shell artwork');
+assert.match(src,/data-seat-part="wings"/,'fantasy chairs include enchanted side wings');
+assert.match(src,/data-seat-part="crest"/,'fantasy chairs include custom rune crowns');
+assert.match(src,/chair\.innerHTML=fantasyChairArt\(Number\(level\)\)/,
+ 'when study hours pass a milestone, artwork must update, not only dataset color');
+assert(!src.includes('class="sr-chair-back-panel"'),'rectangular TV-like backrest was removed');
+assert.match(chairStyles,/background:transparent!important/,'stage behind avatar is transparent');
+assert.match(chairStyles,/\.sr-room \.sr-scene-chair\.sr-fantasy-seat::before/,
+ 'old rectangular pseudo-elements cannot reappear');
+assert.match(chairStyles,/prefers-reduced-motion/,'animation respects accessibility setting');
 const assets=JSON.parse(sw.match(/const ASSETS=(.*);/)[1]);
 assert.equal(new Set(assets).size,assets.length,'precache cannot contain duplicate URLs');
 for(const file of ['./study-rooms.js','./study-rooms.css','./study-rooms-immersive.css','./offline-support.js'])assert(assets.includes(file));
-assert(assets.includes('./room-chairs.css?v=2-sculpted-crest'),'new sculpted chair CSS must be precached');
+assert(assets.includes('./room-chairs.css?v=3-fantasy-runes'),'fantasy thrones CSS must be precached');
 console.log('PASS study-room clock math, navigation wiring and PWA assets');
 
 vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname,'..','room-experience.js'),'utf8'),{window:win,document:doc});
