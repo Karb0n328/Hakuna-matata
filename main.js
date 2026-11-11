@@ -14,7 +14,7 @@ function loadRoomUi(){
     import('./room-weather.js?v=2'),
     import('./room-experience.js?v=7-bloom'),
     import('./room-wardrobe.js?v=8-esila-heart'),
-    import('./study-rooms.js?v=29-refined-dark-fantasy')
+    import('./study-rooms.js?v=30-fantasy-visible')
   ]);
   return roomUi;
 }
