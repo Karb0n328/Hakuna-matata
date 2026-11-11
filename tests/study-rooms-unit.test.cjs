@@ -61,7 +61,7 @@ const chairStyles=fs.readFileSync(require('node:path').join(__dirname,'..','room
 const models=JSON.parse(src.match(/const fantasySeats=(\[[^\n]+\]);/)[1]);
 assert.equal(models.length,12,'all original 12 study-hour tiers remain');
 assert.equal(new Set(models.map(item=>item.form)).size,12,'all tiers have distinct outlines');
-assert.equal(new Set(models.map(item=>item.crest)).size,12,'all tiers have distinct ornaments');
+assert.equal(new Set(models.map(item=>item.crown)).size,12,'all tiers have distinct ornaments');
 assert.equal(new Set(models.map(item=>item.colors.join(','))).size,12,'each tier has a coordinated material palette');
 assert(models.every(item=>Array.isArray(item.colors)&&item.colors.length===4),'every throne has four harmonious material tones');
 assert(models.every(item=>item.orn?.startsWith('M')),'every throne has its own small ornament');
