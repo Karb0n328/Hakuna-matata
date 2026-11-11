@@ -55,7 +55,7 @@ assert.match(src,/if\(user===accountId\(\)&&window\.HakunaRoomPreferences\?\.sta
 assert.ok(html.includes('study-rooms.css'),'page should load room CSS');
 assert.ok(html.includes('study-rooms-immersive.css'),'page should load isolated room CSS');
 
-assert.ok(html.includes('room-chairs.css?v=6-solid-thrones'),
+assert.ok(html.includes('room-chairs.css?v=7-cozy-fantasy'),
   'fantasy thrones stylesheet must load on mobile and desktop');
 const chairStyles=fs.readFileSync(require('node:path').join(__dirname,'..','room-chairs.css'),'utf8');
 const models=JSON.parse(src.match(/const fantasySeats=(\[[^\n]+\]);/)[1]);
@@ -66,6 +66,22 @@ assert.equal(new Set(models.map(item=>item.colors.join(','))).size,12,'each tier
 assert(models.every(item=>Array.isArray(item.colors)&&item.colors.length===4),'every throne has four harmonious material tones');
 assert(models.every(item=>item.orn?.startsWith('M')),'every throne has its own small ornament');
 assert(models.every(item=>item.form.startsWith('M')), 'each tier has handcrafted vector geometry');
+assert(models.slice(0,3).every(item=>item.arms===0),
+  'beginner tiers remain modest rather than starting with royal armrests');
+assert(models.slice(3).every(item=>item.arms===1),
+  'armrests unlock and persist after the 30-hour milestone');
+assert(models.slice(0,8).every(item=>item.gem===0),
+  'gemstones must not appear early or overpower the cozy chair look');
+assert(models.slice(8).every(item=>item.gem===1),
+  'upper tiers introduce only small crystal accents');
+assert(models.slice(0,10).every(item=>item.halo===0),
+  'radiant headpieces remain exclusive to the final milestones');
+assert(models.slice(10).every(item=>item.halo===1),
+  'late tiers earn the subtle celestial arc');
+assert(models.every(item=>item.panel.startsWith('M')),
+  'every tier has crafted seating or inset details');
+assert.match(chairStyles,/left:22px/,'chair is aligned with the fixed avatar, not scene center');
+assert.match(chairStyles,/height:94px/,'chairs fit narrow iPhone desk scenes');
 assert.match(src,/function fantasyChairArt\(level\)/,'fantasy chair renderer exists');
 assert.match(src,/data-seat-part="back"/,'fantasy chairs include curved shell artwork');
 assert.match(src,/data-seat-part="wings"/,'fantasy chairs include enchanted side wings');
@@ -80,7 +96,7 @@ assert.match(chairStyles,/prefers-reduced-motion/,'animation respects accessibil
 const assets=JSON.parse(sw.match(/const ASSETS=(.*);/)[1]);
 assert.equal(new Set(assets).size,assets.length,'precache cannot contain duplicate URLs');
 for(const file of ['./study-rooms.js','./study-rooms.css','./study-rooms-immersive.css','./offline-support.js'])assert(assets.includes(file));
-assert(assets.includes('./room-chairs.css?v=6-solid-thrones'),'fantasy thrones CSS must be precached');
+assert(assets.includes('./room-chairs.css?v=7-cozy-fantasy'),'fantasy thrones CSS must be precached');
 console.log('PASS study-room clock math, navigation wiring and PWA assets');
 
 vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname,'..','room-experience.js'),'utf8'),{window:win,document:doc});
