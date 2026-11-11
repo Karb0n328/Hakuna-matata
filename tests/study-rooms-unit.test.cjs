@@ -55,7 +55,7 @@ assert.match(src,/if\(user===accountId\(\)&&window\.HakunaRoomPreferences\?\.sta
 assert.ok(html.includes('study-rooms.css'),'page should load room CSS');
 assert.ok(html.includes('study-rooms-immersive.css'),'page should load isolated room CSS');
 
-assert.ok(html.includes('room-chairs.css?v=1-sculpted-levels'),
+assert.ok(html.includes('room-chairs.css?v=2-sculpted-crest'),
   'chair silhouette stylesheet must be loaded in both installed and browser apps');
 const chairStyles=fs.readFileSync(require('node:path').join(__dirname,'..','room-chairs.css'),'utf8');
 const chairMarkupClasses=['sr-chair-back-panel','sr-chair-seams','sr-chair-seat','sr-chair-arm-left',
@@ -75,7 +75,7 @@ assert.match(chairStyles,/prefers-reduced-motion/,'chair animation respects acce
 const assets=JSON.parse(sw.match(/const ASSETS=(.*);/)[1]);
 assert.equal(new Set(assets).size,assets.length,'precache cannot contain duplicate URLs');
 for(const file of ['./study-rooms.js','./study-rooms.css','./study-rooms-immersive.css','./offline-support.js'])assert(assets.includes(file));
-assert(assets.includes('./room-chairs.css?v=1-sculpted-levels'),'new sculpted chair CSS must be precached');
+assert(assets.includes('./room-chairs.css?v=2-sculpted-crest'),'new sculpted chair CSS must be precached');
 console.log('PASS study-room clock math, navigation wiring and PWA assets');
 
 vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname,'..','room-experience.js'),'utf8'),{window:win,document:doc});
