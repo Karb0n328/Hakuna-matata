@@ -60,8 +60,8 @@ assert.ok(html.includes('room-chairs.css?v=4-refined-dark-fantasy'),
 const chairStyles=fs.readFileSync(require('node:path').join(__dirname,'..','room-chairs.css'),'utf8');
 const models=JSON.parse(src.match(/const fantasySeats=(\[[^\n]+\]);/)[1]);
 assert.equal(models.length,12,'all original 12 study-hour tiers remain');
-assert.equal(new Set(models.map(item=>item.form)).size,12,'all tiers have distinct outlines');
-assert.equal(new Set(models.map(item=>item.crown)).size,12,'all tiers have distinct ornaments');
+assert.equal(new Set(models.map(item=>item.back)).size,12,'all tiers have distinct outlines');
+assert.equal(new Set(models.map(item=>item.crest)).size,12,'all tiers have distinct ornaments');
 assert.equal(new Set(models.map(item=>item.colors.join(','))).size,12,'each tier has a coordinated material palette');
 assert(models.every(item=>item.w<=82&&item.h<=88), 'fantasy seats must fit behind avatars');
 assert(models.every(item=>item.w>=53&&item.h>=55), 'all silhouettes remain visible at miniature size');
