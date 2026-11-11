@@ -138,7 +138,7 @@
   --ch-face:linear-gradient(110deg,#6f4056,#aa647b,#6c3d53);
   --ch-pad:radial-gradient(ellipse at 30% 18%,#c28a9d,#81485f 72%);
   --ch-seat:linear-gradient(#b1768b,#784457);
-  --ch-arms:1;--ch-seams:.45;--ch-shoulders:1;
+  --ch-arms:1;--ch-seams:.45;--ch-shoulders:1;--ch-crest:1;
   --ch-shoulder-height:38px;--ch-shoulder-width:9px;
   --ch-arm-height:21px;--ch-wing-tilt:-4deg;
 }
