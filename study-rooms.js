@@ -86,6 +86,7 @@
       +'<path d="M43 70 Q43 61 50 57 M67 70 Q67 61 61 57" fill="none" stroke="'+highlight+'" stroke-width="1.2" opacity=".3"/>'
       +'<path d="M33 61 Q31 70 32 84 M77 61 Q79 70 78 84" fill="none" stroke="'+highlight+'" stroke-width="1.9" opacity=".55"/>'
       +'<path data-seat-part="crest" d="'+model.crest+'" fill="'+metal+'" stroke="'+outline+'" stroke-width="2" stroke-linejoin="round"/>'
+      +'<path data-seat-part="rune" d="M50 66 L55 58 L60 66 L55 72Z" fill="none" stroke="'+highlight+'" stroke-width="1.3" opacity=".35"/>'
       +'<path d="M28 84 Q22 82 19 90 L21 94 M82 84 Q88 82 91 90 L89 94" stroke="'+metal+'" stroke-width="4.5" fill="none" stroke-linecap="round"/>'
       +'<path data-seat-part="seat" d="M32 85 Q55 80 78 85 L82 92 Q55 98 28 92Z" fill="url(#'+finish+')" stroke="'+outline+'" stroke-width="3" stroke-linejoin="round"/>'
       +'<path d="M34 86 Q55 83 76 86" stroke="'+highlight+'" stroke-width="1.2" opacity=".7" fill="none"/>'
