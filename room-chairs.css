@@ -5,7 +5,7 @@
   position:absolute;
   box-sizing:border-box;
   left:67px;
-  bottom:15px;
+  bottom:11px;
   width:var(--sr-seat-width,53px);
   height:var(--sr-seat-height,55px);
   z-index:2;
@@ -37,18 +37,18 @@
 }
 /* Twelve evolving materials and physical silhouettes. CSS controls size, SVG
    controls the actual sculpted outline, so changing the hour really upgrades it. */
-.sr-room .sr-fantasy-seat[data-chair-level="0"]{--sr-seat-width:53px;--sr-seat-height:55px;}
-.sr-room .sr-fantasy-seat[data-chair-level="1"]{--sr-seat-width:57px;--sr-seat-height:60px;}
-.sr-room .sr-fantasy-seat[data-chair-level="2"]{--sr-seat-width:60px;--sr-seat-height:63px;}
-.sr-room .sr-fantasy-seat[data-chair-level="3"]{--sr-seat-width:63px;--sr-seat-height:68px;}
-.sr-room .sr-fantasy-seat[data-chair-level="4"]{--sr-seat-width:66px;--sr-seat-height:71px;}
-.sr-room .sr-fantasy-seat[data-chair-level="5"]{--sr-seat-width:69px;--sr-seat-height:74px;}
-.sr-room .sr-fantasy-seat[data-chair-level="6"]{--sr-seat-width:72px;--sr-seat-height:77px;}
-.sr-room .sr-fantasy-seat[data-chair-level="7"]{--sr-seat-width:73px;--sr-seat-height:79px;}
-.sr-room .sr-fantasy-seat[data-chair-level="8"]{--sr-seat-width:75px;--sr-seat-height:80px;}
-.sr-room .sr-fantasy-seat[data-chair-level="9"]{--sr-seat-width:77px;--sr-seat-height:83px;}
-.sr-room .sr-fantasy-seat[data-chair-level="10"]{--sr-seat-width:79px;--sr-seat-height:85px;}
-.sr-room .sr-fantasy-seat[data-chair-level="11"]{--sr-seat-width:82px;--sr-seat-height:88px;}
+.sr-room .sr-fantasy-seat[data-chair-level="0"]{--sr-seat-width:70px;--sr-seat-height:70px;}
+.sr-room .sr-fantasy-seat[data-chair-level="1"]{--sr-seat-width:74px;--sr-seat-height:73px;}
+.sr-room .sr-fantasy-seat[data-chair-level="2"]{--sr-seat-width:76px;--sr-seat-height:76px;}
+.sr-room .sr-fantasy-seat[data-chair-level="3"]{--sr-seat-width:78px;--sr-seat-height:78px;}
+.sr-room .sr-fantasy-seat[data-chair-level="4"]{--sr-seat-width:80px;--sr-seat-height:81px;}
+.sr-room .sr-fantasy-seat[data-chair-level="5"]{--sr-seat-width:82px;--sr-seat-height:84px;}
+.sr-room .sr-fantasy-seat[data-chair-level="6"]{--sr-seat-width:84px;--sr-seat-height:86px;}
+.sr-room .sr-fantasy-seat[data-chair-level="7"]{--sr-seat-width:86px;--sr-seat-height:88px;}
+.sr-room .sr-fantasy-seat[data-chair-level="8"]{--sr-seat-width:88px;--sr-seat-height:90px;}
+.sr-room .sr-fantasy-seat[data-chair-level="9"]{--sr-seat-width:90px;--sr-seat-height:92px;}
+.sr-room .sr-fantasy-seat[data-chair-level="10"]{--sr-seat-width:92px;--sr-seat-height:94px;}
+.sr-room .sr-fantasy-seat[data-chair-level="11"]{--sr-seat-width:94px;--sr-seat-height:96px;}
 /* Room display has multiple breakpoints but all chairs keep the same anchor
    behind avatars and within the 119px minimum desk scene. */
 @media(prefers-reduced-motion:reduce){
