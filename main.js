@@ -14,7 +14,7 @@ function loadRoomUi(){
     import('./room-weather.js?v=2'),
     import('./room-experience.js?v=7-bloom'),
     import('./room-wardrobe.js?v=8-esila-heart'),
-    import('./study-rooms.js?v=26-start-stop-all')
+    import('./study-rooms.js?v=27-sculpted-chairs')
   ]);
   return roomUi;
 }
