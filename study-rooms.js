@@ -68,7 +68,7 @@
     const [outline,shade,material,highlight,metal]=model.colors;
     const finish='sr-throne-finish-'+tier,cushion='sr-throne-cushion-'+tier;
     return '<svg class="sr-fantasy-seat-art" viewBox="15 0 80 104" '
-      +'xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" aria-hidden="true">'
+      +'xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" aria-hidden="true">'
       +'<defs>'
       +'<linearGradient id="'+finish+'" x1="0" x2="1" y1="0" y2=".3">'
       +'<stop offset="0%" stop-color="'+outline+'"/><stop offset="21%" stop-color="'+shade+'"/>'
