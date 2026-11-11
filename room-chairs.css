@@ -1,298 +1,62 @@
-/* Hakuna Matata — 12 progressively sculpted desk chairs.
-   Shape and construction evolve with study hours, without affecting avatars,
-   room sessions, furniture coordinates or the surrounding app. */
-.sr-room .sr-scene-chair[data-chair-level],
-.sr-wardrobe .sr-scene-chair[data-chair-level]{
-  --ch-frame:#77594a;--ch-inset:#c29b78;--ch-stitch:#ead1b6;
-  --ch-rim:#e6c59b;--ch-face:linear-gradient(110deg,#815f4a,#a77c5e 43%,#75513d);
-  --ch-pad:linear-gradient(110deg,#ad8164,#c09877 50%,#875e47);
-  --ch-arm:linear-gradient(90deg,#7c5642,#bd9873,#79533f);
-  --ch-seat:linear-gradient(#c69c78,#936749);
-  --ch-trim:rgba(255,238,203,.27);--ch-sheen:rgba(255,246,222,.18);
-  --ch-shoulders:0;--ch-arms:0;--ch-seams:0;--ch-crest:0;
-  --ch-arm-height:22px;--ch-arm-width:7px;--ch-shoulder-height:46px;
-  --ch-shoulder-width:13px;--ch-crest-width:11px;--ch-crest-height:11px;
-  --ch-seat-height:10px;
-  position:absolute;box-sizing:border-box;left:67px;bottom:15px;
-  width:50px;height:49px;transform:translateX(-50%);
-  border:3px solid var(--ch-frame);border-radius:8px 8px 4px 4px;
-  background:var(--ch-face);z-index:2;isolation:isolate;overflow:visible;
-  box-shadow:inset 0 0 0 1px var(--ch-rim),inset 4px 2px 10px rgba(0,0,0,.12),
-    0 2px 0 rgba(32,26,26,.22);
-  transition:width .32s ease,height .32s ease,border-radius .32s ease,
-    border-color .32s ease,box-shadow .32s ease;
+/* Fantasy throne silhouettes — carved runes, crescent horns and small crystals.
+   A deliberately small vector object, not a boxed backrest or a glowing monitor.
+   12 stages retain the original hour thresholds and never move the character,
+   tabletop, coffee, plant, dragon or any study-room controls. */
+.sr-room .sr-scene-chair.sr-fantasy-seat,
+.sr-wardrobe .sr-scene-chair.sr-fantasy-seat {
+  position:absolute;
+  box-sizing:border-box;
+  left:17px;
+  bottom:7px;
+  top:auto;
+  width:100px;
+  height:102px;
+  z-index:2;
+  isolation:auto;
+  transform:none;
+  border:0!important;
+  border-radius:0!important;
+  outline:0;
+  background:transparent!important;
+  box-shadow:none!important;
+  overflow:visible;
+  transition:none;
+  pointer-events:none;
 }
-.sr-room .sr-scene-chair[data-chair-level] i,
-.sr-wardrobe .sr-scene-chair[data-chair-level] i{
-  position:absolute;display:block;box-sizing:border-box;pointer-events:none;
+.sr-room .sr-scene-chair.sr-fantasy-seat::before,
+.sr-room .sr-scene-chair.sr-fantasy-seat::after,
+.sr-wardrobe .sr-scene-chair.sr-fantasy-seat::before,
+.sr-wardrobe .sr-scene-chair.sr-fantasy-seat::after {
+  content:none!important;
+  display:none!important;
 }
-.sr-room .sr-scene-chair[data-chair-level]::before,
-.sr-wardrobe .sr-scene-chair[data-chair-level]::before{
-  content:"";position:absolute;inset:2px;z-index:1;
-  border:1px solid var(--ch-trim);border-radius:inherit;pointer-events:none;
-  box-shadow:inset 0 2px 2px rgba(255,255,255,.08);
+.sr-room .sr-fantasy-seat-art,
+.sr-wardrobe .sr-fantasy-seat-art {
+  position:relative;
+  display:block;
+  width:100%;
+  height:100%;
+  overflow:visible;
+  filter:drop-shadow(0 1px 1px rgba(9,15,25,.27));
+  transform:none;
 }
-.sr-room .sr-scene-chair[data-chair-level]::after,
-.sr-wardrobe .sr-scene-chair[data-chair-level]::after{
-  content:"";position:absolute;bottom:-12px;left:calc(50% - 3px);
-  width:6px;height:12px;border-radius:1px 1px 3px 3px;
-  background:linear-gradient(90deg,var(--ch-frame),var(--ch-inset));
-  box-shadow:none;pointer-events:none;z-index:0;
+.sr-room .sr-fantasy-seat-art path,
+.sr-wardrobe .sr-fantasy-seat-art path {
+  vector-effect:non-scaling-stroke;
 }
-/* Inner upholstery has its own bevel, distinct from the chair outline. */
-.sr-room .sr-chair-back-panel,.sr-wardrobe .sr-chair-back-panel{
-  top:6px;left:6px;right:6px;bottom:9px;z-index:1;
-  background:var(--ch-pad);border:1px solid var(--ch-inset);
-  border-radius:10px 10px 4px 4px;
-  box-shadow:inset 2px 2px 4px rgba(255,255,255,.13),
-    inset -2px -3px 5px rgba(15,14,24,.15);
+/* Keep the entire runic silhouette inside even the 119px-wide iPhone desk.
+   Larger or zoomed desks scale the entire illustrated scene uniformly. */
+@media(max-width:690px){
+  .sr-room .sr-scene-chair.sr-fantasy-seat,
+  .sr-wardrobe .sr-scene-chair.sr-fantasy-seat{
+    left:17px;
+    width:100px;
+    height:102px;
+  }
 }
-.sr-room .sr-chair-seams,.sr-wardrobe .sr-chair-seams{
-  opacity:var(--ch-seams);top:19%;bottom:22%;left:50%;width:1px;z-index:2;
-  background:linear-gradient(transparent,var(--ch-stitch),transparent);
-  box-shadow:-10px 0 var(--ch-stitch),10px 0 var(--ch-stitch);
-  transition:opacity .2s ease;
-}
-.sr-room .sr-chair-seat,.sr-wardrobe .sr-chair-seat{
-  z-index:3;bottom:-4px;left:5px;right:5px;height:var(--ch-seat-height);
-  border:2px solid var(--ch-frame);border-top-color:var(--ch-rim);
-  border-radius:10px 10px 5px 5px;
-  background:var(--ch-seat);
-  box-shadow:0 3px 0 rgba(29,23,27,.25),inset 0 2px rgba(255,255,255,.2);
-}
-.sr-room .sr-chair-arm,.sr-wardrobe .sr-chair-arm{
-  opacity:var(--ch-arms);bottom:-2px;width:var(--ch-arm-width);
-  height:var(--ch-arm-height);z-index:4;
-  border:2px solid var(--ch-frame);border-top:3px solid var(--ch-rim);
-  border-radius:8px 8px 3px 3px;background:var(--ch-arm);
-  box-shadow:1px 2px 2px rgba(0,0,0,.19);
-  transition:opacity .2s ease,height .32s ease;
-}
-.sr-room .sr-chair-arm-left,.sr-wardrobe .sr-chair-arm-left{left:-6px;transform:rotate(-5deg)}
-.sr-room .sr-chair-arm-right,.sr-wardrobe .sr-chair-arm-right{right:-6px;transform:rotate(5deg)}
-.sr-room .sr-chair-wing,.sr-wardrobe .sr-chair-wing{
-  opacity:var(--ch-shoulders);z-index:-1;bottom:8px;
-  width:var(--ch-shoulder-width);height:var(--ch-shoulder-height);
-  background:var(--ch-face);border:3px solid var(--ch-frame);
-  box-shadow:inset 0 0 0 1px var(--ch-rim),0 2px 3px rgba(0,0,0,.16);
-  border-radius:var(--ch-wing-radius,10px 6px 4px 4px);
-  transition:opacity .25s ease,width .3s ease,height .3s ease;
-}
-.sr-room .sr-chair-wing-left,.sr-wardrobe .sr-chair-wing-left{
-  left:-8px;transform:rotate(var(--ch-wing-tilt,-5deg));
-}
-.sr-room .sr-chair-wing-right,.sr-wardrobe .sr-chair-wing-right{
-  right:-8px;transform:scaleX(-1) rotate(var(--ch-wing-tilt,-5deg));
-}
-.sr-room .sr-chair-crest,.sr-wardrobe .sr-chair-crest{
-  opacity:var(--ch-crest);z-index:5;top:-8px;left:50%;
-  width:var(--ch-crest-width);height:var(--ch-crest-height);
-  transform:translateX(-50%);background:var(--ch-inset);
-  border:2px solid var(--ch-frame);border-radius:50%;
-  box-shadow:inset 0 0 0 1px var(--ch-sheen),0 1px 3px #0003;
-  transition:opacity .3s ease;
-}
-/* 0h — joined walnut planks, straight seat; honest plain wood. */
-.sr-room .sr-scene-chair[data-chair-level="0"],
-.sr-wardrobe .sr-scene-chair[data-chair-level="0"]{
-  width:49px;height:47px;border-radius:5px 5px 3px 3px;
-  --ch-face:repeating-linear-gradient(90deg,#805945 0 9px,#a47758 9px 11px,#79533e 11px 13px);
-  --ch-pad:linear-gradient(100deg,#a67e60,#806047);
-  --ch-inset:#bd9979;--ch-rim:#cba685;--ch-frame:#674735;
-}
-.sr-room .sr-scene-chair[data-chair-level="0"] .sr-chair-back-panel,
-.sr-wardrobe .sr-scene-chair[data-chair-level="0"] .sr-chair-back-panel{
-  left:11px;right:11px;border-radius:2px;
-  background:repeating-linear-gradient(90deg,transparent 0 8px,#c497754a 8px 9px);
-}
-/* 10h — slender brushed-steel workshop chair; square shoulders and arms. */
-.sr-room .sr-scene-chair[data-chair-level="1"],
-.sr-wardrobe .sr-scene-chair[data-chair-level="1"]{
-  width:53px;height:52px;border-radius:8px 8px 5px 5px;
-  --ch-frame:#4e5967;--ch-inset:#a6bac8;--ch-rim:#c7d3de;
-  --ch-face:linear-gradient(100deg,#44515e,#758798 45%,#4d5c6b);
-  --ch-pad:linear-gradient(125deg,#66798b,#9baaba 49%,#56687b);
-  --ch-arm:linear-gradient(90deg,#485564,#9caebe,#53606e);
-  --ch-arms:1;--ch-arm-height:16px;--ch-arm-width:5px;
-}
-/* 20h — first gilded armchair: rounded shell, inset cushion, brass crest. */
-.sr-room .sr-scene-chair[data-chair-level="2"],
-.sr-wardrobe .sr-scene-chair[data-chair-level="2"]{
-  width:57px;height:57px;border-radius:17px 17px 7px 7px;
-  --ch-frame:#9b7138;--ch-inset:#f2d290;--ch-rim:#ffdfa1;
-  --ch-face:linear-gradient(115deg,#ab7838,#ecd18d 47%,#ac7936);
-  --ch-pad:linear-gradient(110deg,#a88960,#dfbc7e,#967547);
-  --ch-arm:linear-gradient(90deg,#98713f,#eed08e,#98713f);
-  --ch-seat:linear-gradient(#eccb8e,#b68e54);
-  --ch-arms:1;--ch-crest:1;--ch-arm-height:19px;--ch-arm-width:7px;
-}
-.sr-room .sr-scene-chair[data-chair-level="2"] .sr-chair-crest,
-.sr-wardrobe .sr-scene-chair[data-chair-level="2"] .sr-chair-crest{
-  width:9px;height:9px;top:-6px;transform:translateX(-50%) rotate(45deg);border-radius:2px;
-}
-/* 30h — high upholstered salon chair, stitched velvet and soft shoulders. */
-.sr-room .sr-scene-chair[data-chair-level="3"],
-.sr-wardrobe .sr-scene-chair[data-chair-level="3"]{
-  width:61px;height:62px;border-radius:21px 21px 8px 8px;
-  --ch-frame:#8e5970;--ch-inset:#c58fa1;--ch-rim:#e3b8c3;
-  --ch-face:linear-gradient(110deg,#6f4056,#aa647b,#6c3d53);
-  --ch-pad:radial-gradient(ellipse at 30% 18%,#c28a9d,#81485f 72%);
-  --ch-seat:linear-gradient(#b1768b,#784457);
-  --ch-arms:1;--ch-seams:.45;--ch-shoulders:1;--ch-crest:1;
-  --ch-shoulder-height:38px;--ch-shoulder-width:9px;
-  --ch-arm-height:21px;--ch-wing-tilt:-4deg;
-}
-/* 40h — faceted obsidian; angular high-back and triangular metal wings. */
-.sr-room .sr-scene-chair[data-chair-level="4"],
-.sr-wardrobe .sr-scene-chair[data-chair-level="4"]{
-  width:65px;height:66px;border-radius:5px 5px 6px 6px;
-  --ch-frame:#4c455e;--ch-inset:#a496c0;--ch-rim:#c0b5dc;
-  --ch-face:linear-gradient(139deg,#181925 0 32%,#5a516b 33% 49%,#2c2a40 50% 78%,#1b1a28 79%);
-  --ch-pad:linear-gradient(135deg,#48435b 0 44%,#241f33 45% 60%,#524862 61%);
-  --ch-arm:linear-gradient(#887ea5,#292636);
-  --ch-arms:1;--ch-shoulders:1;--ch-crest:1;--ch-seams:.22;
-  --ch-shoulder-height:53px;--ch-wing-radius:2px;--ch-wing-tilt:-7deg;
-  --ch-arm-height:25px;
-}
-.sr-room .sr-scene-chair[data-chair-level="4"] .sr-chair-crest,
-.sr-wardrobe .sr-scene-chair[data-chair-level="4"] .sr-chair-crest{
-  transform:translateX(-50%) rotate(45deg);border-radius:2px;
-}
-/* 50h — first royal throne: framed velvet, extended arms, gold finial. */
-.sr-room .sr-scene-chair[data-chair-level="5"],
-.sr-wardrobe .sr-scene-chair[data-chair-level="5"]{
-  width:69px;height:71px;border-radius:25px 25px 7px 7px;
-  --ch-frame:#a77839;--ch-inset:#efc886;--ch-rim:#ffe1a5;
-  --ch-face:linear-gradient(105deg,#71303a,#a04b54 52%,#6a2936);
-  --ch-pad:radial-gradient(ellipse at 40% 25%,#a75b68,#542734 85%);
-  --ch-seat:linear-gradient(#b65e69,#69333e);
-  --ch-arm:linear-gradient(90deg,#bb8748,#ffe1a0,#a77639);
-  --ch-arms:1;--ch-shoulders:1;--ch-crest:1;--ch-seams:.4;
-  --ch-arm-height:28px;--ch-arm-width:9px;
-  --ch-shoulder-height:58px;--ch-shoulder-width:12px;
-  --ch-wing-tilt:-7deg;
-}
-.sr-room .sr-scene-chair[data-chair-level="5"] .sr-chair-crest,
-.sr-wardrobe .sr-scene-chair[data-chair-level="5"] .sr-chair-crest{
-  width:13px;height:11px;border-radius:3px 3px 7px 7px;
-}
-/* 65h — ruby throne with two chamfered shoulder fins. */
-.sr-room .sr-scene-chair[data-chair-level="6"],
-.sr-wardrobe .sr-scene-chair[data-chair-level="6"]{
-  width:72px;height:74px;border-radius:10px 24px 7px 7px;
-  --ch-frame:#ad6372;--ch-inset:#f4b9aa;--ch-rim:#f8d0c0;
-  --ch-face:linear-gradient(140deg,#561c2e,#a34255 50%,#5b2536);
-  --ch-pad:radial-gradient(circle at 50% 20%,#c56b7d,#642b41 82%);
-  --ch-seat:linear-gradient(#ae536b,#60293f);
-  --ch-arms:1;--ch-shoulders:1;--ch-crest:1;--ch-seams:.45;
-  --ch-arm-height:29px;--ch-arm-width:10px;
-  --ch-shoulder-height:63px;--ch-wing-radius:3px 16px 3px 3px;
-  --ch-wing-tilt:-8deg;
-}
-.sr-room .sr-scene-chair[data-chair-level="6"] .sr-chair-crest,
-.sr-wardrobe .sr-scene-chair[data-chair-level="6"] .sr-chair-crest{
-  border-radius:2px;transform:translateX(-50%) rotate(45deg);background:#d86a7d;
-}
-/* 85h — emerald throne, leafy rounded wings and fine arched seams. */
-.sr-room .sr-scene-chair[data-chair-level="7"],
-.sr-wardrobe .sr-scene-chair[data-chair-level="7"]{
-  width:75px;height:76px;border-radius:34px 34px 9px 9px;
-  --ch-frame:#4d8471;--ch-inset:#b4d5b4;--ch-rim:#e0e9b5;
-  --ch-face:linear-gradient(112deg,#184b41,#3f866e 52%,#194f43);
-  --ch-pad:radial-gradient(ellipse at 48% 20%,#72ab8a,#25564b 80%);
-  --ch-arm:linear-gradient(95deg,#487b66,#bfd2a4,#47816a);
-  --ch-arms:1;--ch-shoulders:1;--ch-crest:1;--ch-seams:.3;
-  --ch-arm-height:29px;--ch-arm-width:9px;
-  --ch-shoulder-height:62px;--ch-shoulder-width:14px;
-  --ch-wing-radius:28px 5px 5px 5px;--ch-wing-tilt:-7deg;
-}
-.sr-room .sr-scene-chair[data-chair-level="7"] .sr-chair-crest,
-.sr-wardrobe .sr-scene-chair[data-chair-level="7"] .sr-chair-crest{
-  width:13px;height:9px;border-radius:100% 0 100% 0;transform:translateX(-50%) rotate(-32deg);
-}
-/* 110h — tall sapphire high-back: crystalline angles and slim chrome sides. */
-.sr-room .sr-scene-chair[data-chair-level="8"],
-.sr-wardrobe .sr-scene-chair[data-chair-level="8"]{
-  width:77px;height:79px;border-radius:7px 7px 9px 9px;
-  --ch-frame:#5579ab;--ch-inset:#b4d6ef;--ch-rim:#e1eafb;
-  --ch-face:linear-gradient(130deg,#1c3057 0 31%,#4c79ac 32% 46%,#2e487a 47% 76%,#1f315f 77%);
-  --ch-pad:linear-gradient(115deg,#365486,#527eae 50%,#293e69);
-  --ch-arm:linear-gradient(110deg,#5071a1,#b3d3ed,#5071a1);
-  --ch-arms:1;--ch-shoulders:1;--ch-crest:1;--ch-seams:.36;
-  --ch-arm-height:32px;--ch-arm-width:9px;
-  --ch-shoulder-height:68px;--ch-shoulder-width:11px;
-  --ch-wing-radius:3px;--ch-wing-tilt:-7deg;
-}
-.sr-room .sr-scene-chair[data-chair-level="8"] .sr-chair-crest,
-.sr-wardrobe .sr-scene-chair[data-chair-level="8"] .sr-chair-crest{
-  width:12px;height:12px;border-radius:2px;
-  transform:translateX(-50%) rotate(45deg);
-}
-/* 150h — moon throne: wide crescent shoulders and cool silver stitching. */
-.sr-room .sr-scene-chair[data-chair-level="9"],
-.sr-wardrobe .sr-scene-chair[data-chair-level="9"]{
-  width:79px;height:81px;border-radius:38px 38px 10px 10px;
-  --ch-frame:#a296b9;--ch-inset:#e4ddf0;--ch-rim:#f1ebfa;
-  --ch-face:linear-gradient(120deg,#35304c,#746889 52%,#372c52);
-  --ch-pad:radial-gradient(circle at 50% 25%,#9587af,#423653 79%);
-  --ch-arm:linear-gradient(90deg,#8a7fa6,#e6e2f1,#897bac);
-  --ch-arms:1;--ch-shoulders:1;--ch-crest:1;--ch-seams:.32;
-  --ch-arm-height:31px;--ch-arm-width:10px;
-  --ch-shoulder-height:68px;--ch-shoulder-width:13px;
-  --ch-wing-radius:40px 5px 5px 5px;--ch-wing-tilt:-9deg;
-}
-.sr-room .sr-scene-chair[data-chair-level="9"] .sr-chair-crest,
-.sr-wardrobe .sr-scene-chair[data-chair-level="9"] .sr-chair-crest{
-  width:13px;height:13px;border-radius:50%;
-  background:radial-gradient(circle at 68% 32%,#5e4b72 0 38%,#e6def1 43%);
-}
-/* 220h — solar throne: sloped wing shoulders, bright filigree sunburst. */
-.sr-room .sr-scene-chair[data-chair-level="10"],
-.sr-wardrobe .sr-scene-chair[data-chair-level="10"]{
-  width:82px;height:82px;border-radius:18px 18px 8px 8px;
-  --ch-frame:#aa774a;--ch-inset:#f4d499;--ch-rim:#fff1c1;
-  --ch-face:repeating-conic-gradient(from 0deg at 50% 20%,#794b31 0 12deg,#b27846 12deg 22deg,#845137 22deg 30deg);
-  --ch-pad:radial-gradient(ellipse at 50% 27%,#d5a56b,#7b4835 73%);
-  --ch-arm:linear-gradient(95deg,#a36e43,#ffebb7,#a36e43);
-  --ch-arms:1;--ch-shoulders:1;--ch-crest:1;--ch-seams:.3;
-  --ch-arm-height:33px;--ch-arm-width:10px;
-  --ch-shoulder-height:70px;--ch-shoulder-width:13px;
-  --ch-wing-radius:9px 23px 4px 4px;--ch-wing-tilt:-9deg;
-}
-.sr-room .sr-scene-chair[data-chair-level="10"] .sr-chair-crest,
-.sr-wardrobe .sr-scene-chair[data-chair-level="10"] .sr-chair-crest{
-  width:14px;height:14px;border-radius:50%;
-  background:radial-gradient(circle,#fff1ba 0 21%,#c18048 23% 34%,#efd69b 36%);
-}
-/* 320h+ — imperial: crowned silhouette, layered velvet and two gold wings.
-   Fits a 119px mobile desk while staying completely behind the avatar. */
-.sr-room .sr-scene-chair[data-chair-level="11"],
-.sr-wardrobe .sr-scene-chair[data-chair-level="11"]{
-  width:85px;height:84px;border-radius:27px 27px 9px 9px;
-  --ch-frame:#bd9254;--ch-inset:#f6dba6;--ch-rim:#fff0cc;
-  --ch-face:linear-gradient(112deg,#3a244c,#75517a 51%,#342142);
-  --ch-pad:radial-gradient(ellipse at 52% 28%,#8e6893,#442e51 80%);
-  --ch-arm:linear-gradient(90deg,#b18b4d,#fff2bc,#b18b4d);
-  --ch-seat:linear-gradient(#8e6186,#563653);
-  --ch-arms:1;--ch-shoulders:1;--ch-crest:1;--ch-seams:.5;
-  --ch-arm-height:34px;--ch-arm-width:11px;
-  --ch-shoulder-height:70px;--ch-shoulder-width:15px;
-  --ch-wing-radius:26px 7px 4px 4px;--ch-wing-tilt:-8deg;
-  box-shadow:inset 0 0 0 2px #f2d3a2,inset 5px 3px 10px #140c2099,
-    0 2px 5px #38283f66;
-}
-.sr-room .sr-scene-chair[data-chair-level="11"] .sr-chair-crest,
-.sr-wardrobe .sr-scene-chair[data-chair-level="11"] .sr-chair-crest{
-  top:-9px;width:20px;height:13px;border:0;border-radius:0;
-  background:linear-gradient(#fff4c9,#c89d5e 80%);
-  clip-path:polygon(0 24%,24% 55%,29% 0,50% 43%,71% 0,76% 55%,100% 24%,89% 100%,11% 100%);
-  box-shadow:0 1px 4px #0005;
-}
-/* At 119px desk width, arms and wings stay within their scene. A switch
-   to "Masama geç" scales the complete scene, never independent chair parts. */
 @media(prefers-reduced-motion:reduce){
- .sr-room .sr-scene-chair[data-chair-level],.sr-wardrobe .sr-scene-chair[data-chair-level],
- .sr-room .sr-scene-chair[data-chair-level] i,.sr-wardrobe .sr-scene-chair[data-chair-level] i{
-   transition:none!important;
- }
+  .sr-room .sr-fantasy-seat-art,.sr-wardrobe .sr-fantasy-seat-art{
+    transition:none!important;
+    animation:none!important;
+  }
 }
