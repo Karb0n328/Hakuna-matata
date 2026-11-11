@@ -15,43 +15,44 @@ async function checkCoffeeOnTable(page,label){
   assert(Math.abs(g.cupBottom-g.tableTop)<=3,
     label+': the cup must rest on the tabletop, not float: '+JSON.stringify(g));
 }
-async function verifySculptedChair(page,label,level){
-  const details=await page.locator('[data-sr-user="user-1"] .sr-scene-chair').evaluate(chair=>{
-    const scene=chair.closest('.sr-desk-scene'),avatar=scene.querySelector('.sr-avatar');
-    const cr=chair.getBoundingClientRect(),sr=scene.getBoundingClientRect();
-    const arm=chair.querySelector('.sr-chair-arm-left');
-    const wing=chair.querySelector('.sr-chair-wing-right');
-    const crest=chair.querySelector('.sr-chair-crest');
-    const parts=['sr-chair-back-panel','sr-chair-seams','sr-chair-seat',
-      'sr-chair-arm-left','sr-chair-arm-right','sr-chair-wing-left',
-      'sr-chair-wing-right','sr-chair-crest'];
-    const missing=parts.filter(name=>!chair.querySelector('.'+name));
-    const avatarZ=Number(getComputedStyle(avatar).zIndex);
-    const chairZ=Number(getComputedStyle(chair).zIndex);
-    const activeParts=[chair,...Array.from(chair.children).filter(el=>Number(getComputedStyle(el).opacity)>.1)];
-    const bounds=activeParts.map(el=>{const r=el.getBoundingClientRect();return {l:r.left,r:r.right,t:r.top,b:r.bottom,cls:el.className}});
-    return {level:Number(chair.dataset.chairLevel),width:cr.width,height:cr.height,radius:getComputedStyle(chair).borderTopLeftRadius,
-      armOpacity:Number(getComputedStyle(arm).opacity),wingOpacity:Number(getComputedStyle(wing).opacity),
-      crestOpacity:Number(getComputedStyle(crest).opacity),crestClip:getComputedStyle(crest).clipPath,
-      avatarZ,chairZ,scene:{l:sr.left,r:sr.right,t:sr.top,b:sr.bottom},
-      bounds,missing};
+async function verifyFantasyThrone(page,label,level){
+  const value=await page.locator('[data-sr-user="user-1"] .sr-scene-chair').evaluate(chair=>{
+    const scene=chair.closest('.sr-desk-scene');
+    const svg=chair.querySelector('svg.sr-fantasy-seat-art');
+    const avatar=scene.querySelector('.sr-avatar');
+    const shape=svg?.querySelector('[data-seat-part="back"]');
+    const wings=svg?.querySelector('[data-seat-part="wings"]');
+    const crest=svg?.querySelector('[data-seat-part="crest"]');
+    const seat=svg?.querySelector('[data-seat-part="seat"]');
+    const rune=svg?.querySelector('[data-seat-part="rune"]');
+    const rect=svg?.getBoundingClientRect(),sceneRect=scene.getBoundingClientRect();
+    return {
+      level:Number(chair.dataset.chairLevel),hasSvg:!!svg,hasShapes:!!(shape&&wings&&crest&&seat&&rune),
+      back:shape?.getAttribute('d'),wings:wings?.getAttribute('d'),crest:crest?.getAttribute('d'),
+      fill:shape?.getAttribute('fill'),
+      art:rect?{l:rect.left,r:rect.right,t:rect.top,b:rect.bottom}:null,
+      scene:{l:sceneRect.left,r:sceneRect.right,t:sceneRect.top,b:sceneRect.bottom},
+      bg:getComputedStyle(chair).backgroundImage,
+      border:getComputedStyle(chair).borderTopStyle,
+      avatarZ:Number(getComputedStyle(avatar).zIndex),
+      chairZ:Number(getComputedStyle(chair).zIndex),
+      tableExists:!!scene.querySelector('.sr-scene-table'),
+      mugExists:!!scene.querySelector('.sr-scene-coffee')
+    };
   });
-  assert.equal(details.level,level,label+' upgraded level follows existing time brackets');
-  assert.equal(details.missing.length,0,label+' has every structural chair component');
-  assert(details.avatarZ>details.chairZ,label+' keeps avatar in front of the chair');
-  assert(details.armOpacity===(level>=1?1:0),label+' level '+level+' progressive armrests: '+details.armOpacity);
-  assert(details.wingOpacity===(level>=3?1:0),label+' level '+level+' carved side wings: '+details.wingOpacity);
-  assert(details.crestOpacity===(level>=2?1:0),label+' level '+level+' chair crest: '+details.crestOpacity);
-  for(const part of details.bounds){
-    assert(part.l>=details.scene.l-2&&part.r<=details.scene.r+2,
-      label+' level '+level+' fits scene horizontally: '+JSON.stringify(part));
-    assert(part.t>=details.scene.t-2,
-      label+' level '+level+' headboard and crest are not clipped at the top: '+JSON.stringify(part));
-  }
-  if(level===11)assert(details.crestClip&&details.crestClip!=='none',
-    label+' royal crown must have a distinctive cutout silhouette');
-  return {width:details.width,height:details.height,radius:details.radius,
-    arms:details.armOpacity,wings:details.wingOpacity,crest:details.crestOpacity};
+  assert.equal(value.level,level,label+' progression is still driven by study hours');
+  assert(value.hasSvg&&value.hasShapes,label+' level '+level+' has complete fantasy vector art');
+  assert(value.back?.includes('M')&&/[QC]/.test(value.back),
+    label+' level '+level+' is a curved/pointed throne, not a rectangular screen');
+  assert.equal(value.bg,'none',label+' no TV-style chair background');
+  assert.equal(value.border,'none',label+' no TV-style outline');
+  assert(value.avatarZ>value.chairZ,label+' throne stays behind avatar and wardrobe');
+  assert(value.tableExists&&value.mugExists,label+' desk and coffee are unchanged');
+  assert(value.art.l>=value.scene.l-2&&value.art.r<=value.scene.r+2,
+    label+' level '+level+' stays inside mobile scene horizontally');
+  assert(value.art.t>=value.scene.t-2&&value.art.b<=value.scene.b+2,
+    label+' level '+level+' stays inside scene vertically');
+  return {back:value.back,crest:value.crest,wings:value.wings,fill:value.fill};
 }
 const files={};
 for(const name of ['offline-support.js','styles.css','study-rooms.css','study-rooms-immersive.css','room-experience.css','room-experience.js','room-weather.js','room-wardrobe.js','study-rooms.js','room-chairs.css'])files[name]=fs.readFileSync(require('node:path').join(__dirname,'..',name),'utf8');
@@ -168,7 +169,7 @@ const server=createServer((req,res)=>{
 
     const chair=page.locator('[data-sr-user="user-1"] [data-chair-level]');
     assert.equal(await chair.getAttribute('data-chair-level'),'0');
-    const initialHeight=(await chair.boundingBox()).height;
+    const initialBack=await chair.locator('[data-seat-part="back"]').getAttribute('d');
     // Every milestone must change the actual chair silhouette, not only its colour.
     const chairHours=[0,10,20,30,40,50,65,85,110,150,220,320];
     const visualProfiles=[];
@@ -179,14 +180,16 @@ const server=createServer((req,res)=>{
         level);
       // Wait for width/height/armrest CSS transitions before checking final geometry.
       await page.waitForTimeout(500);
-      visualProfiles.push(await verifySculptedChair(page,label,level));
+      visualProfiles.push(await verifyFantasyThrone(page,label,level));
       if([0,3,5,8,11].includes(level)){
         await page.locator('[data-sr-user="user-1"] .sr-desk-scene')
           .screenshot({path:'test-results/sculpted-chair-'+level+'-'+width+'.png'});
       }
     }
-    assert.equal(new Set(visualProfiles.map(p=>p.width+'x'+p.height+' '+p.radius)).size,12,
-      label+': all twelve levels have distinct physical chair profiles');
+    assert.equal(new Set(visualProfiles.map(p=>p.back)).size,12,
+      label+': all twelve throne silhouettes have distinct contour paths');
+    assert.equal(new Set(visualProfiles.map(p=>p.crest)).size,12,
+      label+': all twelve throne levels also have unique rune or crown ornaments');
     // Restore the entry-level chair before the older scene/clock regressions.
     await page.evaluate(()=>{window.__state.seconds=12;window.dispatchEvent(new Event('online'));});
     await page.waitForFunction(()=>
@@ -196,7 +199,7 @@ const server=createServer((req,res)=>{
     await page.locator('.sr-chair-guide summary').click();
     await page.evaluate(()=>{window.__state.seconds=180000;window.dispatchEvent(new Event('online'));});
     await page.waitForFunction(()=>document.querySelector('[data-sr-user="user-1"] [data-chair-level]')?.dataset.chairLevel==='5');
-    await page.waitForFunction(height=>document.querySelector('[data-sr-user="user-1"] [data-chair-level]').getBoundingClientRect().height>height,initialHeight);
+    await page.waitForFunction(first=>document.querySelector('[data-sr-user="user-1"] [data-seat-part="back"]')?.getAttribute('d')!==first,initialBack);
     await page.locator('[data-sr-user="user-1"] .sr-desk-scene').screenshot({path:'test-results/throne-'+width+'.png'});
     await page.evaluate(()=>{window.__state.seconds=320*3600;window.dispatchEvent(new Event('online'));});
     await page.waitForFunction(()=>document.querySelector('[data-sr-user="user-1"] [data-chair-level]')?.dataset.chairLevel==='11');
