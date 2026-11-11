@@ -1,34 +1,52 @@
-/* Quiet fantasy thrones: opaque carved backrests, subtle bevels, shaped crowns.
-   No neon wireframes, monitor frames, oversized horns or floating accessories.
-   Geometry lives inside the original desk scene and behind the avatar. */
+/* Twelve cozy-fantasy study chairs, from stool to moonlit throne.
+   Matte walnut, soft cushions and tiny engraved/gem details.
+   Deliberately restrained: no giant halos, neon, screen-like back panels or
+   floating fragments; do not change avatar, table, lamp or room geometry. */
 .sr-room .sr-scene-chair.sr-fantasy-seat,
 .sr-wardrobe .sr-scene-chair.sr-fantasy-seat{
-  position:absolute;box-sizing:border-box;
-  left:50%;bottom:11px;top:auto;
-  width:min(92px,76%);height:92px;
-  transform:translateX(-50%);
-  z-index:2;isolation:auto;
-  border:0!important;border-radius:0!important;outline:0;
-  background:transparent!important;box-shadow:none!important;
-  overflow:visible;transition:none;pointer-events:none;
+  position:absolute;
+  left:22px;
+  bottom:10px;
+  top:auto;
+  width:94px;
+  height:94px;
+  z-index:2;
+  box-sizing:border-box;
+  isolation:auto;
+  transform:none;
+  border:0!important;
+  border-radius:0!important;
+  outline:0;
+  background:transparent!important;
+  box-shadow:none!important;
+  overflow:visible;
+  pointer-events:none;
+  transition:none;
 }
 .sr-room .sr-scene-chair.sr-fantasy-seat::before,
 .sr-room .sr-scene-chair.sr-fantasy-seat::after,
 .sr-wardrobe .sr-scene-chair.sr-fantasy-seat::before,
 .sr-wardrobe .sr-scene-chair.sr-fantasy-seat::after{
-  content:none!important;display:none!important;
+  content:none!important;
+  display:none!important;
 }
 .sr-room .sr-fantasy-seat-art,
 .sr-wardrobe .sr-fantasy-seat-art{
-  display:block;position:relative;width:100%;height:100%;overflow:visible;
-  filter:drop-shadow(0 1px 2px rgba(4,11,16,.24));
+  display:block;
+  width:100%;
+  height:100%;
+  overflow:visible;
+  position:relative;
+  filter:drop-shadow(0 1px 1px rgba(10,19,27,.22));
 }
 .sr-room .sr-fantasy-seat-art path,
 .sr-wardrobe .sr-fantasy-seat-art path{
   vector-effect:non-scaling-stroke;
 }
 @media(prefers-reduced-motion:reduce){
-  .sr-room .sr-fantasy-seat-art,.sr-wardrobe .sr-fantasy-seat-art{
-    transition:none!important;animation:none!important;
+  .sr-room .sr-fantasy-seat-art,
+  .sr-wardrobe .sr-fantasy-seat-art{
+    animation:none!important;
+    transition:none!important;
   }
 }
