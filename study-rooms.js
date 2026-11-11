@@ -61,39 +61,25 @@
   // Distinct vector silhouettes stay behind avatars in the original 119px desk scene.
   // Compact fantasy seats: engraved stone, antique alloys, muted gemstones.
   // Each tier changes the silhouette, but never obscures a desk or avatar.
-  const fantasySeats=[{"back":"M30 92 L32 67 Q31 58 39 53 L43 52 L49 43 L56 49 L63 51 Q73 53 75 65 L76 92 Z","crest":"M48 47 L55 40 L62 47 L55 51 Z","colors":["#3c3c3b","#665748","#896e52","#bfa383","#897252"],"w":70,"h":70},{"back":"M28 92 L29 64 L37 56 L41 48 L48 50 L54 38 L63 49 L70 49 L80 61 L81 92 Z","crest":"M51 43 L55 33 L59 43 L55 48 Z","colors":["#303943","#536271","#6e8290","#b2bfcb","#a2acaf"],"w":74,"h":73},{"back":"M27 92 L28 64 Q31 49 44 47 L48 42 L55 36 L62 42 Q78 49 81 63 L81 92 Z","crest":"M49 42 Q55 30 61 42 L55 46 Z","colors":["#51402e","#8f744a","#b59a6b","#e0c597","#c7a974"],"w":76,"h":76},{"back":"M26 92 L27 62 Q27 45 42 42 L49 42 Q55 29 62 42 L69 42 Q84 48 85 63 L84 92 Z","crest":"M49 42 Q55 31 61 42 L55 46 Z","colors":["#3d303a","#624c5c","#805e71","#c5a6b5","#a88998"],"w":78,"h":78},{"back":"M26 92 L25 63 L34 48 L43 47 L50 32 L56 43 L64 29 L70 47 L80 49 L86 63 L85 92 Z","crest":"M51 42 L56 30 L62 42 L56 47 Z","colors":["#292933","#484652","#626171","#a7a2b2","#8c8698"],"w":80,"h":81},{"back":"M23 92 L24 64 L33 52 L35 43 L45 47 L55 33 L66 47 L76 43 L79 52 L87 64 L87 92 Z","crest":"M45 47 L46 39 L52 43 L55 31 L59 43 L66 39 L66 47 Z","colors":["#432f31","#6d4547","#945f58","#e0bd8b","#af865d"],"w":82,"h":84},{"back":"M23 92 L25 66 L34 50 L41 52 L48 36 L55 46 L63 28 L71 51 L79 48 L86 68 L87 92 Z","crest":"M50 42 L57 30 L63 41 L56 49 Z","colors":["#422b34","#6d3b4f","#894e5f","#d6a5a4","#a77d82"],"w":84,"h":86},{"back":"M23 92 Q20 73 30 58 Q26 48 41 46 Q47 36 55 35 Q63 35 69 46 Q85 45 82 58 Q92 74 87 92 Z","crest":"M50 46 Q47 38 57 33 Q65 39 55 47 Z","colors":["#213e39","#355e50","#467562","#b9cfb0","#7d9e86"],"w":86,"h":88},{"back":"M21 92 L23 64 L35 47 L43 50 L55 25 L67 50 L76 47 L88 64 L89 92 Z","crest":"M51 37 L55 23 L59 37 L55 43 Z","colors":["#293d53","#3b5e7b","#537e9c","#c6d8e3","#8baac1"],"w":88,"h":90},{"back":"M22 92 Q17 68 30 51 Q35 44 43 42 Q55 34 67 42 Q77 44 82 51 Q95 68 89 92 Z","crest":"M51 44 Q42 33 55 28 Q51 38 62 39 Q57 47 51 44 Z","colors":["#343246","#57536c","#77718e","#d8d1df","#a9a3bf"],"w":90,"h":92},{"back":"M22 92 L24 64 L34 51 L38 43 L46 45 L55 31 L64 45 L72 43 L76 51 L86 64 L88 92 Z","crest":"M46 43 L44 36 L50 39 L55 29 L60 39 L66 36 L64 43 Z","colors":["#48362f","#715640","#98734f","#e7cb91","#bb9a62"],"w":92,"h":94},{"back":"M19 92 L21 67 L30 53 L35 40 L45 44 L48 34 L55 42 L62 34 L65 44 L75 40 L80 53 L89 67 L91 92 Z","crest":"M43 44 L42 34 L49 38 L55 26 L61 38 L68 34 L67 44 Z","colors":["#302a36","#55445c","#775e79","#ecd7a7","#bf9c73"],"w":94,"h":96}];
+  // A restrained, illustrated fantasy seat — not a luminous wireframe behind the user.
+  // The twelve solid silhouettes share the app's muted nighttime palette.
+  const fantasySeats=[{"form":"M34 90 L34 54 Q34 43 44 42 L56 42 Q66 43 66 54 L66 90 Z","colors":["#524742","#333942","#927867","#76655a"],"orn":"M50 50 L50 61","crown":"M50 50 L50 61","wings":"M28 76 Q18 77 19 88 L26 90 L32 79 M72 79 L74 90 L81 88 Q82 77 72 76"},{"form":"M30 90 L30 51 Q30 42 40 41 L60 41 Q70 42 70 51 L70 90 Z","colors":["#495258","#343f47","#8b9a9f","#667884"],"orn":"M45 52 L50 46 L55 52 L50 59 Z","crown":"M45 52 L50 46 L55 52 L50 59 Z","wings":"M28 76 Q18 77 19 88 L26 90 L32 79 M72 79 L74 90 L81 88 Q82 77 72 76"},{"form":"M27 91 L27 52 Q27 34 50 34 Q73 34 73 52 L73 91 Z","colors":["#655647","#424548","#bba57b","#968467"],"orn":"M50 48 a6 6 0 1 0 0 12 a6 6 0 1 0 0 -12","crown":"M50 48 a6 6 0 1 0 0 12 a6 6 0 1 0 0 -12","wings":"M28 76 Q18 77 19 88 L26 90 L32 79 M72 79 L74 90 L81 88 Q82 77 72 76"},{"form":"M25 91 L25 50 Q25 39 35 36 Q43 33 50 37 Q57 33 65 36 Q75 39 75 50 L75 91 Z","colors":["#685158","#443e49","#b18e9b","#816872"],"orn":"M50 46 L56 53 L50 61 L44 53 Z","crown":"M50 46 L56 53 L50 61 L44 53 Z","wings":"M28 76 Q18 77 19 88 L26 90 L32 79 M72 79 L74 90 L81 88 Q82 77 72 76"},{"form":"M24 92 L24 52 L34 38 L41 43 L50 31 L59 43 L66 38 L76 52 L76 92 Z","colors":["#4d4759","#343440","#9991a4","#726a80"],"orn":"M42 59 L50 47 L58 59","crown":"M42 59 L50 47 L58 59","wings":"M28 76 Q18 77 19 88 L26 90 L32 79 M72 79 L74 90 L81 88 Q82 77 72 76"},{"form":"M22 92 L22 52 Q22 40 31 39 L35 33 L43 37 L50 28 L57 37 L65 33 L69 39 Q78 40 78 52 L78 92 Z","colors":["#635147","#414049","#c3a57b","#947a63"],"orn":"M44 55 L44 49 L50 53 L56 49 L56 55","crown":"M44 55 L44 49 L50 53 L56 49 L56 55","wings":"M28 76 Q18 77 19 88 L26 90 L32 79 M72 79 L74 90 L81 88 Q82 77 72 76"},{"form":"M22 92 L22 51 L34 36 L40 42 L50 28 L60 42 L66 36 L78 51 L78 92 Z","colors":["#694950","#493a47","#b77e85","#946770"],"orn":"M50 46 L57 54 L50 63 L43 54 Z","crown":"M50 46 L57 54 L50 63 L43 54 Z","wings":"M28 76 Q18 77 19 88 L26 90 L32 79 M72 79 L74 90 L81 88 Q82 77 72 76"},{"form":"M21 92 Q20 63 27 48 Q32 35 42 36 Q50 30 58 36 Q68 35 73 48 Q80 63 79 92 Z","colors":["#476055","#3b4b47","#a2b39c","#718878"],"orn":"M44 59 Q42 48 57 47 Q56 57 44 59 Z","crown":"M44 59 Q42 48 57 47 Q56 57 44 59 Z","wings":"M28 76 Q18 77 19 88 L26 90 L32 79 M72 79 L74 90 L81 88 Q82 77 72 76"},{"form":"M21 92 L21 49 L31 38 L39 42 L50 23 L61 42 L69 38 L79 49 L79 92 Z","colors":["#40576c","#34434f","#a0b2be","#748ca2"],"orn":"M50 45 L57 54 L50 65 L43 54 Z","crown":"M50 45 L57 54 L50 65 L43 54 Z","wings":"M28 76 Q18 77 19 88 L26 90 L32 79 M72 79 L74 90 L81 88 Q82 77 72 76"},{"form":"M21 92 Q16 63 27 45 Q35 31 50 34 Q65 31 73 45 Q84 63 79 92 Z","colors":["#58536a","#404251","#bab0bb","#888299"],"orn":"M53 48 Q44 53 51 62 Q42 57 47 48","crown":"M53 48 Q44 53 51 62 Q42 57 47 48","wings":"M28 76 Q18 77 19 88 L26 90 L32 79 M72 79 L74 90 L81 88 Q82 77 72 76"},{"form":"M19 93 L19 52 L30 40 L37 40 L42 31 L50 35 L58 31 L63 40 L70 40 L81 52 L81 93 Z","colors":["#685646","#484347","#ceae7c","#a18a64"],"orn":"M50 47 L50 62 M43 54 L57 54 M46 50 L54 59 M54 50 L46 59","crown":"M50 47 L50 62 M43 54 L57 54 M46 50 L54 59 M54 50 L46 59","wings":"M28 76 Q18 77 19 88 L26 90 L32 79 M72 79 L74 90 L81 88 Q82 77 72 76"},{"form":"M18 93 L18 53 L26 39 L36 42 L41 28 L48 36 L50 19 L52 36 L59 28 L64 42 L74 39 L82 53 L82 93 Z","colors":["#695360","#44404d","#d2b99a","#9d899e"],"orn":"M43 56 L43 49 L48 53 L50 45 L52 53 L57 49 L57 56 Z","crown":"M43 56 L43 49 L48 53 L50 45 L52 53 L57 49 L57 56 Z","wings":"M28 76 Q18 77 19 88 L26 90 L32 79 M72 79 L74 90 L81 88 Q82 77 72 76"}];
   function fantasyChairArt(level){
-    const tier=Math.min(fantasySeats.length-1,Math.max(0,Number(level)||0));
-    const model=fantasySeats[tier];
-    const [outline,shade,material,highlight,metal]=model.colors;
-    const finish='sr-throne-finish-'+tier,cushion='sr-throne-cushion-'+tier;
-    return '<svg class="sr-fantasy-seat-art" viewBox="15 0 80 104" '
-      +'xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" aria-hidden="true">'
-      +'<defs>'
-      +'<linearGradient id="'+finish+'" x1="0" x2="1" y1="0" y2=".3">'
-      +'<stop offset="0%" stop-color="'+outline+'"/><stop offset="21%" stop-color="'+shade+'"/>'
-      +'<stop offset="48%" stop-color="'+material+'"/><stop offset="86%" stop-color="'+shade+'"/>'
-      +'<stop offset="100%" stop-color="'+outline+'"/></linearGradient>'
-      +'<linearGradient id="'+cushion+'" x1="0" x2="0" y1="0" y2="1">'
-      +'<stop offset="0%" stop-color="'+material+'"/><stop offset="100%" stop-color="'+shade+'"/>'
-      +'</linearGradient></defs>'
-      +'<ellipse cx="55" cy="100" rx="36" ry="3" fill="#060c13" opacity=".2"/>'
-      +'<path data-seat-part="wings" d="M29 87 Q20 86 20 96 M81 87 Q90 86 90 96" stroke="'+outline+'" stroke-width="7" fill="none" stroke-linecap="round"/>'
-      +'<path data-seat-part="back" d="'+model.back+'" fill="url(#'+finish+')" stroke="'+outline+'" stroke-width="4" stroke-linejoin="round"/>'
-      +'<path d="'+model.back+'" fill="none" stroke="'+metal+'" stroke-width="1.8" stroke-linejoin="round" opacity=".9"/>'
-      +'<path d="M36 86 L37 64 Q40 53 47 52 Q55 47 63 52 Q72 57 74 65 L74 86 Q55 91 36 86Z" '
-      +'fill="url(#'+cushion+')" stroke="'+outline+'" stroke-width="2" opacity=".91"/>'
-      +'<path d="M43 70 Q43 61 50 57 M67 70 Q67 61 61 57" fill="none" stroke="'+highlight+'" stroke-width="1.2" opacity=".3"/>'
-      +'<path d="M33 61 Q31 70 32 84 M77 61 Q79 70 78 84" fill="none" stroke="'+highlight+'" stroke-width="1.9" opacity=".55"/>'
-      +'<path data-seat-part="crest" d="'+model.crest+'" fill="'+metal+'" stroke="'+outline+'" stroke-width="2" stroke-linejoin="round"/>'
-      +'<path data-seat-part="rune" d="M50 66 L55 58 L60 66 L55 72Z" fill="none" stroke="'+highlight+'" stroke-width="1.3" opacity=".35"/>'
-      +'<path d="M28 84 Q22 82 19 90 L21 94 M82 84 Q88 82 91 90 L89 94" stroke="'+metal+'" stroke-width="4.5" fill="none" stroke-linecap="round"/>'
-      +'<path data-seat-part="seat" d="M32 85 Q55 80 78 85 L82 92 Q55 98 28 92Z" fill="url(#'+finish+')" stroke="'+outline+'" stroke-width="3" stroke-linejoin="round"/>'
-      +'<path d="M34 86 Q55 83 76 86" stroke="'+highlight+'" stroke-width="1.2" opacity=".7" fill="none"/>'
-      +'<path d="M34 95 L32 101 M76 95 L78 101" stroke="'+outline+'" stroke-width="4" stroke-linecap="round"/>'
+    const model=fantasySeats[Math.min(11,Math.max(0,Number(level)||0))];
+    const [frame,pad,trim,accent]=model.colors;
+    return '<svg class="sr-fantasy-seat-art" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" aria-hidden="true">'
+      +'<ellipse cx="50" cy="94" rx="33" ry="4" fill="#0d1520" opacity=".22"/>'
+      +'<path data-seat-part="back" d="'+model.form+'" fill="'+frame+'" stroke="#212730" stroke-width="3.2" stroke-linejoin="round"/>'
+      +'<path d="'+model.form+'" fill="none" stroke="'+trim+'" stroke-width="1.3" stroke-linejoin="round" opacity=".79"/>'
+      +'<path d="M32 85 L32 57 Q32 48 42 47 L58 47 Q68 48 68 57 L68 85Z" fill="'+pad+'" stroke="'+accent+'" stroke-width="1.3"/>'
+      +'<path d="M36 81 L36 60 Q37 53 44 52 M64 81 L64 60 Q63 53 56 52" fill="none" stroke="'+trim+'" stroke-width="1" opacity=".22"/>'
+      +'<path data-seat-part="rune" d="'+model.orn+'" fill="none" stroke="'+trim+'" stroke-width="1.6" opacity=".83" stroke-linecap="round" stroke-linejoin="round"/>'
+      +'<path data-seat-part="crest" d="'+model.crown+'" fill="none" stroke="'+trim+'" stroke-width="1" opacity=".48" stroke-linecap="round" stroke-linejoin="round"/>'
+      +'<path data-seat-part="wings" d="'+model.wings+'" fill="'+frame+'" stroke="'+trim+'" stroke-width="2" stroke-linejoin="round"/>'
+      +'<path d="M26 87 Q50 82 74 87 L76 95 Q50 99 24 95Z" data-seat-part="seat" fill="'+accent+'" stroke="#222730" stroke-width="2.5"/>'
+      +'<path d="M31 89 Q50 85 69 89" fill="none" stroke="'+trim+'" stroke-width="1.3" opacity=".8"/>'
       +'</svg>';
   }
-
   function chairLevel(value){
     const hours=seconds(value)/3600;
     let level=0;
