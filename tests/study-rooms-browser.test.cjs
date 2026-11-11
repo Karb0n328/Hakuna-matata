@@ -15,11 +15,49 @@ async function checkCoffeeOnTable(page,label){
   assert(Math.abs(g.cupBottom-g.tableTop)<=3,
     label+': the cup must rest on the tabletop, not float: '+JSON.stringify(g));
 }
+async function verifySculptedChair(page,label,level){
+  const details=await page.locator('[data-sr-user="user-1"] .sr-scene-chair').evaluate(chair=>{
+    const scene=chair.closest('.sr-desk-scene'),avatar=scene.querySelector('.sr-avatar');
+    const cr=chair.getBoundingClientRect(),sr=scene.getBoundingClientRect();
+    const arm=chair.querySelector('.sr-chair-arm-left');
+    const wing=chair.querySelector('.sr-chair-wing-right');
+    const crest=chair.querySelector('.sr-chair-crest');
+    const parts=['sr-chair-back-panel','sr-chair-seams','sr-chair-seat',
+      'sr-chair-arm-left','sr-chair-arm-right','sr-chair-wing-left',
+      'sr-chair-wing-right','sr-chair-crest'];
+    const missing=parts.filter(name=>!chair.querySelector('.'+name));
+    const avatarZ=Number(getComputedStyle(avatar).zIndex);
+    const chairZ=Number(getComputedStyle(chair).zIndex);
+    const activeParts=[chair,...Array.from(chair.children).filter(el=>Number(getComputedStyle(el).opacity)>.1)];
+    const bounds=activeParts.map(el=>{const r=el.getBoundingClientRect();return {l:r.left,r:r.right,t:r.top,b:r.bottom,cls:el.className}});
+    return {level:Number(chair.dataset.chairLevel),width:cr.width,height:cr.height,radius:getComputedStyle(chair).borderTopLeftRadius,
+      armOpacity:Number(getComputedStyle(arm).opacity),wingOpacity:Number(getComputedStyle(wing).opacity),
+      crestOpacity:Number(getComputedStyle(crest).opacity),crestClip:getComputedStyle(crest).clipPath,
+      avatarZ,chairZ,scene:{l:sr.left,r:sr.right,t:sr.top,b:sr.bottom},
+      bounds,missing};
+  });
+  assert.equal(details.level,level,label+' upgraded level follows existing time brackets');
+  assert.equal(details.missing.length,0,label+' has every structural chair component');
+  assert(details.avatarZ>details.chairZ,label+' keeps avatar in front of the chair');
+  assert(details.armOpacity===(level>=1?1:0),label+' progressive armrests');
+  assert(details.wingOpacity===(level>=3?1:0),label+' progressive carved side wings');
+  assert(details.crestOpacity===(level>=2?1:0),label+' progressive chair crest');
+  for(const part of details.bounds){
+    assert(part.l>=details.scene.l-2&&part.r<=details.scene.r+2,
+      label+' level '+level+' fits scene horizontally: '+JSON.stringify(part));
+    assert(part.t>=details.scene.t-2,
+      label+' level '+level+' headboard and crest are not clipped at the top: '+JSON.stringify(part));
+  }
+  if(level===11)assert(details.crestClip&&details.crestClip!=='none',
+    label+' royal crown must have a distinctive cutout silhouette');
+  return {width:details.width,height:details.height,radius:details.radius,
+    arms:details.armOpacity,wings:details.wingOpacity,crest:details.crestOpacity};
+}
 const files={};
-for(const name of ['offline-support.js','styles.css','study-rooms.css','study-rooms-immersive.css','room-experience.css','room-experience.js','room-weather.js','room-wardrobe.js','study-rooms.js'])files[name]=fs.readFileSync(require('node:path').join(__dirname,'..',name),'utf8');
+for(const name of ['offline-support.js','styles.css','study-rooms.css','study-rooms-immersive.css','room-experience.css','room-experience.js','room-weather.js','room-wardrobe.js','study-rooms.js','room-chairs.css'])files[name]=fs.readFileSync(require('node:path').join(__dirname,'..',name),'utf8');
 const fixture=[
   '<!doctype html><html lang="tr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
-  '<link href="/styles.css" rel="stylesheet"><link href="/study-rooms.css" rel="stylesheet"><link href="/study-rooms-immersive.css" rel="stylesheet"><link href="/room-experience.css" rel="stylesheet">',
+  '<link href="/styles.css" rel="stylesheet"><link href="/study-rooms.css" rel="stylesheet"><link href="/study-rooms-immersive.css" rel="stylesheet"><link href="/room-experience.css" rel="stylesheet"><link href="/room-chairs.css" rel="stylesheet">',
   '<main class="main-area"><h1 id="pageTitle">Odalar</h1><section class="ataturk-corner" aria-label="Atatürk Köşesi">Atatürk Köşesi</section><section class="republic-hero">Cumhuriyet</section><section id="view"></section></main>',
   '<script>',
   'window.__batuId='+JSON.stringify(batuId)+';window.__uid="user-1";localStorage.setItem("sb-zyrbbkbwrijnnykbgjvc-auth-token",JSON.stringify({user:{id:window.__uid}}));',
@@ -131,6 +169,26 @@ const server=createServer((req,res)=>{
     const chair=page.locator('[data-sr-user="user-1"] [data-chair-level]');
     assert.equal(await chair.getAttribute('data-chair-level'),'0');
     const initialHeight=(await chair.boundingBox()).height;
+    // Every milestone must change the actual chair silhouette, not only its colour.
+    const chairHours=[0,10,20,30,40,50,65,85,110,150,220,320];
+    const visualProfiles=[];
+    for(let level=0;level<chairHours.length;level++){
+      await page.evaluate(hours=>{window.__state.seconds=hours*3600;window.dispatchEvent(new Event('online'));},chairHours[level]);
+      await page.waitForFunction(expected=>
+        document.querySelector('[data-sr-user="user-1"] [data-chair-level]')?.dataset.chairLevel===String(expected),
+        level);
+      visualProfiles.push(await verifySculptedChair(page,label,level));
+      if([0,3,5,8,11].includes(level)){
+        await page.locator('[data-sr-user="user-1"] .sr-desk-scene')
+          .screenshot({path:'test-results/sculpted-chair-'+level+'-'+width+'.png'});
+      }
+    }
+    assert.equal(new Set(visualProfiles.map(p=>p.width+'x'+p.height+' '+p.radius)).size,12,
+      label+': all twelve levels have distinct physical chair profiles');
+    // Restore the entry-level chair before the older scene/clock regressions.
+    await page.evaluate(()=>{window.__state.seconds=12;window.dispatchEvent(new Event('online'));});
+    await page.waitForFunction(()=>
+      document.querySelector('[data-sr-user="user-1"] [data-chair-level]')?.dataset.chairLevel==='0');
     await page.locator('.sr-chair-guide summary').click();
     await page.getByText('320 sa ve üzeri',{exact:true}).waitFor();
     await page.locator('.sr-chair-guide summary').click();
