@@ -415,36 +415,21 @@ html[data-hakuna-palette="republic"] .sr-desk-scene{filter:hue-rotate(323deg) sa
   --chair-finish:radial-gradient(circle,#f2c883 1px,transparent 2px) 2px 3px/11px 11px,linear-gradient(150deg,#543766,#24192f);
 }
 
-/* A real closed hardcover on the desk while resting or away.
-   Keep the original open pages and pencil animation for active sessions. */
-.sr-desk-scene .sr-scene-notebook{
-  opacity:0;
-  visibility:hidden;
-}
-.sr-desk-working .sr-scene-notebook{
-  opacity:1;
-  visibility:visible;
-}
-.sr-closed-book{
+/* Closed hardback appears only for paused/AFK desks.
+   Intrinsic SVG dimensions and inline placement are deliberate:
+   older installed APK/PWA styles cannot leave an unstyled 300x150 SVG. */
+.sr-desk-scene > svg.sr-closed-book {
+  display:block;
   position:absolute;
-  left:51px;
-  bottom:17px;
-  width:49px;
-  height:31px;
+  left:52px;
+  bottom:18px;
+  width:44px;
+  height:27px;
+  max-width:none;
+  max-height:none;
   z-index:8;
   overflow:visible;
-  filter:drop-shadow(1px 2px 1px rgba(40,37,35,.17));
   pointer-events:none;
+  filter:drop-shadow(1px 1px 1px rgba(35,40,45,.18));
 }
-.sr-desk-away .sr-closed-book{opacity:.88}
-.sr-desk-working .sr-closed-book{
-  animation:sr-book-unfold .65s cubic-bezier(.18,.68,.3,1) both;
-}
-@keyframes sr-book-unfold{
-  0%{opacity:1;transform:rotate(0) scale(1)}
-  50%{opacity:.75;transform:rotate(-10deg) translate(-1px,-1px) scaleX(1.08)}
-  100%{opacity:0;transform:rotate(-20deg) translate(-2px,-3px) scaleX(1.17)}
-}
-@media(prefers-reduced-motion:reduce){
-  .sr-desk-working .sr-closed-book{display:none}
-}
+.sr-desk-away > svg.sr-closed-book{opacity:.86}
