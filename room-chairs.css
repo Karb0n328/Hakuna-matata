@@ -1,56 +1,34 @@
-/* Compact dark-fantasy seats. Purpose-built for the miniature study desk:
-   no TV-like rectangle, giant horns, neon outlines or floating embellishments.
-   Original 12 study-hour thresholds and every room interaction stay unchanged. */
-.sr-room .sr-scene-chair.sr-fantasy-seat {
-  position:absolute;
-  box-sizing:border-box;
-  left:67px;
-  bottom:11px;
-  width:var(--sr-seat-width,53px);
-  height:var(--sr-seat-height,55px);
-  z-index:2;
-  isolation:auto;
+/* Quiet fantasy thrones: opaque carved backrests, subtle bevels, shaped crowns.
+   No neon wireframes, monitor frames, oversized horns or floating accessories.
+   Geometry lives inside the original desk scene and behind the avatar. */
+.sr-room .sr-scene-chair.sr-fantasy-seat,
+.sr-wardrobe .sr-scene-chair.sr-fantasy-seat{
+  position:absolute;box-sizing:border-box;
+  left:50%;bottom:11px;top:auto;
+  width:min(92px,76%);height:92px;
   transform:translateX(-50%);
-  border:0!important;
-  border-radius:0!important;
-  outline:0;
-  background:transparent!important;
-  box-shadow:none!important;
-  overflow:visible;
-  pointer-events:none;
-  transition:width .28s ease,height .28s ease;
+  z-index:2;isolation:auto;
+  border:0!important;border-radius:0!important;outline:0;
+  background:transparent!important;box-shadow:none!important;
+  overflow:visible;transition:none;pointer-events:none;
 }
 .sr-room .sr-scene-chair.sr-fantasy-seat::before,
-.sr-room .sr-scene-chair.sr-fantasy-seat::after {
-  content:none!important;
-  display:none!important;
+.sr-room .sr-scene-chair.sr-fantasy-seat::after,
+.sr-wardrobe .sr-scene-chair.sr-fantasy-seat::before,
+.sr-wardrobe .sr-scene-chair.sr-fantasy-seat::after{
+  content:none!important;display:none!important;
 }
-.sr-room .sr-fantasy-seat-art{
-  display:block;
-  width:100%;
-  height:100%;
-  overflow:visible;
-  filter:drop-shadow(0 1px 1px rgba(6,13,20,.32));
+.sr-room .sr-fantasy-seat-art,
+.sr-wardrobe .sr-fantasy-seat-art{
+  display:block;position:relative;width:100%;height:100%;overflow:visible;
+  filter:drop-shadow(0 1px 2px rgba(4,11,16,.24));
 }
-.sr-room .sr-fantasy-seat-art path{
+.sr-room .sr-fantasy-seat-art path,
+.sr-wardrobe .sr-fantasy-seat-art path{
   vector-effect:non-scaling-stroke;
 }
-/* Twelve evolving materials and physical silhouettes. CSS controls size, SVG
-   controls the actual sculpted outline, so changing the hour really upgrades it. */
-.sr-room .sr-fantasy-seat[data-chair-level="0"]{--sr-seat-width:70px;--sr-seat-height:70px;}
-.sr-room .sr-fantasy-seat[data-chair-level="1"]{--sr-seat-width:74px;--sr-seat-height:73px;}
-.sr-room .sr-fantasy-seat[data-chair-level="2"]{--sr-seat-width:76px;--sr-seat-height:76px;}
-.sr-room .sr-fantasy-seat[data-chair-level="3"]{--sr-seat-width:78px;--sr-seat-height:78px;}
-.sr-room .sr-fantasy-seat[data-chair-level="4"]{--sr-seat-width:80px;--sr-seat-height:81px;}
-.sr-room .sr-fantasy-seat[data-chair-level="5"]{--sr-seat-width:82px;--sr-seat-height:84px;}
-.sr-room .sr-fantasy-seat[data-chair-level="6"]{--sr-seat-width:84px;--sr-seat-height:86px;}
-.sr-room .sr-fantasy-seat[data-chair-level="7"]{--sr-seat-width:86px;--sr-seat-height:88px;}
-.sr-room .sr-fantasy-seat[data-chair-level="8"]{--sr-seat-width:88px;--sr-seat-height:90px;}
-.sr-room .sr-fantasy-seat[data-chair-level="9"]{--sr-seat-width:90px;--sr-seat-height:92px;}
-.sr-room .sr-fantasy-seat[data-chair-level="10"]{--sr-seat-width:92px;--sr-seat-height:94px;}
-.sr-room .sr-fantasy-seat[data-chair-level="11"]{--sr-seat-width:94px;--sr-seat-height:96px;}
-/* Room display has multiple breakpoints but all chairs keep the same anchor
-   behind avatars and within the 119px minimum desk scene. */
 @media(prefers-reduced-motion:reduce){
-  .sr-room .sr-scene-chair.sr-fantasy-seat{transition:none!important;}
+  .sr-room .sr-fantasy-seat-art,.sr-wardrobe .sr-fantasy-seat-art{
+    transition:none!important;animation:none!important;
+  }
 }
