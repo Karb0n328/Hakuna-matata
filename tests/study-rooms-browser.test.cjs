@@ -39,9 +39,9 @@ async function verifySculptedChair(page,label,level){
   assert.equal(details.level,level,label+' upgraded level follows existing time brackets');
   assert.equal(details.missing.length,0,label+' has every structural chair component');
   assert(details.avatarZ>details.chairZ,label+' keeps avatar in front of the chair');
-  assert(details.armOpacity===(level>=1?1:0),label+' progressive armrests');
-  assert(details.wingOpacity===(level>=3?1:0),label+' progressive carved side wings');
-  assert(details.crestOpacity===(level>=2?1:0),label+' progressive chair crest');
+  assert(details.armOpacity===(level>=1?1:0),label+' level '+level+' progressive armrests: '+details.armOpacity);
+  assert(details.wingOpacity===(level>=3?1:0),label+' level '+level+' carved side wings: '+details.wingOpacity);
+  assert(details.crestOpacity===(level>=2?1:0),label+' level '+level+' chair crest: '+details.crestOpacity);
   for(const part of details.bounds){
     assert(part.l>=details.scene.l-2&&part.r<=details.scene.r+2,
       label+' level '+level+' fits scene horizontally: '+JSON.stringify(part));
@@ -177,6 +177,8 @@ const server=createServer((req,res)=>{
       await page.waitForFunction(expected=>
         document.querySelector('[data-sr-user="user-1"] [data-chair-level]')?.dataset.chairLevel===String(expected),
         level);
+      // Wait for width/height/armrest CSS transitions before checking final geometry.
+      await page.waitForTimeout(500);
       visualProfiles.push(await verifySculptedChair(page,label,level));
       if([0,3,5,8,11].includes(level)){
         await page.locator('[data-sr-user="user-1"] .sr-desk-scene')
