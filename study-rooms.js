@@ -56,11 +56,32 @@
       }
     })().catch(()=>{}).finally(()=>{refreshTask=null;});
   }
-  const chairLevels=[
-    [0,'Ahşap sandalye'],[10,'Demir koltuk'],[20,'Altın koltuk'],[30,'Kadife koltuk'],
-    [40,'Obsidyen taht'],[50,'Kral tahtı'],[65,'Yakut taht'],[85,'Zümrüt taht'],
-    [110,'Safir taht'],[150,'Ay tahtı'],[220,'Güneş tahtı'],[320,'İmparator tahtı']
-  ];
+  const chairLevels=[[0,"Kök oturağı"],[10,"Demir rün"],[20,"Altın mühür"],[30,"Kadife kâhin"],[40,"Obsidyen muhafız"],[50,"Kral tahtı"],[65,"Yakut bekçi"],[85,"Zümrüt koruyucu"],[110,"Safir anıt"],[150,"Ay muhafızı"],[220,"Güneş tahtı"],[320,"İmparator tahtı"]];
+  // Hand-drawn fantasy seats; no rectangular monitor-shaped backrests.
+  // Distinct vector silhouettes stay behind avatars in the original 119px desk scene.
+  const fantasySeats=[{"form":"M35 91 L31 68 Q29 62 34 57 L38 55 L40 44 L50 50 L59 43 L69 52 L77 55 Q83 63 79 70 L77 91 Z","wings":"M34 82 Q22 78 19 68 L27 65 L30 70 M77 82 Q89 78 92 68 L84 65 L80 70","crown":"M50 49 L56 41 L62 49 L56 53 Z","rune":"M47 62 L56 57 L64 63 L56 71 Z","colors":["#66513c","#947154","#dac29c","#ab8762"]},{"form":"M32 92 L31 54 L38 48 L43 48 L46 31 L55 43 L65 29 L69 48 L76 47 L83 55 L81 92 Z","wings":"M32 85 L23 76 L22 58 L30 64 M81 85 L89 76 L89 58 L82 64","crown":"M49 34 L55 20 L61 34 L55 40 Z","rune":"M55 56 L55 77 M46 66 L64 66","colors":["#465766","#7d8f9d","#c4d4dd","#7c9cac"]},{"form":"M31 93 L28 58 Q28 44 40 39 L46 37 L54 29 L64 37 Q81 40 83 57 L81 93 Z","wings":"M29 73 Q18 64 24 48 L34 55 M82 73 Q94 64 88 48 L78 55","crown":"M48 35 Q56 17 64 35 Q56 42 48 35 Z","rune":"M48 59 Q56 50 64 59 M56 53 L56 68","colors":["#89683c","#bfa16e","#f3d9a3","#cca976"]},{"form":"M29 93 Q23 74 28 51 Q32 41 42 40 Q46 29 55 29 Q66 29 70 40 Q80 41 84 52 Q88 74 81 93 Z","wings":"M31 77 C14 70 11 50 29 41 Q20 56 35 61 M80 77 C97 70 100 50 82 41 Q91 56 76 61","crown":"M46 35 Q55 21 64 35 Q55 43 46 35 Z","rune":"M47 58 Q55 49 63 58 Q55 65 47 58 Z","colors":["#724b68","#9f7892","#dbc7d7","#c7a2bb"]},{"form":"M29 94 L24 64 L34 44 L40 48 L51 25 L57 38 L68 20 L74 46 L83 38 L88 62 L83 94 Z","wings":"M31 77 L14 70 L22 51 L31 57 M81 77 L98 70 L90 51 L81 57","crown":"M47 31 L54 15 L60 31 L54 42 Z","rune":"M49 61 L56 51 L64 62 L55 75 Z","colors":["#3f3855","#6b6481","#aca5ca","#9284ba"]},{"form":"M27 93 L26 53 L34 46 L33 30 L45 39 L55 22 L66 39 L77 29 L77 46 L86 53 L85 93 Z","wings":"M29 78 Q13 68 19 43 L34 54 M83 78 Q99 68 93 43 L78 54","crown":"M42 36 L42 22 L49 28 L55 15 L61 28 L69 22 L69 36 Z","rune":"M48 57 L55 49 L62 57 L55 66 Z","colors":["#805345","#ab8065","#f7d7a2","#d49d78"]},{"form":"M25 95 L24 64 L32 45 L37 49 L43 27 L55 37 L66 19 L73 46 L82 39 L89 65 L86 95 Z","wings":"M31 83 L13 69 L21 39 L36 62 M81 83 L99 69 L91 39 L76 62","crown":"M47 34 L55 12 L63 34 L55 41 Z","rune":"M47 61 L55 48 L64 61 L55 75 Z","colors":["#723f55","#a85e78","#efb4b9","#d7789b"]},{"form":"M26 94 Q20 71 31 54 C23 44 33 32 45 39 Q55 16 66 38 C80 30 91 45 81 55 Q92 74 83 94 Z","wings":"M34 81 C12 76 9 54 20 41 Q28 48 35 62 M78 81 C100 76 103 54 92 41 Q84 48 77 62","crown":"M46 32 Q49 17 60 19 Q60 33 49 39 Z","rune":"M49 69 Q50 53 64 49 M53 62 L44 55 M58 56 L68 57","colors":["#315b51","#4c9072","#c0dfc0","#8dcab0"]},{"form":"M27 94 L25 61 L36 40 L43 44 L55 14 L67 44 L75 38 L87 61 L85 94 Z","wings":"M29 81 L13 69 L24 35 L36 61 M81 81 L97 69 L86 35 L74 61","crown":"M48 30 L55 9 L62 30 L55 39 Z","rune":"M46 61 L55 47 L64 61 L55 77 Z M55 47 L55 77","colors":["#355a84","#568ab4","#c5e3f1","#8bb9d7"]},{"form":"M26 95 Q17 70 30 45 C33 35 45 30 54 34 Q67 26 77 43 Q94 65 85 95 Z","wings":"M31 77 C12 65 14 38 30 27 Q23 51 39 58 M80 77 C99 65 97 38 81 27 Q88 51 72 58","crown":"M49 32 Q42 18 53 12 Q44 27 62 24 Q57 37 49 32 Z","rune":"M46 64 Q56 47 66 64 Q56 70 46 64 Z","colors":["#625a83","#9188b2","#e7ddf1","#bea8d8"]},{"form":"M26 96 L25 61 Q25 43 41 38 L45 30 L55 37 L66 30 L70 38 Q87 44 86 62 L85 96 Z","wings":"M28 80 L12 64 L19 49 L29 53 M82 80 L98 64 L91 49 L81 53","crown":"M37 36 L36 26 L46 28 L48 15 L56 25 L64 15 L66 28 L77 26 L75 36 Z","rune":"M48 58 Q55 51 62 58 Q66 66 55 69 Q44 65 48 58 Z","colors":["#986542","#d5a46b","#ffe6b5","#e4bd80"]},{"form":"M22 96 L21 60 L30 49 L33 29 L43 38 L48 21 L55 34 L62 20 L68 38 L78 29 L81 49 L91 60 L89 96 Z","wings":"M30 82 C13 77 8 57 13 36 L28 45 L36 67 M82 82 C99 77 104 57 99 36 L84 45 L76 67","crown":"M38 34 L35 18 L46 26 L55 9 L64 26 L76 18 L73 34 L64 31 L55 38 L46 31 Z","rune":"M55 47 L61 58 L72 60 L62 67 L59 78 L55 70 L51 78 L48 67 L38 60 L49 58 Z","colors":["#79567c","#b493ad","#f9dfaf","#d5acd5"]}];
+  function fantasyChairArt(level){
+    const model=fantasySeats[Math.min(11,Math.max(0,Number(level)||0))];
+    const [dark,mid,light,gem]=model.colors;
+    // Solid SVG fills instead of gradients with duplicate ids across 30 user desks.
+    return '<svg class="sr-fantasy-seat-art" viewBox="0 0 110 112" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" aria-hidden="true">'
+      +'<ellipse cx="55" cy="105" rx="36" ry="4" fill="#0b1620" opacity=".24"/>'
+      +'<path data-seat-part="wings" d="'+model.wings+'" fill="none" stroke="'+dark+'" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>'
+      +'<path d="'+model.wings+'" fill="none" stroke="'+mid+'" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity=".94"/>'
+      +'<path data-seat-part="back" d="'+model.form+'" fill="'+dark+'" stroke="'+light+'" stroke-width="2.7" stroke-linejoin="round"/>'
+      +'<path d="'+model.form+'" fill="none" stroke="'+mid+'" stroke-width="6" stroke-linejoin="round" opacity=".58"/>'
+      +'<path d="M38 88 Q32 65 41 53 Q55 47 69 53 Q78 66 72 88 Q55 97 38 88Z" fill="'+mid+'" opacity=".38"/>'
+      +'<path d="M40 83 Q38 61 47 57 Q55 53 64 57 Q73 62 70 83" fill="none" stroke="'+light+'" stroke-width="1.4" opacity=".4"/>'
+      +'<path data-seat-part="rune" d="'+model.rune+'" fill="none" stroke="'+gem+'" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" opacity=".95"/>'
+      +'<path d="'+model.crown+'" data-seat-part="crest" fill="'+gem+'" stroke="'+light+'" stroke-width="1.5" stroke-linejoin="round"/>'
+      +'<path d="M24 78 Q18 80 19 90 L27 91 Q32 78 38 77 M86 78 Q93 80 91 90 L83 91 Q79 78 72 77" fill="none" stroke="'+dark+'" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>'
+      +'<path d="M24 79 Q18 81 19 87 M86 79 Q92 81 91 87" fill="none" stroke="'+light+'" stroke-width="2.4" opacity=".86" stroke-linecap="round"/>'
+      +'<path data-seat-part="seat" d="M30 87 Q55 81 80 87 L85 96 Q55 103 25 96Z" fill="'+mid+'" stroke="'+dark+'" stroke-width="3" stroke-linejoin="round"/>'
+      +'<path d="M34 89 Q55 84 76 89" fill="none" stroke="'+light+'" stroke-width="1.4" opacity=".75"/>'
+      +'<path d="M35 99 L32 106 M75 99 L78 106" fill="none" stroke="'+dark+'" stroke-width="4" stroke-linecap="round"/>'
+      +'</svg>';
+  }
+
   function chairLevel(value){
     const hours=seconds(value)/3600;
     let level=0;
@@ -285,11 +306,7 @@
     const state=online?(working?'working':'resting'):'away';
     return '<div class="sr-desk-scene sr-desk-'+state+' sr-outfit-'+avatar+'" aria-hidden="true">'
       +'<span class="sr-scene-stars">✦</span><div class="sr-scene-window"><span></span><span></span></div>'
-      +'<div class="sr-scene-chair" data-chair-level="'+level+'">'
-        +'<i class="sr-chair-wing sr-chair-wing-left"></i><i class="sr-chair-wing sr-chair-wing-right"></i>'
-        +'<i class="sr-chair-back-panel"></i><i class="sr-chair-seams"></i>'
-        +'<i class="sr-chair-seat"></i><i class="sr-chair-arm sr-chair-arm-left"></i>'
-        +'<i class="sr-chair-arm sr-chair-arm-right"></i><i class="sr-chair-crest"></i></div>'
+      +'<div class="sr-scene-chair sr-fantasy-seat" data-chair-level="'+level+'">'+fantasyChairArt(level)+'</div>'
       +(online?window.HakunaRoomWardrobe.character(m.look):'')
       +'<div class="sr-scene-table"></div><div class="sr-scene-notebook"><i></i><i></i><i></i></div>'
       +'<div class="sr-scene-coffee"><span></span></div>'
@@ -478,7 +495,10 @@
         node.textContent=duration(total);
         const chair=node.closest('[data-sr-user]')?.querySelector('[data-chair-level]');
         const level=String(chairLevel(total));
-        if(chair&&chair.dataset.chairLevel!==level)chair.dataset.chairLevel=level;
+        if(chair&&chair.dataset.chairLevel!==level){
+          chair.dataset.chairLevel=level;
+          chair.innerHTML=fantasyChairArt(Number(level));
+        }
       }
     }
     window.HakunaRoomExperience?.update(snapshot,now);
