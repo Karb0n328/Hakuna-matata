@@ -60,6 +60,14 @@ assert.ok(html.includes('room-chairs.css?v=7-cozy-fantasy'),
 const chairStyles=fs.readFileSync(require('node:path').join(__dirname,'..','room-chairs.css'),'utf8');
 const models=JSON.parse(src.match(/const fantasySeats=(\[[^\n]+\]);/)[1]);
 assert.equal(models.length,12,'all original 12 study-hour tiers remain');
+const tierNames=JSON.parse(src.match(/const chairLevels=(\[[^\n]+\]);/)[1]);
+assert.deepEqual(tierNames.map(([hours])=>hours),[0,10,20,30,40,50,65,85,110,150,220,320],
+  'all existing hour milestones remain unchanged');
+assert.deepEqual(tierNames.map(([,name])=>name),[
+ 'Ahşap tabure','Ahşap sandalye','Minderli sandalye','Meşe koltuk',
+ 'Kadife koltuk','Oyma koltuk','Ay tahtı','Yaprak tahtı',
+ 'Kristal taht','Hilal tahtı','Yıldız tahtı','Ayışığı tahtı'
+],'visible chair labels must match the redesigned silhouettes');
 assert.equal(new Set(models.map(item=>item.form)).size,12,'all tiers have distinct outlines');
 assert.equal(new Set(models.map(item=>item.crown)).size,12,'all tiers have distinct ornaments');
 assert.equal(new Set(models.map(item=>item.colors.join(','))).size,12,'each tier has a coordinated material palette');
