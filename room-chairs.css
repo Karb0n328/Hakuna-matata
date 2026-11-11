@@ -82,7 +82,7 @@
   left:-8px;transform:rotate(var(--ch-wing-tilt,-5deg));
 }
 .sr-room .sr-chair-wing-right,.sr-wardrobe .sr-chair-wing-right{
-  right:-8px;transform:rotate(calc(-1 * var(--ch-wing-tilt,-5deg)));
+  right:-8px;transform:scaleX(-1) rotate(var(--ch-wing-tilt,-5deg));
 }
 .sr-room .sr-chair-crest,.sr-wardrobe .sr-chair-crest{
   opacity:var(--ch-crest);z-index:5;top:-8px;left:50%;
