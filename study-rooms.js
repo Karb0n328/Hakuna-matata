@@ -56,7 +56,7 @@
       }
     })().catch(()=>{}).finally(()=>{refreshTask=null;});
   }
-  const chairLevels=[[0,"Kök oturağı"],[10,"Demir rün"],[20,"Altın mühür"],[30,"Kadife kâhin"],[40,"Obsidyen muhafız"],[50,"Kral tahtı"],[65,"Yakut bekçi"],[85,"Zümrüt koruyucu"],[110,"Safir anıt"],[150,"Ay muhafızı"],[220,"Güneş tahtı"],[320,"İmparator tahtı"]];
+  const chairLevels=[[0,"Ahşap tabure"],[10,"Ahşap sandalye"],[20,"Minderli sandalye"],[30,"Meşe koltuk"],[40,"Kadife koltuk"],[50,"Oyma koltuk"],[65,"Ay tahtı"],[85,"Yaprak tahtı"],[110,"Kristal taht"],[150,"Hilal tahtı"],[220,"Yıldız tahtı"],[320,"Ayışığı tahtı"]];
   // Hand-drawn fantasy seats; no rectangular monitor-shaped backrests.
   // Distinct vector silhouettes stay behind avatars in the original 119px desk scene.
   // Compact fantasy seats: engraved stone, antique alloys, muted gemstones.
