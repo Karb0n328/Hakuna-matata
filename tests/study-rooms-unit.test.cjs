@@ -55,7 +55,7 @@ assert.match(src,/if\(user===accountId\(\)&&window\.HakunaRoomPreferences\?\.sta
 assert.ok(html.includes('study-rooms.css'),'page should load room CSS');
 assert.ok(html.includes('study-rooms-immersive.css'),'page should load isolated room CSS');
 
-assert.ok(html.includes('room-chairs.css?v=3-fantasy-runes'),
+assert.ok(html.includes('room-chairs.css?v=4-refined-dark-fantasy'),
   'fantasy thrones stylesheet must load on mobile and desktop');
 const chairStyles=fs.readFileSync(require('node:path').join(__dirname,'..','room-chairs.css'),'utf8');
 const models=JSON.parse(src.match(/const fantasySeats=(\[[^\n]+\]);/)[1]);
@@ -63,6 +63,9 @@ assert.equal(models.length,12,'all original 12 study-hour tiers remain');
 assert.equal(new Set(models.map(item=>item.form)).size,12,'all tiers have distinct outlines');
 assert.equal(new Set(models.map(item=>item.crown)).size,12,'all tiers have distinct ornaments');
 assert.equal(new Set(models.map(item=>item.colors.join(','))).size,12,'each tier has a coordinated material palette');
+assert(models.every(item=>item.w<=82&&item.h<=88), 'fantasy seats must fit behind avatars');
+assert(models.every(item=>item.w>=53&&item.h>=55), 'all silhouettes remain visible at miniature size');
+assert(models.every(item=>item.back.startsWith('M')), 'each tier has handcrafted vector geometry');
 assert.match(src,/function fantasyChairArt\(level\)/,'fantasy chair renderer exists');
 assert.match(src,/data-seat-part="back"/,'fantasy chairs include curved shell artwork');
 assert.match(src,/data-seat-part="wings"/,'fantasy chairs include enchanted side wings');
@@ -77,7 +80,7 @@ assert.match(chairStyles,/prefers-reduced-motion/,'animation respects accessibil
 const assets=JSON.parse(sw.match(/const ASSETS=(.*);/)[1]);
 assert.equal(new Set(assets).size,assets.length,'precache cannot contain duplicate URLs');
 for(const file of ['./study-rooms.js','./study-rooms.css','./study-rooms-immersive.css','./offline-support.js'])assert(assets.includes(file));
-assert(assets.includes('./room-chairs.css?v=3-fantasy-runes'),'fantasy thrones CSS must be precached');
+assert(assets.includes('./room-chairs.css?v=4-refined-dark-fantasy'),'fantasy thrones CSS must be precached');
 console.log('PASS study-room clock math, navigation wiring and PWA assets');
 
 vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname,'..','room-experience.js'),'utf8'),{window:win,document:doc});
