@@ -42,8 +42,8 @@ async function verifyFantasyThrone(page,label,level){
   });
   assert.equal(value.level,level,label+' progression is still driven by study hours');
   assert(value.hasSvg&&value.hasShapes,label+' level '+level+' has complete fantasy vector art');
-  assert(value.back?.includes('M')&&/[QC]/.test(value.back),
-    label+' level '+level+' is a curved/pointed throne, not a rectangular screen');
+  assert(value.back?.startsWith('M')&&(value.back.match(/[LQC]/g)||[]).length>=6,
+    label+' level '+level+' has a detailed angular or curved throne outline');
   assert.equal(value.bg,'none',label+' no TV-style chair background');
   assert.equal(value.border,'none',label+' no TV-style outline');
   assert(value.avatarZ>value.chairZ,label+' throne stays behind avatar and wardrobe');
