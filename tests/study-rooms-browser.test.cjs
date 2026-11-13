@@ -146,19 +146,35 @@ const server=createServer((req,res)=>{
     await wardrobe.locator('[name=face]').selectOption('hoops');
     await wardrobe.locator('[name=neck]').selectOption('pendant');
     await wardrobe.getByRole('button',{name:'Karakter'}).click();
-    await wardrobe.locator('[name=hair]').selectOption('buns');
+    assert.deepEqual(await wardrobe.locator('[name=hair] option').evaluateAll(nodes=>nodes.map(n=>n.value)),
+      ['fade','curls','braids'],'male dropdown lists only male hair');
+    await wardrobe.locator('[name=hair]').selectOption('braids');
     await wardrobe.locator('[name=skin]').selectOption('deep');
     const preview=wardrobe.locator('.sr-wardrobe-preview');
     await wardrobe.locator('.sr-wardrobe-gender label').filter({hasText:'Kadın'}).click();
     assert.equal(await wardrobe.locator('[name=gender][value=female]').isChecked(),true);
     await preview.locator('.sr-avatar[data-gender=female] .sr-avatar-hair-back').waitFor();
-    assert.equal(await preview.locator('.sr-avatar[data-hair=buns]').count(),1,
-      'female selection keeps the chosen hair');
+    assert.deepEqual(await wardrobe.locator('[name=hair] option').evaluateAll(nodes=>nodes.map(n=>n.value)),
+      ['long_wavy','long_straight','twin_braids','buns'],
+      'female dropdown has four long hairstyles and no short fade/bob');
+    assert.equal(await wardrobe.locator('[name=hair]').inputValue(),'long_wavy',
+      'switching to female automatically gives long hair');
+    await preview.locator('.sr-avatar[data-hair=long_wavy]').waitFor();
+    await wardrobe.locator('[name=hair]').selectOption('long_straight');
+    await preview.locator('.sr-avatar[data-hair=long_straight]').waitFor();
+    await wardrobe.locator('[name=hair]').selectOption('buns');
+    await preview.locator('.sr-avatar[data-hair=buns]').waitFor();
     await wardrobe.locator('.sr-wardrobe-gender label').filter({hasText:'Erkek'}).click();
     await preview.locator('.sr-avatar[data-gender=male]').waitFor();
+    assert.equal(await wardrobe.locator('[name=hair]').inputValue(),'braids',
+      'switching back restores earlier masculine hair');
+    assert.deepEqual(await wardrobe.locator('[name=hair] option').evaluateAll(nodes=>nodes.map(n=>n.value)),
+      ['fade','curls','braids'],'male hair dropdown never includes female options');
     assert.equal(await preview.locator('.sr-avatar-hair-back').count(),0,
       'switching back restores the original male variant');
     await wardrobe.locator('.sr-wardrobe-gender label').filter({hasText:'Kadın'}).click();
+    assert.equal(await wardrobe.locator('[name=hair]').inputValue(),'buns',
+      'female hairstyle is retained when switching between character variants');
     const accessories=['headphones','hoops','pendant','watch'];
     for(const name of accessories)assert.equal(await preview.locator('[data-accessory='+name+']').count(),1);
     assert.equal(await preview.locator('.sr-avatar[data-hair=buns] .sr-accessory-art').count(),1);
@@ -168,6 +184,8 @@ const server=createServer((req,res)=>{
     await wardrobe.waitFor({state:'detached'});
     assert.equal(await page.evaluate(()=>window.__state.look?.gender),'female',
       'selected female avatar persists with the rest of the outfit');
+    assert.equal(await page.evaluate(()=>window.__state.look?.hair),'buns',
+      'new long hairstyle is saved with the female avatar');
     await page.locator('[data-sr-action=entry-create]').click();
     await page.locator('[data-sr-form=create] [name=name]').fill('Kütüphane Ekibi');
     await page.locator('[data-sr-form=create] button[type=submit]').click();
