@@ -120,6 +120,10 @@ const server=createServer((req,res)=>{
     await page.locator('[data-sr-action=wardrobe]').click();
     const wardrobe=page.locator('.sr-wardrobe');
     await wardrobe.waitFor();
+    assert.equal(await wardrobe.locator('[name=gender][value=male]').count(),1);
+    assert.equal(await wardrobe.locator('[name=gender][value=female]').count(),1);
+    assert.equal(await wardrobe.locator('[name=gender][value=male]').isChecked(),true,
+      'existing accounts open the unchanged male model');
     assert.equal(await wardrobe.locator('[name=head] option[value=batu_thorn_crown]').count(),0);
     await wardrobe.getByRole('button',{name:'Vazgeç'}).click();
     await wardrobe.waitFor({state:'detached'});
@@ -145,6 +149,16 @@ const server=createServer((req,res)=>{
     await wardrobe.locator('[name=hair]').selectOption('buns');
     await wardrobe.locator('[name=skin]').selectOption('deep');
     const preview=wardrobe.locator('.sr-wardrobe-preview');
+    await wardrobe.locator('.sr-wardrobe-gender label').filter({hasText:'Kadın'}).click();
+    assert.equal(await wardrobe.locator('[name=gender][value=female]').isChecked(),true);
+    await preview.locator('.sr-avatar[data-gender=female] .sr-avatar-hair-back').waitFor();
+    assert.equal(await preview.locator('.sr-avatar[data-hair=buns]').count(),1,
+      'female selection keeps the chosen hair');
+    await wardrobe.locator('.sr-wardrobe-gender label').filter({hasText:'Erkek'}).click();
+    await preview.locator('.sr-avatar[data-gender=male]').waitFor();
+    assert.equal(await preview.locator('.sr-avatar-hair-back').count(),0,
+      'switching back restores the original male variant');
+    await wardrobe.locator('.sr-wardrobe-gender label').filter({hasText:'Kadın'}).click();
     const accessories=['headphones','hoops','pendant','watch'];
     for(const name of accessories)assert.equal(await preview.locator('[data-accessory='+name+']').count(),1);
     assert.equal(await preview.locator('.sr-avatar[data-hair=buns] .sr-accessory-art').count(),1);
@@ -152,6 +166,8 @@ const server=createServer((req,res)=>{
     await wardrobe.screenshot({path:'test-results/wardrobe-'+width+'.png'});
     await wardrobe.getByRole('button',{name:'Kaydet'}).click();
     await wardrobe.waitFor({state:'detached'});
+    assert.equal(await page.evaluate(()=>window.__state.look?.gender),'female',
+      'selected female avatar persists with the rest of the outfit');
     await page.locator('[data-sr-action=entry-create]').click();
     await page.locator('[data-sr-form=create] [name=name]').fill('Kütüphane Ekibi');
     await page.locator('[data-sr-form=create] button[type=submit]').click();
@@ -159,6 +175,8 @@ const server=createServer((req,res)=>{
     assert.equal(await page.locator('[data-sr-invite]').textContent(),'K7MP-4X9R');
     await checkCoffeeOnTable(page,label+' shared room');
     for(const name of accessories)assert.equal(await page.locator('.sr-roster [data-accessory='+name+']').count(),1);
+    assert.equal(await page.locator('.sr-roster .sr-avatar[data-gender=female]').count(),1,
+      'female avatar is visible to everyone in the opened room');
     assert.equal(await page.locator('[data-sr-action=wardrobe]').count(),0);
     await page.evaluate(()=>{window.__state.showBatu=true;window.dispatchEvent(new Event('online'));});
     const batuDesk=page.locator('[data-sr-user="'+batuId+'"] .sr-desk-scene');
@@ -298,7 +316,8 @@ const server=createServer((req,res)=>{
     await page.locator('[data-sr-form=create] [name=name]').fill('Serbest Test');
     await page.locator('[data-sr-form=create] button[type=submit]').click();
     await page.locator('[data-sr-room-mode]').getByText('ÇALIŞMA ODASI').waitFor();
-    assert.equal(await page.locator('.sr-roster .sr-avatar[data-hair=buns]').count(),1,'saved look persists on room re-entry');
+    assert.equal(await page.locator('.sr-roster .sr-avatar[data-hair=buns][data-gender=female]').count(),1,
+      'female hairstyle, outfit and character choice survive leaving and reopening a room');
     assert.equal(await page.locator('.sx-leaf.is-grown').count(),1,'plant must render after remount');
     assert.equal(await page.locator('[data-sx-audio-state]').textContent(),'Ses kapalı');
     assert(await page.locator('body').evaluate(el=>el.classList.contains('sr-immersed')),'room should enter isolated screen');
