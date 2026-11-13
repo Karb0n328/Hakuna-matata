@@ -9,6 +9,16 @@
   const PLUSH_BUNNY = 'batu_plush_heart_bunny';
   const exclusiveOwners = {[THORN_CROWN]: BATU_USER_ID, [PLUSH_BUNNY]: ESILA_USER_ID};
 
+  // Keep hair choices distinct; all female variants have hair extending past the face.
+  const hairChoices = {
+    male: {fade:'Kısa (Fade)',curls:'Kıvırcık',braids:'Örgülü'},
+    female: {
+      long_wavy:'Uzun dalgalı',
+      long_straight:'Uzun düz',
+      twin_braids:'İkili uzun örgü',
+      buns:'Uzun topuz'
+    }
+  };
   const catalog = {
     gender: {label:'Karakter',items:{male:'Erkek',female:'Kadın'}},
     top: {
@@ -61,7 +71,7 @@
       }
     },
     hand: {label: 'El', items: {glove: 'Taşlı eldiven', watch: 'Metal saat'}},
-    hair: {label: 'Saç', items: {fade:'Kısa', curls:'Kıvırcık', braids:'Örgülü', bob:'Küt', buns:'Çift topuz'}},
+    hair: {label:'Saç', items:{...hairChoices.male,...hairChoices.female}},
     skin: {label: 'Ten tonu', items: {light:'Açık', medium:'Orta', deep:'Koyu'}}
   };
 
@@ -224,18 +234,22 @@
     </g>`;
   }
 
-  function itemsFor(slot, userId) {
+  function itemsFor(slot, userId, gender='male') {
+    if(slot==='hair')return Object.entries(hairChoices[gender==='female'?'female':'male']);
     return Object.entries(catalog[slot].items).filter(([key])=>!exclusiveOwners[key]||exclusiveOwners[key]===userId);
   }
 
   function normalize(look) {
     const result = {};
     for (const [slot, {items}] of Object.entries(catalog)) {
-      if (Object.hasOwn(items, look?.[slot])) result[slot] = look[slot];
+      if (slot!=='hair' && Object.hasOwn(items, look?.[slot])) result[slot] = look[slot];
     }
-    // Older outfits have no gender field; keep their original masculine appearance.
-    // Never accept arbitrary values from remote room member JSON.
+    // Existing male looks have no gender key. Older female looks with fade/bob
+    // automatically acquire a long cut, including in other people's room views.
     if (!result.gender) result.gender = 'male';
+    const allowed = hairChoices[result.gender];
+    result.hair = Object.hasOwn(allowed,look?.hair) ? look.hair :
+      result.gender==='female' ? 'long_wavy' : 'fade';
     return result;
   }
 
@@ -250,7 +264,7 @@
   function character(look) {
     const {gender,top, head, face, neck, hand, skin, hair} = normalize(look);
     const variables = [top && '--sr-shirt:'+tops[top], skin && '--sr-skin:'+skins[skin]].filter(Boolean).join(';');
-    const displayHair = hair || (gender === 'female' ? 'bob' : '');
+    const displayHair = hair;
     return '<div class="sr-avatar" data-gender="'+gender+'" style="'+variables+'"'+(displayHair?' data-hair="'+displayHair+'"':'')+(head===PLUSH_BUNNY?' data-head="'+PLUSH_BUNNY+'"':'')+'>'
       +(gender==='female'?'<div class="sr-avatar-hair-back"></div>':'')
       +'<div class="sr-avatar-hair"></div><div class="sr-avatar-head"><i></i><b></b></div>'
