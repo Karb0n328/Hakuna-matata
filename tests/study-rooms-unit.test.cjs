@@ -151,8 +151,8 @@ vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname,'..','roo
 const wardrobe=win.HakunaRoomWardrobe;
 assert.equal(wardrobe.normalize({}).gender,'male','old saved outfits retain male avatar');
 assert.equal(wardrobe.normalize({gender:'female'}).gender,'female','female avatar can be selected');
-const maleHair=wardrobe.itemsFor('hair',null,'male').map(([key])=>key);
-const femaleHair=wardrobe.itemsFor('hair',null,'female').map(([key])=>key);
+const maleHair=Array.from(wardrobe.itemsFor('hair',null,'male'),([key])=>key);
+const femaleHair=Array.from(wardrobe.itemsFor('hair',null,'female'),([key])=>key);
 assert.deepEqual(maleHair,['fade','curls','braids'],'male hairstyles do not include female hairstyles');
 assert.deepEqual(femaleHair,['long_wavy','long_straight','twin_braids','buns'],
   'female hairstyles are all long or tied-up longer hair');
