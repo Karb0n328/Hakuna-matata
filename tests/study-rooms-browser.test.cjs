@@ -148,6 +148,31 @@ const server=createServer((req,res)=>{
     await wardrobe.getByRole('button',{name:'Karakter'}).click();
     assert.deepEqual(await wardrobe.locator('[name=hair] option').evaluateAll(nodes=>nodes.map(n=>n.value)),
       ['fade','curls','braids'],'male dropdown lists only male hair');
+    // The refreshed male options must render unique visible miniatures, not flat caps.
+    fs.mkdirSync('test-results',{recursive:true});
+    const maleShapes=[];
+    for(const maleStyle of ['fade','curls','braids']){
+      await wardrobe.locator('[name=hair]').selectOption(maleStyle);
+      const avatar=wardrobe.locator('.sr-wardrobe-preview .sr-avatar[data-gender=male]');
+      await avatar.locator('svg.sr-male-hair-art [data-male-hair="'+maleStyle+'"]').waitFor();
+      const details=await avatar.evaluate(el=>{
+        const art=el.querySelector('.sr-male-hair-art');
+        const legacy=el.querySelector('.sr-avatar-hair');
+        const box=art.getBoundingClientRect();
+        return {width:box.width,height:box.height,visible:getComputedStyle(art).display!=='none',
+          legacyHidden:getComputedStyle(legacy).visibility==='hidden',
+          drawing:art.innerHTML};
+      });
+      assert(details.visible&&details.legacyHidden,
+        maleStyle+' must use the new vector hair rather than the former CSS cap');
+      assert(details.width>=40&&details.height>=40,
+        maleStyle+' fits the original avatar reference space');
+      maleShapes.push(details.drawing);
+      await wardrobe.locator('.sr-wardrobe-preview').screenshot({
+        path:'test-results/male-hair-'+maleStyle+'-'+width+'.png'
+      });
+    }
+    assert.equal(new Set(maleShapes).size,3,'all three male hairstyle drawings differ');
     await wardrobe.locator('[name=hair]').selectOption('braids');
     await wardrobe.locator('[name=skin]').selectOption('deep');
     const preview=wardrobe.locator('.sr-wardrobe-preview');
