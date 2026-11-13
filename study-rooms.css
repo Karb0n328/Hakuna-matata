@@ -496,3 +496,68 @@ html[data-hakuna-palette="republic"] .sr-desk-scene{filter:hue-rotate(323deg) sa
 }
 .sr-avatar[data-head="batu_plush_heart_bunny"] .sr-avatar-hair-back{visibility:hidden}
 @media(prefers-reduced-motion:reduce){.sr-wardrobe-gender span{transition:none}}
+
+
+/* Cinsiyete göre ayrı saç koleksiyonu. Kadın modellerinde kısa/fade/küt saç
+   seçeneği yoktur; dört model de minyatür avatarın omuzlarına kadar uzanır. */
+.sr-avatar[data-gender="female"][data-hair="long_wavy"] .sr-avatar-hair-back{
+  left:0;top:7px;width:42px;height:51px;border-radius:16px 16px 10px 10px;
+  background:var(--sr-hair);
+  box-shadow:inset -3px -2px rgba(0,0,0,.10);
+}
+.sr-avatar[data-gender="female"][data-hair="long_wavy"] .sr-avatar-hair-back::before,
+.sr-avatar[data-gender="female"][data-hair="long_wavy"] .sr-avatar-hair-back::after{
+  content:"";position:absolute;top:18px;width:9px;height:34px;
+  border-radius:6px 7px 5px 6px;
+  background:var(--sr-hair);
+  box-shadow:inset -2px 0 rgba(0,0,0,.12);
+}
+.sr-avatar[data-gender="female"][data-hair="long_wavy"] .sr-avatar-hair-back::before{left:-2px;transform:rotate(5deg)}
+.sr-avatar[data-gender="female"][data-hair="long_wavy"] .sr-avatar-hair-back::after{right:-2px;transform:rotate(-5deg)}
+.sr-avatar[data-gender="female"][data-hair="long_wavy"] .sr-avatar-hair{
+  height:20px;transform:none;border-radius:16px 16px 9px 8px;
+}
+.sr-avatar[data-gender="female"][data-hair="long_wavy"] .sr-avatar-hair::after{
+  top:13px;left:0;height:24px;width:7px;border-radius:0 0 6px 7px;
+  box-shadow:29px 0 var(--sr-hair);
+}
+.sr-avatar[data-gender="female"][data-hair="long_straight"] .sr-avatar-hair-back{
+  left:0;top:7px;width:42px;height:49px;border-radius:14px 14px 4px 4px;
+  background:var(--sr-hair);
+  box-shadow:inset -4px 0 rgba(0,0,0,.11);
+}
+.sr-avatar[data-gender="female"][data-hair="long_straight"] .sr-avatar-hair{
+  height:18px;transform:none;border-radius:16px 16px 5px 5px;
+}
+.sr-avatar[data-gender="female"][data-hair="long_straight"] .sr-avatar-hair::after{
+  left:-1px;top:11px;width:8px;height:31px;border-radius:1px 2px 5px 2px;
+  background:var(--sr-hair);box-shadow:30px 0 var(--sr-hair);
+}
+.sr-avatar[data-gender="female"][data-hair="twin_braids"] .sr-avatar-hair-back{
+  left:3px;top:6px;width:36px;height:25px;border-radius:16px 16px 7px 7px;
+}
+.sr-avatar[data-gender="female"][data-hair="twin_braids"] .sr-avatar-hair-back::before,
+.sr-avatar[data-gender="female"][data-hair="twin_braids"] .sr-avatar-hair-back::after{
+  content:"";position:absolute;top:18px;width:8px;height:36px;
+  border-radius:4px 4px 6px 6px;
+  background:repeating-linear-gradient(160deg,var(--sr-hair) 0 5px,#503b37 5px 6px,var(--sr-hair) 6px 11px);
+  box-shadow:inset -1px 0 rgba(0,0,0,.13);
+}
+.sr-avatar[data-gender="female"][data-hair="twin_braids"] .sr-avatar-hair-back::before{left:-5px;transform:rotate(4deg)}
+.sr-avatar[data-gender="female"][data-hair="twin_braids"] .sr-avatar-hair-back::after{right:-5px;transform:rotate(-4deg)}
+.sr-avatar[data-gender="female"][data-hair="twin_braids"] .sr-avatar-hair{
+  height:18px;transform:none;border-radius:16px 16px 6px 6px;
+}
+.sr-avatar[data-gender="female"][data-hair="twin_braids"] .sr-avatar-hair::after{
+  display:none;
+}
+.sr-avatar[data-gender="female"][data-hair="buns"] .sr-avatar-hair-back{
+  left:1px;top:7px;width:40px;height:42px;border-radius:16px 16px 8px 8px;
+}
+.sr-avatar[data-gender="female"][data-hair="buns"] .sr-avatar-hair-back::before,
+.sr-avatar[data-gender="female"][data-hair="buns"] .sr-avatar-hair-back::after{
+  content:"";position:absolute;top:17px;width:7px;height:29px;
+  background:var(--sr-hair);border-radius:3px 4px 6px 6px;
+}
+.sr-avatar[data-gender="female"][data-hair="buns"] .sr-avatar-hair-back::before{left:-2px}
+.sr-avatar[data-gender="female"][data-hair="buns"] .sr-avatar-hair-back::after{right:-2px}
