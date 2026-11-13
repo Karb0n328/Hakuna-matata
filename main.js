@@ -13,8 +13,8 @@ function loadRoomUi(){
   roomUi??=Promise.all([
     import('./room-weather.js?v=2'),
     import('./room-experience.js?v=7-bloom'),
-    import('./room-wardrobe.js?v=9-female-avatar'),
-    import('./study-rooms.js?v=39-gender-select')
+    import('./room-wardrobe.js?v=10-gender-hair'),
+    import('./study-rooms.js?v=40-gender-hair')
   ]);
   return roomUi;
 }
