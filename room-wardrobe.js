@@ -11,7 +11,7 @@
 
   // Keep hair choices distinct; all female variants have hair extending past the face.
   const hairChoices = {
-    male: {fade:'Kısa (Fade)',curls:'Kıvırcık',braids:'Örgülü'},
+    male: {fade:'Low taper fade',curls:'Doğal kıvırcık',braids:'Cornrows örgü'},
     female: {
       long_wavy:'Uzun dalgalı',
       long_straight:'Uzun düz',
@@ -261,6 +261,36 @@
     return key ? '<g data-accessory="'+key+'">'+art[key]+'</g>' : '';
   }
 
+  // Hand-sculpted miniature men's hairstyles. The same 42px character proportions
+  // are preserved. Each shape is made for room scale, not a repeated CSS texture.
+  const maleHairArt = {
+    fade: `
+      <g data-male-hair="fade" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M5.7 14Q6 5 15 4Q25 .5 33 5Q39 9 37.7 18L35.3 25.4Q32.8 27 32.1 23.3L33 16Q21 12 10.8 18L10.1 24.5Q8 26.9 6.5 23Z" fill="var(--sr-hair)" opacity=".5"/>
+        <path d="M6.1 13.2Q7.2 6 13.4 5.2Q17.7 1.5 23.5 3.7Q32.6 1.8 36.4 9.1Q38.1 12.2 35.5 16.5Q29 12.8 23.2 13.6Q16.9 13.2 9.5 19.1Q5.6 18.4 6.1 13.2Z" fill="var(--sr-hair)" stroke="#24202a" stroke-width=".8"/>
+        <path d="M7.3 11.8Q12.4 6.1 19.4 6.2Q25.2 3.2 31.4 7.6" stroke="#e1d6c7" stroke-width="1.05" fill="none" opacity=".32"/>
+        <path d="M11.6 14.6Q21.5 10.1 31.7 13.9M11.3 9.6Q17.6 6.2 22.7 7.8" fill="none" stroke="#191d27" opacity=".26" stroke-width="1.3"/>
+        <path d="M6.4 18.7q2.4 2.3 4.1-1.3M6.8 21.5q1.8 1.7 3.1-.5M35.6 17.6q-1.8 2.6-3.6.6M35.2 20.5q-1.6 2.2-2.9 1" fill="none" stroke="#ead1bf" stroke-width=".9" opacity=".27"/>
+        <path d="M8.3 23Q8.5 18 10.3 16M34 15.8Q35.5 20.4 34.8 23.3" fill="none" stroke="#242530" opacity=".36" stroke-width="1"/>
+      </g>`,
+    curls: `
+      <g data-male-hair="curls" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M5.2 22Q1.4 19 4.8 14Q2.2 8.3 9 7.1Q10.2 1.2 16.8 4.1Q22 -.4 27.1 4.3Q33 .5 35.3 7.4Q41.7 8.2 38.3 15.6Q40.8 20.2 35.5 23.2Q31 19.8 26.3 20.4Q19.4 22.4 15.3 20.2Q9.8 24.4 5.2 22Z" fill="var(--sr-hair)" stroke="#26212a" stroke-width=".75"/>
+        <path d="M7.3 16.8q-2.7-4.5 2.3-6.3q3.5-2 6.3 1.2M11.8 6.3q3.8-2.6 7.9 1.7M21.4 5.1q4.1-2.9 7.9 1.2M30.4 9.2q4.1-1 5 3.1M34.6 17.4q-.5 4.1-5.1 2.7M13.4 16q3.5-3.3 7.8.2M20.3 11.6q4.8-2.4 8.7.8M10.2 20q3.6 1.9 5.8-1.4" fill="none" stroke="#0e1422" stroke-width="1.55" opacity=".33"/>
+        <path d="M8.5 9.8q1.9-2 4.4-.9M17.3 5.8q2-.9 4.2.4M26.8 6.8q2-1.3 4.5.2M32 13.8q2.1 1.1 1.4 3M17 18q2.9-1.7 4.8.8M6.1 18.1q.1 1.9 2.1 2.2" fill="none" stroke="#ffeadc" stroke-width="1.1" opacity=".25"/>
+        <path d="M6.2 21.2q3.5 4.5 6.8-.6M30.9 21.1q3.5 4.1 6-1.4" fill="none" stroke="#292029" stroke-width="1.05" opacity=".55"/>
+      </g>`,
+    braids: `
+      <g data-male-hair="braids" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M6.2 15.5Q6 4.6 19.2 4Q33 1 36.2 13.9L36.7 21L33.4 22.3Q29 17.8 21 17.1Q13.2 17.9 9.2 22.3L6.4 20Z" fill="var(--sr-hair)" stroke="#24202b" stroke-width=".8"/>
+        <path d="M10 17Q11.5 8 17.6 4.5M14.2 17.1Q16.4 8.1 20.5 3.9M20.6 17.1Q20.9 7 23.7 3.8M26 17.8Q25.3 8.8 27.4 4.6M31.5 18.7Q28.9 9.5 30.9 6.6" fill="none" stroke="#e5d0bd" stroke-width="1.55" opacity=".44"/>
+        <path d="M9.2 11.4l2.5 1.8-2.5 1.6 2.4 1.7M14.7 10.1l2.5 2-2.8 1.7 2.6 1.9M19.7 9.7l2.1 1.9-2.1 1.5 2 1.8M25.2 9.5l2.2 1.6-2 1.9 2 2.1M30.5 11.3l2.3 1.7-2.2 1.9 2.2 1.7" fill="none" stroke="#111925" stroke-width="1.15" opacity=".55"/>
+        <path d="M8.2 20.7Q5.8 24.4 7.8 27.4Q5.1 30.2 7.6 33.9M34 20.2Q37.2 24.9 34.5 27.4Q37.1 30.8 34.5 34" fill="none" stroke="var(--sr-hair)" stroke-width="4.7"/>
+        <path d="M8 20.8l2.5 2.3-3 2.3 2.8 2.3-3 2.2 2.6 2.3M34 20.8l-2.5 2.3 3 2.3-2.8 2.3 3 2.2-2.6 2.3" fill="none" stroke="#d1baa6" stroke-width="1.15" opacity=".43"/>
+        <path d="M6.5 33.6l2.8 1.2M33.2 34.6l2.7-1.1" stroke="#2d2631" stroke-width="1.8"/>
+      </g>`
+  };
+
   function character(look) {
     const {gender,top, head, face, neck, hand, skin, hair} = normalize(look);
     const variables = [top && '--sr-shirt:'+tops[top], skin && '--sr-skin:'+skins[skin]].filter(Boolean).join(';');
@@ -268,6 +298,7 @@
     return '<div class="sr-avatar" data-gender="'+gender+'" style="'+variables+'"'+(displayHair?' data-hair="'+displayHair+'"':'')+(head===PLUSH_BUNNY?' data-head="'+PLUSH_BUNNY+'"':'')+'>'
       +(gender==='female'?'<div class="sr-avatar-hair-back"></div>':'')
       +'<div class="sr-avatar-hair"></div><div class="sr-avatar-head"><i></i><b></b></div>'
+      +(gender==='male'?svg('sr-male-hair-art','0 0 42 42',maleHairArt[hair]):'')
       +'<div class="sr-avatar-body">'+svg('sr-clothes-art','0 0 42 36',shirtArt[top])+'</div>'
       +'<div class="sr-avatar-arm">'+(hand?'<span data-accessory="'+hand+'" class="'+(hand==='glove'?'sr-jeweled-glove':'sr-metal-watch')+'"></span>':'')+'</div>'
       +svg('sr-accessory-art','0 0 42 67',(head===THORN_CROWN?thornCrown():head===PLUSH_BUNNY?plushBunnyHat():accessory(head,headArt))+accessory(face,faceArt)+accessory(neck,neckArt))
