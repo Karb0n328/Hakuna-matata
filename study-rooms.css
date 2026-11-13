@@ -432,3 +432,67 @@ html[data-hakuna-palette="republic"] .sr-desk-scene{filter:hue-rotate(323deg) sa
   filter:drop-shadow(0 1px 1px rgba(40,32,26,.23));
 }
 .sr-desk-away .sr-scene-table > svg.sr-closed-book{opacity:.86}
+
+
+/* Gardırop: aynı minyatür çizim dilinde ikinci karakter biçimi.
+   Yalnızca seçildiğinde değişir; tüm mevcut kombinler erkek kalır. */
+.sr-wardrobe-gender{
+  grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:5px;margin:0;padding:0;border:0;min-width:0;
+}
+.sr-wardrobe-gender legend{grid-column:1/-1;width:100%;padding:0;margin:0 0 5px;
+  color:var(--ink);font-size:.82rem;font-weight:700}
+.sr-wardrobe-gender label{position:relative;display:block;cursor:pointer;min-width:0}
+.sr-wardrobe-gender input{position:absolute;left:5px;top:5px;width:1px;height:1px;opacity:0}
+.sr-wardrobe-gender span{
+  display:grid;place-items:center;min-height:38px;padding:6px 10px;box-sizing:border-box;
+  border:1px solid var(--line);border-radius:9px;
+  background:var(--bg,#edf1f6);color:var(--muted);
+  font-size:13px;font-weight:700;transition:background .15s,border-color .15s;
+}
+.sr-wardrobe-gender input:checked+span{
+  background:var(--card,#fff);color:var(--ink);
+  border-color:var(--sr-accent,#8b91a7);
+  box-shadow:inset 0 0 0 1px var(--sr-accent,#8b91a7);
+}
+.sr-wardrobe-gender input:focus-visible+span{outline:2px solid var(--sr-accent,#8b91a7);outline-offset:2px}
+
+/* Kadın karakter, erkek avatarın aynı ölçekli karşılığıdır.
+   Saç arka katmanı yüzün ve kıyafetin arkasında; aksesuarlar öndedir. */
+.sr-avatar[data-gender="female"] .sr-avatar-hair-back{
+  position:absolute;left:3px;top:7px;width:36px;height:40px;z-index:1;
+  background:var(--sr-hair);border-radius:15px 15px 10px 10px;
+  box-shadow:inset -4px -1px 0 rgba(0,0,0,.14);
+}
+.sr-avatar[data-gender="female"] .sr-avatar-body{
+  left:2px;width:38px;border-radius:16px 16px 7px 7px;
+  clip-path:polygon(11% 0,89% 0,100% 23%,89% 73%,96% 100%,4% 100%,11% 73%,0 23%);
+}
+.sr-avatar[data-gender="female"] .sr-avatar-arm{right:2px;width:9px}
+.sr-avatar[data-gender="female"] .sr-avatar-head{border-radius:14px 14px 17px 17px}
+.sr-avatar[data-gender="female"] .sr-avatar-head i:after,
+.sr-avatar[data-gender="female"] .sr-avatar-head b:after{
+  content:"";position:absolute;left:-1px;top:-2px;width:5px;height:2px;
+  border-top:1px solid #584239;transform:rotate(-12deg);
+}
+.sr-avatar[data-gender="female"][data-hair="fade"] .sr-avatar-hair-back{display:none}
+.sr-avatar[data-gender="female"][data-hair="curls"] .sr-avatar-hair-back{
+  left:1px;width:40px;background:radial-gradient(circle,var(--sr-hair) 67%,transparent 71%) 0 0/10px 10px,
+    var(--sr-hair);border-radius:18px 18px 11px 11px;
+}
+.sr-avatar[data-gender="female"][data-hair="braids"] .sr-avatar-hair-back{
+  left:4px;width:34px;height:28px;border-radius:16px 16px 6px 6px;
+}
+.sr-avatar[data-gender="female"][data-hair="braids"] .sr-avatar-hair-back:after{
+  content:"";position:absolute;left:-5px;top:20px;width:7px;height:23px;border-radius:3px;
+  background:repeating-linear-gradient(0deg,var(--sr-hair) 0 4px,#4f3836 4px 5px);
+  box-shadow:33px 0 var(--sr-hair);
+}
+.sr-avatar[data-gender="female"][data-hair="buns"] .sr-avatar-hair-back{
+  height:24px;border-radius:16px 16px 9px 9px;
+}
+.sr-avatar[data-gender="female"][data-hair="bob"] .sr-avatar-hair-back{
+  height:40px;border-radius:15px 15px 12px 12px;
+}
+.sr-avatar[data-head="batu_plush_heart_bunny"] .sr-avatar-hair-back{visibility:hidden}
+@media(prefers-reduced-motion:reduce){.sr-wardrobe-gender span{transition:none}}
