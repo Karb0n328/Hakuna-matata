@@ -361,7 +361,7 @@
     const choice=slot=>{
       const {label}=catalog[slot];
       const fallback=slot==='skin'||slot==='hair'?'Varsayılan':slot==='top'?'Sade':'Yok';
-      const entries=itemsFor(slot,owner);
+      const entries=itemsFor(slot,owner,selected.gender);
       if(slot==='gender'){
         return '<fieldset class="sr-wardrobe-gender"><legend>Karakter</legend>'+
           entries.map(([key,name])=>'<label><input type="radio" name="gender" value="'+E(key)+'"'+
@@ -389,6 +389,19 @@
       '<div class="sr-wardrobe-actions"><button type="button" class="secondary-btn" data-wardrobe-close>Vazgeç</button>'+
       '<button type="submit" class="primary-btn">Kaydet</button></div></form>';
     const form=dialog.querySelector('form');
+    const hairSelect=form.elements.namedItem('hair');
+    let activeGender=selected.gender;
+    const hairByGender={[activeGender]:selected.hair};
+    const syncHairChoices=()=>{
+      const gender=form.elements.namedItem('gender')?.value==='female'?'female':'male';
+      if(gender!==activeGender)hairByGender[activeGender]=hairSelect.value;
+      const entries=itemsFor('hair',owner,gender);
+      const wanted=hairByGender[gender] || (gender==='female'?'long_wavy':'fade');
+      hairSelect.replaceChildren(...entries.map(([key,label])=>new Option(label,key)));
+      hairSelect.value=entries.some(([key])=>key===wanted)?wanted:entries[0][0];
+      hairByGender[gender]=hairSelect.value;
+      activeGender=gender;
+    };
     const readLook=()=>normalize(Object.fromEntries(new FormData(form)));
     const preview=()=>{dialog.querySelector('.sr-wardrobe-preview').innerHTML=deskMarkup(
       {user_id:owner,look:readLook()},true,true
@@ -407,7 +420,11 @@
       select.value=featuredHead;
       select.dispatchEvent(new Event('change',{bubbles:true}));
     });
-    form.addEventListener('change',()=>{syncFeatured();preview();});
+    form.addEventListener('change',event=>{
+      if(event.target.name==='gender')syncHairChoices();
+      if(event.target.name==='hair')hairByGender[activeGender]=hairSelect.value;
+      syncFeatured();preview();
+    });
     for(const tab of dialog.querySelectorAll('[data-wardrobe-tab]')){
       tab.addEventListener('click',()=>{
         for(const other of dialog.querySelectorAll('[data-wardrobe-tab]'))other.setAttribute('aria-pressed',String(other===tab));
@@ -431,6 +448,7 @@
       }
     });
     host.append(dialog);
+    syncHairChoices();
     preview();
     syncFeatured();
     dialog.showModal();
