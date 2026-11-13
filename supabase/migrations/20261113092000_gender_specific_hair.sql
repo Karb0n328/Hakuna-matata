@@ -1,5 +1,7 @@
 -- Separate male/female hair keys without changing clothes, accessories or room history.
--- Convert only incompatible existing hair values before adding stricter validation.
+-- Temporarily remove the old single-list check before converting stored hair.
+-- This runs atomically as one migration; the strict check is restored below.
+ALTER TABLE public.study_room_looks DROP CONSTRAINT study_room_looks_look_check;
 UPDATE public.study_room_looks
 SET look=jsonb_set(look,'{hair}',to_jsonb('long_wavy'::text),true)
 WHERE look->>'gender'='female'
@@ -12,7 +14,6 @@ WHERE COALESCE(look->>'gender','male')='male'
   AND COALESCE(look->>'hair','') NOT IN ('','fade','curls','braids');
 
 ALTER TABLE public.study_room_looks
-  DROP CONSTRAINT study_room_looks_look_check,
   ADD CONSTRAINT study_room_looks_look_check CHECK (
     jsonb_typeof(look) = 'object'
     AND (look - ARRAY['top','head','face','neck','hand','hair','skin','gender']) = '{}'::jsonb
