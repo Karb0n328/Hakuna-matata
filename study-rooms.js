@@ -353,7 +353,7 @@
     const groups=[
       {label:'Kıyafet',slots:['top']},
       {label:'Aksesuar',slots:['head','face','neck','hand']},
-      {label:'Karakter',slots:['hair','skin']}
+      {label:'Karakter',slots:['gender','hair','skin']}
     ];
     const dialog=document.createElement('dialog');
     dialog.className='sr-wardrobe';
@@ -362,6 +362,12 @@
       const {label}=catalog[slot];
       const fallback=slot==='skin'||slot==='hair'?'Varsayılan':slot==='top'?'Sade':'Yok';
       const entries=itemsFor(slot,owner);
+      if(slot==='gender'){
+        return '<fieldset class="sr-wardrobe-gender"><legend>Karakter</legend>'+
+          entries.map(([key,name])=>'<label><input type="radio" name="gender" value="'+E(key)+'"'+
+            (selected.gender===key?' checked':'')+'><span>'+E(name)+'</span></label>').join('')+
+          '</fieldset>';
+      }
       const special=slot==='head'?entries.find(([key])=>key===featuredHead):null;
       const option=([key,name])=>'<option value="'+E(key)+'"'+(selected[slot]===key?' selected':'')+'>'+E(name)+'</option>';
       const normal=entries.filter(([key])=>!special||key!==special[0]).map(option).join('');
