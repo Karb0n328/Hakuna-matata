@@ -154,6 +154,22 @@ assert.equal(wardrobe.normalize({gender:'female'}).gender,'female','female avata
 const maleHair=Array.from(wardrobe.itemsFor('hair',null,'male'),([key])=>key);
 const femaleHair=Array.from(wardrobe.itemsFor('hair',null,'female'),([key])=>key);
 assert.deepEqual(maleHair,['fade','curls','braids'],'male hairstyles do not include female hairstyles');
+const maleArt=maleHair.map(hair=>wardrobe.character({gender:'male',hair,top:'palm'}));
+for(const [i,hair] of maleHair.entries()){
+  assert.match(maleArt[i],/class="sr-male-hair-art"/,
+    'every male hairstyle must be custom vector artwork');
+  assert(maleArt[i].includes('data-male-hair="'+hair+'"'),
+    'male hair '+hair+' has a distinct labeled drawing');
+  assert.match(maleArt[i],/var\(--sr-hair\)/,
+    'male hair inherits the actual character hair color');
+  assert.doesNotMatch(wardrobe.character({gender:'female',hair:'long_wavy'}),
+    /sr-male-hair-art/,'female artwork stays completely unchanged');
+}
+assert.equal(new Set(maleArt).size,3,'the three male hair silhouettes must not be identical');
+const maleHairCss=fs.readFileSync(require('node:path').join(__dirname,'..','study-rooms.css'),'utf8');
+assert.match(maleHairCss,/\.sr-avatar\[data-gender="male"\] \.sr-avatar-hair\{visibility:hidden\}/);
+assert.match(maleHairCss,/\.sr-avatar\[data-gender="male"\] \.sr-male-hair-art/);
+
 assert.deepEqual(femaleHair,['long_wavy','long_straight','twin_braids','buns'],
   'female hairstyles are all long or tied-up longer hair');
 assert(!femaleHair.includes('fade')&&!femaleHair.includes('bob'),'female options exclude short fades and bobs');
