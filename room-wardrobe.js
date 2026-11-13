@@ -10,6 +10,7 @@
   const exclusiveOwners = {[THORN_CROWN]: BATU_USER_ID, [PLUSH_BUNNY]: ESILA_USER_ID};
 
   const catalog = {
+    gender: {label:'Karakter',items:{male:'Erkek',female:'Kadın'}},
     top: {
       label: 'Kıyafet',
       items: {
@@ -232,6 +233,9 @@
     for (const [slot, {items}] of Object.entries(catalog)) {
       if (Object.hasOwn(items, look?.[slot])) result[slot] = look[slot];
     }
+    // Older outfits have no gender field; keep their original masculine appearance.
+    // Never accept arbitrary values from remote room member JSON.
+    if (!result.gender) result.gender = 'male';
     return result;
   }
 
@@ -244,9 +248,11 @@
   }
 
   function character(look) {
-    const {top, head, face, neck, hand, skin, hair} = normalize(look);
+    const {gender,top, head, face, neck, hand, skin, hair} = normalize(look);
     const variables = [top && '--sr-shirt:'+tops[top], skin && '--sr-skin:'+skins[skin]].filter(Boolean).join(';');
-    return '<div class="sr-avatar" style="'+variables+'"'+(hair?' data-hair="'+hair+'"':'')+(head===PLUSH_BUNNY?' data-head="'+PLUSH_BUNNY+'"':'')+'>'
+    const displayHair = hair || (gender === 'female' ? 'bob' : '');
+    return '<div class="sr-avatar" data-gender="'+gender+'" style="'+variables+'"'+(displayHair?' data-hair="'+displayHair+'"':'')+(head===PLUSH_BUNNY?' data-head="'+PLUSH_BUNNY+'"':'')+'>'
+      +(gender==='female'?'<div class="sr-avatar-hair-back"></div>':'')
       +'<div class="sr-avatar-hair"></div><div class="sr-avatar-head"><i></i><b></b></div>'
       +'<div class="sr-avatar-body">'+svg('sr-clothes-art','0 0 42 36',shirtArt[top])+'</div>'
       +'<div class="sr-avatar-arm">'+(hand?'<span data-accessory="'+hand+'" class="'+(hand==='glove'?'sr-jeweled-glove':'sr-metal-watch')+'"></span>':'')+'</div>'
