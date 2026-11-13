@@ -283,10 +283,10 @@
     braids: `
       <g data-male-hair="braids" stroke-linejoin="round" stroke-linecap="round">
         <path d="M6.2 15.5Q6 4.6 19.2 4Q33 1 36.2 13.9L36.7 21L33.4 22.3Q29 17.8 21 17.1Q13.2 17.9 9.2 22.3L6.4 20Z" fill="var(--sr-hair)" stroke="#24202b" stroke-width=".8"/>
-        <path d="M10 17Q11.5 8 17.6 4.5M14.2 17.1Q16.4 8.1 20.5 3.9M20.6 17.1Q20.9 7 23.7 3.8M26 17.8Q25.3 8.8 27.4 4.6M31.5 18.7Q28.9 9.5 30.9 6.6" fill="none" stroke="#e5d0bd" stroke-width="1.55" opacity=".44"/>
+        <path d="M10 17Q11.5 8 17.6 4.5M14.2 17.1Q16.4 8.1 20.5 3.9M20.6 17.1Q20.9 7 23.7 3.8M26 17.8Q25.3 8.8 27.4 4.6M31.5 18.7Q28.9 9.5 30.9 6.6" fill="none" stroke="#bba89b" stroke-width="1.1" opacity=".25"/>
         <path d="M9.2 11.4l2.5 1.8-2.5 1.6 2.4 1.7M14.7 10.1l2.5 2-2.8 1.7 2.6 1.9M19.7 9.7l2.1 1.9-2.1 1.5 2 1.8M25.2 9.5l2.2 1.6-2 1.9 2 2.1M30.5 11.3l2.3 1.7-2.2 1.9 2.2 1.7" fill="none" stroke="#111925" stroke-width="1.15" opacity=".55"/>
         <path d="M8.2 20.7Q5.8 24.4 7.8 27.4Q5.1 30.2 7.6 33.9M34 20.2Q37.2 24.9 34.5 27.4Q37.1 30.8 34.5 34" fill="none" stroke="var(--sr-hair)" stroke-width="4.7"/>
-        <path d="M8 20.8l2.5 2.3-3 2.3 2.8 2.3-3 2.2 2.6 2.3M34 20.8l-2.5 2.3 3 2.3-2.8 2.3 3 2.2-2.6 2.3" fill="none" stroke="#d1baa6" stroke-width="1.15" opacity=".43"/>
+        <path d="M8 20.8l2.5 2.3-3 2.3 2.8 2.3-3 2.2 2.6 2.3M34 20.8l-2.5 2.3 3 2.3-2.8 2.3 3 2.2-2.6 2.3" fill="none" stroke="#bbac9d" stroke-width=".9" opacity=".29"/>
         <path d="M6.5 33.6l2.8 1.2M33.2 34.6l2.7-1.1" stroke="#2d2631" stroke-width="1.8"/>
       </g>`
   };
