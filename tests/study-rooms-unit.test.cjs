@@ -151,26 +151,56 @@ vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname,'..','roo
 const wardrobe=win.HakunaRoomWardrobe;
 assert.equal(wardrobe.normalize({}).gender,'male','old saved outfits retain male avatar');
 assert.equal(wardrobe.normalize({gender:'female'}).gender,'female','female avatar can be selected');
+const maleHair=wardrobe.itemsFor('hair',null,'male').map(([key])=>key);
+const femaleHair=wardrobe.itemsFor('hair',null,'female').map(([key])=>key);
+assert.deepEqual(maleHair,['fade','curls','braids'],'male hairstyles do not include female hairstyles');
+assert.deepEqual(femaleHair,['long_wavy','long_straight','twin_braids','buns'],
+  'female hairstyles are all long or tied-up longer hair');
+assert(!femaleHair.includes('fade')&&!femaleHair.includes('bob'),'female options exclude short fades and bobs');
+assert(!maleHair.some(key=>femaleHair.includes(key)),'hair catalogs must be disjoint');
+assert.equal(wardrobe.normalize({gender:'female',hair:'fade'}).hair,'long_wavy',
+  'old short-haired female avatars immediately render with long hair');
+assert.equal(wardrobe.normalize({gender:'female',hair:'bob'}).hair,'long_wavy',
+  'old bob haircut cannot persist on female avatars');
+assert.equal(wardrobe.normalize({gender:'female',hair:'twin_braids'}).hair,'twin_braids');
+assert.equal(wardrobe.normalize({gender:'male',hair:'buns'}).hair,'fade',
+  'old male-only wardrobe selections do not leak female hairstyles');
+
 assert.equal(wardrobe.normalize({gender:'invalid'}).gender,'male','invalid remote gender cannot alter avatar');
 assert.equal(wardrobe.normalize({gender:'female',hair:'buns',skin:'deep',top:'velour'}).hair,'buns',
   'female avatar retains independent hair, skin and clothing choices');
-const girl=wardrobe.character({gender:'female',hair:'bob',top:'velour',face:'hoops',hand:'watch'});
-const boy=wardrobe.character({gender:'male',hair:'bob',top:'velour',face:'hoops'});
+const girl=wardrobe.character({gender:'female',hair:'long_wavy',top:'velour',face:'hoops',hand:'watch'});
+const boy=wardrobe.character({gender:'male',hair:'fade',top:'velour',face:'hoops'});
 assert.match(girl,/data-gender="female"/);
 assert.match(girl,/sr-avatar-hair-back/,'female adds a dedicated back-hair silhouette');
-assert.match(girl,/data-hair="bob"/);
+assert.match(girl,/data-hair="long_wavy"/);
 assert.match(girl,/data-accessory="hoops"/);
 assert.match(girl,/data-accessory="watch"/);
 assert.match(boy,/data-gender="male"/);
 assert.doesNotMatch(boy,/sr-avatar-hair-back/,'male character artwork remains unchanged');
-assert.match(wardrobe.character({gender:'female'}),/data-hair="bob"/,
-  'female defaults to a bob while supporting other hair choices');
+assert.match(wardrobe.character({gender:'female'}),/data-hair="long_wavy"/,
+  'female defaults to long hair instead of a short bob');
 assert.match(src,/slots:\['gender','hair','skin'\]/,
   'gender choice is located only inside the character tab');
 assert.match(src,/sr-wardrobe-gender/,'character tab provides a compact choice selector');
 const genderStyle=fs.readFileSync(require('node:path').join(__dirname,'..','study-rooms.css'),'utf8');
 assert.match(genderStyle,/\.sr-avatar\[data-gender="female"\] \.sr-avatar-body/);
 assert.match(genderStyle,/\.sr-avatar\[data-gender="female"\] \.sr-avatar-hair-back/);
+for(const hair of femaleHair){
+  assert(genderStyle.includes('[data-gender="female"][data-hair="'+hair+'"]'),
+    'the '+hair+' style has a dedicated long female silhouette');
+  assert.match(wardrobe.character({gender:'female',hair}),new RegExp('data-hair="'+hair+'"'),
+    'female avatar can render '+hair+' on every member screen');
+}
+assert.match(src,/syncHairChoices/, 'wardrobe immediately filters hair when gender changes');
+assert.match(src,/hairByGender/, 'wardrobe retains each gender hair choice during unsaved switches');
+const hairSql=fs.readFileSync(require('node:path').join(__dirname,'..',
+ 'supabase/migrations/20261113092000_gender_specific_hair.sql'),'utf8');
+assert.match(hairSql,/IN \('long_wavy','long_straight','twin_braids','buns'\)/);
+assert.match(hairSql,/IN \('','fade','curls','braids'\)/);
+assert.match(hairSql,/batu_thorn_crown/);
+assert.match(hairSql,/batu_plush_heart_bunny/);
+
 const migration=fs.readFileSync(require('node:path').join(__dirname,'..',
  'supabase/migrations/20261113082000_wardrobe_gender_variants.sql'),'utf8');
 assert.match(migration,/COALESCE\(look->>'gender', 'male'\) IN \('male','female'\)/);
