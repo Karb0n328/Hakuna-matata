@@ -149,6 +149,34 @@ console.log('PASS shared plant, Istanbul day boundaries, solar phases and weathe
 // to room members regardless of who is looking at the avatar.
 vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname,'..','room-wardrobe.js'),'utf8'),{window:win});
 const wardrobe=win.HakunaRoomWardrobe;
+assert.equal(wardrobe.normalize({}).gender,'male','old saved outfits retain male avatar');
+assert.equal(wardrobe.normalize({gender:'female'}).gender,'female','female avatar can be selected');
+assert.equal(wardrobe.normalize({gender:'invalid'}).gender,'male','invalid remote gender cannot alter avatar');
+assert.equal(wardrobe.normalize({gender:'female',hair:'buns',skin:'deep',top:'velour'}).hair,'buns',
+  'female avatar retains independent hair, skin and clothing choices');
+const girl=wardrobe.character({gender:'female',hair:'bob',top:'velour',face:'hoops',hand:'watch'});
+const boy=wardrobe.character({gender:'male',hair:'bob',top:'velour',face:'hoops'});
+assert.match(girl,/data-gender="female"/);
+assert.match(girl,/sr-avatar-hair-back/,'female adds a dedicated back-hair silhouette');
+assert.match(girl,/data-hair="bob"/);
+assert.match(girl,/data-accessory="hoops"/);
+assert.match(girl,/data-accessory="watch"/);
+assert.match(boy,/data-gender="male"/);
+assert.doesNotMatch(boy,/sr-avatar-hair-back/,'male character artwork remains unchanged');
+assert.match(wardrobe.character({gender:'female'}),/data-hair="bob"/,
+  'female defaults to a bob while supporting other hair choices');
+assert.match(src,/slots:\['gender','hair','skin'\]/,
+  'gender choice is located only inside the character tab');
+assert.match(src,/sr-wardrobe-gender/,'character tab provides a compact choice selector');
+const genderStyle=fs.readFileSync(require('node:path').join(__dirname,'..','study-rooms.css'),'utf8');
+assert.match(genderStyle,/\.sr-avatar\[data-gender="female"\] \.sr-avatar-body/);
+assert.match(genderStyle,/\.sr-avatar\[data-gender="female"\] \.sr-avatar-hair-back/);
+const migration=fs.readFileSync(require('node:path').join(__dirname,'..',
+ 'supabase/migrations/20261113082000_wardrobe_gender_variants.sql'),'utf8');
+assert.match(migration,/COALESCE\(look->>'gender', 'male'\) IN \('male','female'\)/);
+assert.match(migration,/batu_thorn_crown/);
+assert.match(migration,/batu_plush_heart_bunny/);
+
 const gift=wardrobe.featuredHead;
 const batuId='8f2cf782-f4f2-4c85-a9e9-a560c623e6d5';
 const esilaId='6c5b22a1-a671-4508-9f20-812a7139e785';
