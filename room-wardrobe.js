@@ -266,24 +266,35 @@
   // Natural proportions for the small shared-room avatar; no neon or harsh stripes.
   // Saved keys are unchanged so everyone's existing hair selection is preserved.
   // Back layer is painted before the face, so locs no longer conceal the eyes.
+  // Single-purpose, behind-head Rastalı fibers at the native 42×67 avatar scale.
   const maleLocsBackArt = `
-    <g data-male-hair="locs-back" stroke-linecap="round" stroke-linejoin="round" fill="none">
-      <!-- Separately modeled, curved and staggered locs sit behind the face but over the shoulders. -->
+    <g data-male-hair="locs-back" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <!-- Short, unequal mature locs: separated strands instead of a long hair curtain. -->
+      <g stroke="#141416" opacity=".95">
+        <path d="M9.1 14.8 Q5 20.4 3.6 26.6 Q1.0 31.4 1.8 35.4" stroke-width="5.4"/>
+        <path d="M11.9 16 Q7.1 22.6 6.8 29.4 Q5.1 36 5.9 44.2" stroke-width="5.0"/>
+        <path d="M15.1 17.1 Q11.5 23.8 11.7 30.5 Q10.4 36.5 12.3 40.1" stroke-width="4.7"/>
+        <path d="M17 17 Q15.6 26.8 16.2 33.5 Q14.7 40.9 16.9 43.4" stroke-width="3.3"/>
+        <path d="M34 14.1 Q38.8 20 39.9 25.5 Q42.5 29 40.4 33" stroke-width="5.4"/>
+        <path d="M30.4 15.7 Q34.5 21.2 35.5 28.1 Q37.9 35 35.6 42.7" stroke-width="5.0"/>
+        <path d="M27.8 17 Q30.6 23.3 30.4 30 Q32.6 37.5 31.6 48.4" stroke-width="4.2"/>
+        <path d="M24.2 18 Q27.1 24.6 26.8 30.6 Q28.3 36.5 27.1 40.7" stroke-width="3.2"/>
+      </g>
       <g stroke="var(--sr-hair)">
-        <path d="M10.5 12.5Q5.8 16.6 4.3 24.1Q1.2 31.8 3 37.3Q2.4 43.3 1.3 48.6" stroke-width="5.1"/>
-        <path d="M12 14.7Q8.7 20.9 7.1 27.2Q5.9 33.3 6.5 37.4Q5.4 44.8 5.9 52" stroke-width="4.6"/>
-        <path d="M14.2 17Q10.4 23.4 10.4 29.3Q9.2 36.3 11.5 43Q10.3 47.6 12.9 54.3" stroke-width="4.1"/>
-        <path d="M18.4 16.2Q14.5 24.9 15.6 30.1Q13 38.4 16.3 44.1Q15.3 48.8 16.8 52" stroke-width="3.6"/>
-        <path d="M32.8 12.1Q37.5 18 38.8 25.2Q42.6 30.6 40.1 36.4Q42.1 42 40.1 49.8" stroke-width="5.1"/>
-        <path d="M30.4 13.9Q34.1 19.5 34.6 25.3Q37.1 32.5 35.2 38.9Q36.5 45.5 35.8 51.6" stroke-width="4.6"/>
-        <path d="M27.6 17.2Q31.9 24 30.4 31.6Q33.7 39.1 30.3 44.2Q30.9 48.1 29.9 53.1" stroke-width="4.4"/>
-        <path d="M24.4 16.8Q27.2 25.3 26 32.4Q28.1 40.8 26.5 45Q28.7 49.1 26.4 53.6" stroke-width="3.7"/>
+        <path d="M9.1 14.8 Q5 20.4 3.6 26.6 Q1.0 31.4 1.8 35.4" stroke-width="4.4"/>
+        <path d="M11.9 16 Q7.1 22.6 6.8 29.4 Q5.1 36 5.9 44.2" stroke-width="4.1"/>
+        <path d="M15.1 17.1 Q11.5 23.8 11.7 30.5 Q10.4 36.5 12.3 40.1" stroke-width="3.9"/>
+        <path d="M17 17 Q15.6 26.8 16.2 33.5 Q14.7 40.9 16.9 43.4" stroke-width="2.8"/>
+        <path d="M34 14.1 Q38.8 20 39.9 25.5 Q42.5 29 40.4 33" stroke-width="4.2"/>
+        <path d="M30.4 15.7 Q34.5 21.2 35.5 28.1 Q37.9 35 35.6 42.7" stroke-width="3.9"/>
+        <path d="M27.8 17 Q30.6 23.3 30.4 30 Q32.6 37.5 31.6 48.4" stroke-width="3.3"/>
+        <path d="M24.2 18 Q27.1 24.6 26.8 30.6 Q28.3 36.5 27.1 40.7" stroke-width="2.7"/>
       </g>
-      <g stroke="#151418" stroke-width=".9" opacity=".27">
-        <path d="M4.6 26.4q-2 6.1-1.1 10.4M6.7 38q-.5 7.2-.3 10M12 28q-1.3 6.1-.2 9M39.3 29q2.1 5.4.8 8M35.1 35q-.3 5.8.6 11M30.6 35q1.2 5.2-.2 9"/>
+      <g stroke="#7b716f" stroke-width=".67" opacity=".27">
+        <path d="M5.1 23.1q-1.3 2.5-1 4.1 M2.2 30.4q-.7 1.6-.3 3.1 M7.1 31.7q-1.1 2.7-.8 4.5 M6 39.8l.2 1.4 M12.3 32.5q-.5 2.5-.1 4.1 M39.4 25.4q1.6 2.7 1.1 4.2 M35.6 32.7q.8 2.8 0 5.1 M31.5 39.6q.9 2.1.3 3.9"/>
       </g>
-      <g stroke="#998d86" stroke-width=".6" opacity=".21">
-        <path d="M5.8 21.9q-1.6 2.4-1.5 4.8M6.4 42q-.8 2.6-.5 4.3M12.2 37q-.3 2.1.4 3.7M39.5 29q1.5 3.2.9 5.6M35.1 42q.7 2 .4 4.2M29.5 44q-.7 2.3.1 4.1"/>
+      <g stroke="#0b0d10" stroke-width=".7" opacity=".35">
+        <path d="M3.1 28.1l1 1.1-.8 1.2 M6.7 36.1l1 1.1-.8 1.3 M11.6 28.7l.7 1-.7 1.1 M39.5 27.6l1 1.2-.7.9 M35 36.4l.9 1-.8 1.3 M31.5 43.8l.7 1-.7 1"/>
       </g>
     </g>
   `;
@@ -317,15 +328,19 @@
     `,
     locs: `
       <g data-male-hair="locs" stroke-linecap="round" stroke-linejoin="round">
-        <!-- Irregular rooted locs rather than parallel front-facing braids. -->
-        <path d="M6.9 18.5Q5.1 15.8 8.2 11.6Q8.3 8.3 12.4 8.4Q14.3 4.6 18.8 6.4Q21.5 2.6 25.5 5.4Q30 4.8 32.5 8.9Q37.6 10.6 35.6 17.4Q33.2 18.1 30.7 16.7Q26.8 16.7 23.7 15.6Q20.6 16.7 17.7 15.5Q12.3 16.4 9.5 19.1Z" fill="var(--sr-hair)"/>
-        <path d="M9.2 15.2Q11.2 10.3 15.4 10.1Q17.2 9.8 16.9 12.2Q15.3 14.7 12.5 16.3" fill="none" stroke="#171719" stroke-width="2.1" opacity=".55"/>
-        <path d="M14.7 8.1Q18.3 6.5 19.7 8.6Q20.7 10.5 18.2 13.7" fill="none" stroke="#151718" stroke-width="2.6" opacity=".45"/>
-        <path d="M21.4 5.3Q24.4 6.8 23.5 10.1Q23 12.4 21.9 13.7" fill="none" stroke="#151718" stroke-width="2.1" opacity=".47"/>
-        <path d="M26.5 7.4Q30 8.1 28.5 12.1Q27.6 13.4 26.2 14.4" fill="none" stroke="#151718" stroke-width="2.3" opacity=".47"/>
-        <path d="M32.8 10.9Q34.8 13.6 31.4 15.7" fill="none" stroke="#151718" stroke-width="2" opacity=".43"/>
-        <path d="M9.9 12.6Q12.4 10 14.8 10.1M16.5 7.9q2.1-.8 3.2.6M22.2 6.1q2.2.6 2.1 2.5M27.8 8.4q2.1.3 2.1 2.2M32.4 11.1q1.6.9 1 2.9" fill="none" stroke="#827974" stroke-width=".75" opacity=".24"/>
-        <path d="M6.6 17.9q-1-.6-.6-2.2M10.1 8.8q-.6-1.4.8-2.2M16.4 5.5q.6-1.7 2-1.6M28.4 6.4q1.1-1.3 2.4 0M35 12.9q1.2-.4 1.7.6" fill="none" stroke="var(--sr-hair)" stroke-width="1.4" opacity=".7"/>
+        <path d="M6.9 18.1 Q5.9 15.9 7.5 12.2 Q7.2 8.8 11.4 8.6 Q13.7 4.8 17.4 6.5 Q19.8 2.3 24.6 5.4 Q29.4 3.8 32.3 8.7 Q36.5 9.5 35.4 14.7 L35.0 19.0 Q32.2 17.8 29.8 17.2 Q27.9 15.3 24 16.9 Q20.6 15.5 18.1 17.1 Q14.8 15.6 12.0 18.5 L9 20 Z" fill="var(--sr-hair)"/>
+        <path d="M7.4 15.5 Q7.4 12.2 10.4 10.2 Q12.7 8.9 14.8 10.4 Q15.5 12.1 13.7 14.1 Q11.5 15.8 9.8 18.8 Q7.6 18.5 7.4 15.5Z" fill="#1b1a1d"/>
+        <path d="M12.8 9.6 Q13.3 6.5 17.4 6.7 Q19.6 6.7 20.1 8.7 Q20.6 10.8 18.8 12 Q16.8 13.1 16.4 16.5 Q13.6 17.1 12.9 14.9 Q14.1 11.5 12.8 9.6Z" fill="#302c2d"/>
+        <path d="M19.4 7.5 Q19.2 3.6 23.8 4.7 Q26.5 5.1 26.5 7.6 Q26.1 10.6 22.8 12.1 Q21.5 13.2 21.6 16 Q19.0 16.9 18 15 Q19.1 11.5 19.4 7.5Z" fill="#1c1b1e"/>
+        <path d="M25.9 6.7 Q28.6 4.9 31.5 8.3 Q33 10.4 30.5 12.1 Q28.2 13.2 28.7 16.4 Q26.7 17.2 24.3 15.7 Q26.2 12.6 25.9 6.7Z" fill="#343032"/>
+        <path d="M32.0 10.4 Q34.6 10.6 35.6 13.6 Q36.1 16.5 33.2 18.9 L30.3 17.3 Q31.4 14 32 10.4 Z" fill="#201f21"/>
+        <g fill="none" stroke="#595256" stroke-width=".8" opacity=".43">
+          <path d="M9.2 11.9Q10.9 10.3 12.2 11.7 M15 8.8q2.5-.7 3.2 1.6 M21.4 5.9q2.1-.5 2.8 1.9 M27.6 7.5q2.1.1 2.9 2 M33 12q1.5.9 1.2 2.2"/>
+          <path d="M10.2 16.7l1.8-1.2 M15.6 14l1.4-1.3 M21 12.3l1.9-1 M27.1 13.7l1.2-1.6"/>
+        </g>
+        <g fill="none" stroke="#0e1015" stroke-width=".8" opacity=".48">
+          <path d="M8.3 14.1l1 1.1-1.1 1.4 M15.2 11.6l1.2 1-1.2 1.1 M21.8 8.5l1.6 1-1 1.4 M28.8 10.4l1.2 1.1-.8 1.2 M33 15.7l1.1.8"/>
+        </g>
       </g>
     `,
   };
