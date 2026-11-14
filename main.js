@@ -13,7 +13,7 @@ function loadRoomUi(){
   roomUi??=Promise.all([
     import('./room-weather.js?v=2'),
     import('./room-experience.js?v=7-bloom'),
-    import('./room-wardrobe.js?v=15-sculpted-locs'),
+    import('./room-wardrobe.js?v=16-true-locs'),
     import('./study-rooms.js?v=40-gender-hair')
   ]);
   return roomUi;
