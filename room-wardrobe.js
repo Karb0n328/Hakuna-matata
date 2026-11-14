@@ -265,6 +265,29 @@
   // are preserved. Each shape is made for room scale, not a repeated CSS texture.
   // Natural proportions for the small shared-room avatar; no neon or harsh stripes.
   // Saved keys are unchanged so everyone's existing hair selection is preserved.
+  // Back layer is painted before the face, so locs no longer conceal the eyes.
+  const maleLocsBackArt = `
+    <g data-male-hair="locs-back" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <!-- Separately modeled, curved and staggered locs sit behind the face but over the shoulders. -->
+      <g stroke="var(--sr-hair)">
+        <path d="M10.5 12.5Q5.8 16.6 4.3 24.1Q1.2 31.8 3 37.3Q2.4 43.3 1.3 48.6" stroke-width="5.1"/>
+        <path d="M12 14.7Q8.7 20.9 7.1 27.2Q5.9 33.3 6.5 37.4Q5.4 44.8 5.9 52" stroke-width="4.6"/>
+        <path d="M14.2 17Q10.4 23.4 10.4 29.3Q9.2 36.3 11.5 43Q10.3 47.6 12.9 54.3" stroke-width="4.1"/>
+        <path d="M18.4 16.2Q14.5 24.9 15.6 30.1Q13 38.4 16.3 44.1Q15.3 48.8 16.8 52" stroke-width="3.6"/>
+        <path d="M32.8 12.1Q37.5 18 38.8 25.2Q42.6 30.6 40.1 36.4Q42.1 42 40.1 49.8" stroke-width="5.1"/>
+        <path d="M30.4 13.9Q34.1 19.5 34.6 25.3Q37.1 32.5 35.2 38.9Q36.5 45.5 35.8 51.6" stroke-width="4.6"/>
+        <path d="M27.6 17.2Q31.9 24 30.4 31.6Q33.7 39.1 30.3 44.2Q30.9 48.1 29.9 53.1" stroke-width="4.4"/>
+        <path d="M24.4 16.8Q27.2 25.3 26 32.4Q28.1 40.8 26.5 45Q28.7 49.1 26.4 53.6" stroke-width="3.7"/>
+      </g>
+      <g stroke="#151418" stroke-width=".9" opacity=".27">
+        <path d="M4.6 26.4q-2 6.1-1.1 10.4M6.7 38q-.5 7.2-.3 10M12 28q-1.3 6.1-.2 9M39.3 29q2.1 5.4.8 8M35.1 35q-.3 5.8.6 11M30.6 35q1.2 5.2-.2 9"/>
+      </g>
+      <g stroke="#998d86" stroke-width=".6" opacity=".21">
+        <path d="M5.8 21.9q-1.6 2.4-1.5 4.8M6.4 42q-.8 2.6-.5 4.3M12.2 37q-.3 2.1.4 3.7M39.5 29q1.5 3.2.9 5.6M35.1 42q.7 2 .4 4.2M29.5 44q-.7 2.3.1 4.1"/>
+      </g>
+    </g>
+  `;
+
   const maleHairArt = {
     fade: `
       <g data-male-hair="fade" stroke-linecap="round" stroke-linejoin="round">
@@ -294,57 +317,15 @@
     `,
     locs: `
       <g data-male-hair="locs" stroke-linecap="round" stroke-linejoin="round">
-        <!-- Top: rooted loc base, not cornrow stripes -->
-        <path d="M7.6 18.3Q6.8 12.6 11.2 9Q15.1 5.8 20.8 5.8Q27.5 5.2 32 8.9Q35.4 11.8 34.8 17.5Q34 19.5 32.2 19Q29.7 17.2 25.3 17.2Q20.4 16.4 16.2 17.2Q11.9 17.2 9.1 19.4Q8 20.1 7.6 18.3Z" fill="var(--sr-hair)"/>
-
-        <!-- scalp section lines -->
-        <g fill="none" stroke="#d1b2a2" stroke-width=".78" opacity=".24">
-          <path d="M20.9 6.8Q20.9 10.6 21 15.5"/>
-          <path d="M15.4 8.9Q16 11.4 15.8 15.4"/>
-          <path d="M26.4 8.8Q25.8 11.7 25.8 15.5"/>
-          <path d="M11.8 11.3Q13 12.9 13 15.9"/>
-          <path d="M30.2 11.4Q28.8 13.1 28.7 16"/>
-        </g>
-
-        <!-- top shadow for loc-root feel -->
-        <g fill="none" stroke="#151b24" stroke-width="1.05" opacity=".24">
-          <path d="M20.8 7.4Q20.4 10.3 20.6 14.7"/>
-          <path d="M15.2 9.2Q15.2 12 15 15"/>
-          <path d="M26.5 9.1Q26.1 11.6 26 15"/>
-          <path d="M12 11.7Q12.5 13.4 12.5 15.9"/>
-          <path d="M29.9 11.8Q29.2 13.2 28.9 15.8"/>
-        </g>
-
-        <!-- left side locs -->
-        <g fill="var(--sr-hair)">
-          <path d="M9.8 15.8Q7.4 18.6 6.8 22.8Q6.5 27.6 5.2 32.3L4.6 38.7Q4.5 41.1 6.1 41.5Q7.8 41.6 8.1 39.3L8.7 33.4Q10.1 28.8 10.2 24Q10.3 19.3 11.6 17.1Q10.8 16.1 9.8 15.8Z"/>
-          <path d="M12.8 16.2Q10.9 19.1 10.8 23.1Q11.2 28.4 10.5 33.7L10.2 42.2Q10.2 44.7 12.1 45Q14 44.8 13.9 42.2L13.8 35.5Q14.3 30.2 14 25.3Q14 20.1 15.1 17.7Q14 16.6 12.8 16.2Z"/>
-          <path d="M15.9 17Q14.8 20.1 15.2 24.2Q16.2 28 15.9 32.1L15.8 37.5Q15.8 39.5 17.4 39.7Q19 39.6 19 37.5L18.9 32.7Q18.8 28.3 18.6 24.2Q18.7 20.3 19.3 17.3Q17.8 16.9 15.9 17Z"/>
-        </g>
-
-        <!-- right side locs -->
-        <g fill="var(--sr-hair)">
-          <path d="M31.8 15.8Q33.9 18.2 34.4 22.4Q34.7 27.3 35.8 31.8L36.8 38.6Q37.2 40.9 35.5 41.4Q33.8 41.6 33.5 39.3L33.1 33.4Q31.9 28.8 31.7 24.1Q31.5 19.4 30.5 17.1Q31 16.2 31.8 15.8Z"/>
-          <path d="M28.8 16.3Q30.4 18.9 30.5 23Q30.1 28.6 30.8 34L31.2 42Q31.2 44.4 29.3 44.7Q27.5 44.5 27.5 42L27.5 35.2Q27.1 30.1 27.3 25.2Q27.4 20.4 26.7 17.8Q27.6 16.8 28.8 16.3Z"/>
-          <path d="M25.8 17Q26.8 19.8 26.7 24.1Q26 28.5 26.3 32.5L26.4 37.5Q26.3 39.5 24.7 39.7Q23 39.6 23 37.5L23.1 32.8Q23.3 28.3 23 24.2Q23 20.2 22.4 17.3Q23.9 16.8 25.8 17Z"/>
-          <path d="M34.2 13.8Q36.4 16 37.4 20.2Q38 24.6 39.3 27.1L39.8 33.1Q39.8 35.2 38.4 35.6Q36.8 35.7 36.6 33.8L36.3 29.4Q34.8 25.5 34.8 22Q34.5 17.6 33 15.4Q33.4 14.5 34.2 13.8Z"/>
-        </g>
-
-        <!-- inner texture -->
-        <g fill="none" stroke="#111821" stroke-width=".66" opacity=".16">
-          <path d="M7.6 24.1Q7 28.1 6.5 31.8L6 38.6"/>
-          <path d="M11.6 24.5Q11.8 28.5 11.3 33.1L11.1 41.7"/>
-          <path d="M17.1 24Q17.6 27.7 17.3 31.9L17.2 37.6"/>
-          <path d="M33.9 24Q34.4 27.8 35 31.5L35.8 38.3"/>
-          <path d="M29.4 24.4Q29.3 28.5 29.8 33.2L30.1 41.4"/>
-          <path d="M24.8 24Q24.3 28 24.5 32L24.6 37.5"/>
-        </g>
-
-        <!-- soft highlights -->
-        <g fill="none" stroke="#d8bdae" stroke-width=".5" opacity=".13">
-          <path d="M8.5 28.4l-.4 1.6M12.2 28.9l-.3 1.8M17.7 28.1l-.2 1.7"/>
-          <path d="M34.7 28.5l.4 1.7M29.9 28.9l.2 1.8M24.8 28.2l-.2 1.7"/>
-        </g>
+        <!-- Irregular rooted locs rather than parallel front-facing braids. -->
+        <path d="M6.9 18.5Q5.1 15.8 8.2 11.6Q8.3 8.3 12.4 8.4Q14.3 4.6 18.8 6.4Q21.5 2.6 25.5 5.4Q30 4.8 32.5 8.9Q37.6 10.6 35.6 17.4Q33.2 18.1 30.7 16.7Q26.8 16.7 23.7 15.6Q20.6 16.7 17.7 15.5Q12.3 16.4 9.5 19.1Z" fill="var(--sr-hair)"/>
+        <path d="M9.2 15.2Q11.2 10.3 15.4 10.1Q17.2 9.8 16.9 12.2Q15.3 14.7 12.5 16.3" fill="none" stroke="#171719" stroke-width="2.1" opacity=".55"/>
+        <path d="M14.7 8.1Q18.3 6.5 19.7 8.6Q20.7 10.5 18.2 13.7" fill="none" stroke="#151718" stroke-width="2.6" opacity=".45"/>
+        <path d="M21.4 5.3Q24.4 6.8 23.5 10.1Q23 12.4 21.9 13.7" fill="none" stroke="#151718" stroke-width="2.1" opacity=".47"/>
+        <path d="M26.5 7.4Q30 8.1 28.5 12.1Q27.6 13.4 26.2 14.4" fill="none" stroke="#151718" stroke-width="2.3" opacity=".47"/>
+        <path d="M32.8 10.9Q34.8 13.6 31.4 15.7" fill="none" stroke="#151718" stroke-width="2" opacity=".43"/>
+        <path d="M9.9 12.6Q12.4 10 14.8 10.1M16.5 7.9q2.1-.8 3.2.6M22.2 6.1q2.2.6 2.1 2.5M27.8 8.4q2.1.3 2.1 2.2M32.4 11.1q1.6.9 1 2.9" fill="none" stroke="#827974" stroke-width=".75" opacity=".24"/>
+        <path d="M6.6 17.9q-1-.6-.6-2.2M10.1 8.8q-.6-1.4.8-2.2M16.4 5.5q.6-1.7 2-1.6M28.4 6.4q1.1-1.3 2.4 0M35 12.9q1.2-.4 1.7.6" fill="none" stroke="var(--sr-hair)" stroke-width="1.4" opacity=".7"/>
       </g>
     `,
   };
@@ -355,6 +336,7 @@
     const displayHair = hair;
     return '<div class="sr-avatar" data-gender="'+gender+'" style="'+variables+'"'+(displayHair?' data-hair="'+displayHair+'"':'')+(head===PLUSH_BUNNY?' data-head="'+PLUSH_BUNNY+'"':'')+'>'
       +(gender==='female'?'<div class="sr-avatar-hair-back"></div>':'')
+      +(gender==='male'&&hair==='locs'?svg('sr-male-hair-back','0 0 42 67',maleLocsBackArt):'')
       +'<div class="sr-avatar-hair"></div><div class="sr-avatar-head"><i></i><b></b></div>'
       +(gender==='male'?svg('sr-male-hair-art','0 0 42 42',maleHairArt[hair]):'')
       +'<div class="sr-avatar-body">'+svg('sr-clothes-art','0 0 42 36',shirtArt[top])+'</div>'
