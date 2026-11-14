@@ -265,22 +265,50 @@
   // are preserved. Each shape is made for room scale, not a repeated CSS texture.
   // Natural proportions for the small shared-room avatar; no neon or harsh stripes.
   // Saved keys are unchanged so everyone's existing hair selection is preserved.
-  // Continuous, irregular rope-shaped locs. Color inherits the exact palette
-  // used by the other men's haircuts, in wardrobe previews and room avatars.
-  function locRope(d, width, fiber) {
-    return `<g fill="none" stroke-linecap="round" stroke-linejoin="round">
-      <path d="${d}" stroke="var(--sr-hair)" stroke-width="${width + .55}"/>
-      <path d="${d}" stroke="#100e0d" stroke-opacity=".28" stroke-width="${width + .55}"/>
-      <path d="${d}" stroke="var(--sr-hair)" stroke-width="${width}"/>
-      <path d="${fiber}" stroke="#d5bdae" stroke-opacity=".22" stroke-width=".42"/>
+  // Felted locs are irregular closed silhouettes, not round-ended strokes.
+  // Deterministic microfibers add texture without filters, images or SVG IDs.
+  function feltedLoc(points, width, seed) {
+    const [a,b,c,d] = points;
+    const samples = [];
+    const n = 34;
+    const f = value => Number(value.toFixed(3));
+    for (let i=0;i<=n;i++) {
+      const t=i/n,u=1-t;
+      const x=u*u*u*a[0]+3*u*u*t*b[0]+3*u*t*t*c[0]+t*t*t*d[0];
+      const y=u*u*u*a[1]+3*u*u*t*b[1]+3*u*t*t*c[1]+t*t*t*d[1];
+      const dx=3*u*u*(b[0]-a[0])+6*u*t*(c[0]-b[0])+3*t*t*(d[0]-c[0]);
+      const dy=3*u*u*(b[1]-a[1])+6*u*t*(c[1]-b[1])+3*t*t*(d[1]-c[1]);
+      const length=Math.hypot(dx,dy)||1;
+      const radius=width*.5*(.94+.055*Math.sin(i*2.7+seed)+.065*Math.sin(i*.8+seed))
+        * (t>.92 ? 1-(t-.92)*5.5 : 1);
+      samples.push({x,y,nx:-dy/length,ny:dx/length,r:radius});
+    }
+    const edge=(p,side)=>`${f(p.x+p.nx*p.r*side)},${f(p.y+p.ny*p.r*side)}`;
+    const outline='M'+samples.map(p=>edge(p,1)).join('L')+'L'+samples.slice().reverse().map(p=>edge(p,-1)).join('L')+'Z';
+    let fibers='',grain='',shadow='';
+    samples.forEach((p,i)=>{
+      if(i<2||i>n-1)return;
+      const offset=Math.sin(i*4.7+seed)*p.r*.65;
+      const x=p.x+p.nx*offset,y=p.y+p.ny*offset;
+      grain+=`<circle cx="${f(x)}" cy="${f(y)}" r="${i%3===0?.17:.11}"/>`;
+      if(i%3===0){
+        fibers+=`M${f(p.x+p.nx*p.r*.5)} ${f(p.y+p.ny*p.r*.5)}l${f(-p.ny*.65+p.nx*.25)} ${f(p.nx*.65+p.ny*.25)}`;
+        shadow+=`M${f(p.x-p.nx*p.r*.7)} ${f(p.y-p.ny*p.r*.7)}q${f(p.nx*.6-p.ny*.3)} ${f(p.ny*.6+p.nx*.3)} ${f(p.nx*p.r)} ${f(p.ny*p.r)}`;
+      }
+    });
+    return `<g stroke-linecap="round" stroke-linejoin="round">
+      <path d="${outline}" fill="var(--sr-hair)" stroke="#1c1715" stroke-opacity=".65" stroke-width=".65"/>
+      <path d="${shadow}" fill="none" stroke="#191411" opacity=".16" stroke-width=".28"/>
+      <path d="${fibers}" fill="none" stroke="#d5bdae" opacity=".22" stroke-width=".3"/>
+      <g fill="#d5bdae" opacity=".2">${grain}</g>
     </g>`;
   }
   const maleLocsBackArt = `<g data-male-hair="locs-back">
-    ${locRope('M11 12 Q7 18 5.7 24 L5 28 5.4 31 4.7 34',2.4,'M6 23l-.4 3 M5.3 29l.1 2')}
-    ${locRope('M14 12 Q10 20 9 26 L9.4 30 8.4 33 8.7 38',2.6,'M9.1 25l.2 3 M8.9 33l-.2 2')}
-    ${locRope('M17 14 Q13 22 13 28 L12.6 32 13.4 35',2.3,'M13 27l-.1 3')}
-    ${locRope('M30 12 Q35 18 36.7 24 L36.3 27 37.3 30 36.8 33',2.4,'M36.4 23l.1 3 M37 29l.2 1')}
-    ${locRope('M27 14 Q31 22 32.2 28 L31.8 32 32.6 36',2.5,'M31.8 26l.2 3 M32 32l.2 2')}
+    ${feltedLoc([[11,12],[6,18],[2,27],[3.8,34]],3.5,1)}
+    ${feltedLoc([[15,10],[9,19],[8,31],[7.2,39]],3.2,2)}
+    ${feltedLoc([[18,12],[14,22],[10,31],[12,37]],3,3)}
+    ${feltedLoc([[28,10],[35,17],[38,25],[37,32]],3.2,4)}
+    ${feltedLoc([[27,12],[32,23],[32,30],[33.8,36]],3.1,5)}
   </g>`;
 
   const maleHairArt = {
@@ -312,18 +340,16 @@
     `,
     locs: `
       <g data-male-hair="locs">
-        <!-- Small root bed; separated ropes carry the silhouette, not a cap. -->
-        <path d="M8 17Q7 10 13 7Q22 2 29 7Q35 10 34 18L31 16L29 13Q23 11 18 14L11 18Z" fill="var(--sr-hair)"/>
-        <path d="M13 9l2 3 M19 6l1 5 M25 6l-1 5 M29 9l-2 3" stroke="#d5bdae" opacity=".18" stroke-width=".65" fill="none"/>
-        ${locRope('M20 5 C16 3 12 5 10 9 L8.7 13 6.9 17 6.2 21 5.3 24',2.8,'M16 4.8q-3 .4-4 2 M8.6 13l-1 2 M6 20l-.5 2')}
-        ${locRope('M23 4 C19 4 16 7 14 10 L12.8 14 10.7 18 10.4 21',2.6,'M19 5.9l-2 1.6 M13.4 12l-.6 2 M11 18l-.2 1')}
-        ${locRope('M26 5 C23 4 22 7 20 10 L18 13 17.7 17 16.5 19',2.5,'M23 6l-1 2 M19.5 11l-1 2 M17.5 16l-.3 1')}
-        ${locRope('M28 6 Q29 9 26 12 L24.8 15 24.9 18',2.5,'M27.8 8l-.5 2 M25.5 13l-.5 2')}
-        ${locRope('M30 8 Q33 10 31.4 14 L30.9 17 31.6 20',2.7,'M32 11l-.3 2 M31.3 16l.1 2')}
-        ${locRope('M33 11 Q36 14 35 18 L35.5 22 34.8 25 35.2 28',2.6,'M35 15l-.2 2 M35.2 22l-.3 2')}
-        <!-- Tiny uneven fiber edges avoid the smooth tube / braid appearance. -->
-        <path d="M11 7l-1-.3 M16 4l-.3-.7 M21 4l.3-.7 M7 16l-.7.2 M10.5 19l-.5.4 M18 15l-.7.2 M26 13l.5.4 M35 21l.6.4"
-          stroke="var(--sr-hair)" stroke-width=".55" fill="none" stroke-linecap="round"/>
+        <path d="M8 17Q7 10 13 7Q22 3 29 7Q34 10 34 17L31 19L30 14L24 13L17 15L10 20Z" fill="var(--sr-hair)"/>
+        <!-- Root sections show between overlapping, side-swept mature locs. -->
+        <path d="M26 7l-1.8 4 M29 9l-1 4 M31 12l-.3 3" fill="none" stroke="#d5bdae" stroke-width=".65" opacity=".22"/>
+        ${feltedLoc([[28,7],[23,0],[8,2],[6,17]],3.6,7)}
+        ${feltedLoc([[25,6],[17,2],[3,13],[4.2,28]],3.1,8)}
+        ${feltedLoc([[25,8],[17,5],[8,14],[9,31]],2.9,9)}
+        ${feltedLoc([[26,10],[20,8],[11,13],[13,23]],2.8,10)}
+        ${feltedLoc([[26,12],[21,10],[16,13],[16,18]],2.9,11)}
+        ${feltedLoc([[29,8],[34,9],[34,16],[33,22]],3.2,12)}
+        ${feltedLoc([[32,12],[37,15],[35,23],[36,27]],3,13)}
       </g>
     `,
 
