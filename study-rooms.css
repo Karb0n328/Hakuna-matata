@@ -240,6 +240,18 @@ html[data-hakuna-palette="republic"] .sr-desk-scene{filter:hue-rotate(323deg) sa
 .sr-avatar[data-gender="female"] .sr-male-hair-art{display:none}
 .sr-avatar[data-gender="male"] .sr-male-hair-art g{shape-rendering:geometricPrecision}
 
+/* Rastalı: hair stays charcoal regardless of outfit palette; its strands must not cover the face. */
+.sr-avatar[data-gender="male"][data-hair="locs"]{--sr-hair:#282428}
+.sr-avatar[data-gender="male"][data-hair="locs"] .sr-male-hair-back{
+  position:absolute;left:0;top:0;width:42px;height:67px;
+  z-index:3;overflow:visible;pointer-events:none;
+  filter:drop-shadow(0 1px 0 rgba(8,10,14,.16));
+}
+.sr-avatar[data-gender="male"][data-hair="locs"] .sr-male-hair-art{z-index:4}
+.sr-avatar[data-head="batu_plush_heart_bunny"] .sr-male-hair-art,
+.sr-avatar[data-head="batu_plush_heart_bunny"] .sr-male-hair-back{visibility:hidden}
+
+
 
 .sr-wardrobe {
   width:min(420px,calc(100% - 24px)); max-height:calc(100dvh - 32px); box-sizing:border-box;
