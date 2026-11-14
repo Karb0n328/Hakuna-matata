@@ -11,7 +11,7 @@
 
   // Keep hair choices distinct; all female variants have hair extending past the face.
   const hairChoices = {
-    male: {fade:'Kısa',curls:'Kıvırcık',braids:'Örgülü'},
+    male: {fade:'Kısa',curls:'Kıvırcık',braids:'Örgülü',locs:'Rastalı'},
     female: {
       long_wavy:'Uzun dalgalı',
       long_straight:'Uzun düz',
@@ -290,6 +290,25 @@
         <path d="M12.3 9.7l2 2.3-2.2 2.2 2.1 2M19.1 8.1l2.3 2.1-2.2 2.1 2.2 2.1M26.3 9l2.3 2-2.4 2.2 2.4 2.1" fill="none" stroke="#d2b5a4" stroke-width=".9" opacity=".22"/>
         <path d="M9.1 19Q8.6 22.2 9 26M33.1 19Q33.8 22.2 33.2 26" fill="none" stroke="var(--sr-hair)" stroke-width="3.2"/>
         <path d="M9.1 22l1.3 1.3-1.4 1.3M33.3 22L32 23.3l1.4 1.3" fill="none" stroke="#cdb6aa" stroke-width=".85" opacity=".25"/>
+      </g>
+    `,
+    locs: `
+      <g data-male-hair="locs" stroke-linecap="round" stroke-linejoin="round">
+        <!-- Locs hang beside the 31px face, not over the eyes; kept at the same 42px room-avatar scale. -->
+        <g fill="none" stroke="var(--sr-hair)">
+          <path d="M10.2 15.7Q6.1 20.9 6.1 27.2Q5.8 31.1 3.8 36.6" stroke-width="4.1"/>
+          <path d="M8.5 16.9Q9.8 22.9 7.7 29.1Q6.2 34.5 7.8 40.1" stroke-width="3.7"/>
+          <path d="M12.4 17.2Q10.6 24.1 11.5 30.4Q10.8 35.3 12.4 39" stroke-width="3.8"/>
+          <path d="M31.9 16.7Q35.9 22 35.3 28.9Q36.2 34.1 38.1 37.8" stroke-width="4.3"/>
+          <path d="M34 16.3Q32.8 21.1 34.8 26.8Q34.3 33.3 34.3 40" stroke-width="3.8"/>
+          <path d="M29.9 17.2Q31.8 24.3 30.8 29.9Q32.4 35 30.9 38.1" stroke-width="3.7"/>
+        </g>
+        <!-- Soft braided crown and visible parting follow the dark hand-sculpted male-hair palette. -->
+        <path d="M6.7 18.5Q5.7 11.8 11.5 8.1Q17.1 4.9 21.4 5.8Q28.1 4.3 33 9.4Q36.1 12.2 35.1 18.7Q31.4 15.9 28.9 17.1Q25.3 15.3 21 16.1Q15.5 15 12 18.2Q8.5 21 6.7 18.5Z" fill="var(--sr-hair)"/>
+        <path d="M21.5 6.5Q20.8 10.4 21 15.8M11.3 10.2Q13.8 12.4 13.9 17.1M16.1 7.9Q18.1 11.2 17.9 15.7M27.5 8Q25.1 11.2 25.1 15.8M31.9 11.3Q29.6 13.1 29.1 16.5" fill="none" stroke="#101922" stroke-width="2.4" opacity=".39"/>
+        <path d="M21.4 7.2L21 14.8M11.6 10.5L13 12.3 12.4 13.8 13.7 15.6M16.4 8.8L18 10.5 16.8 12.2 18 13.6M26.8 8.8L25 10.7 26.2 12.4 25.1 14.1M31.1 11.4L29.6 13.3 30.4 14.5" fill="none" stroke="#ccb4a6" stroke-width=".74" opacity=".23"/>
+        <path d="M9.3 15.5Q10.3 18.8 9.1 22.8Q8.4 26 9.3 30.2Q8.4 33.5 9.6 36.7M33.2 16Q32.4 20.2 33.8 24Q32.3 28.1 33.8 31.8Q33 35.1 33.5 37.4" fill="none" stroke="#101922" stroke-width="2.2" opacity=".27"/>
+        <path d="M5.3 26.2Q6 27.2 6.1 28.1M7.6 32.8L8.3 34.6M12 25.1Q11.1 27.1 12.2 28.8M35.9 26.5L35.1 28M30.8 32.8L31.5 34.4M34.2 36L35 37.6" fill="none" stroke="#cfb5a8" stroke-width=".92" opacity=".21"/>
       </g>
     `,
   };
