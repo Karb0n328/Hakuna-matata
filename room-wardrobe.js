@@ -11,7 +11,7 @@
 
   // Keep hair choices distinct; all female variants have hair extending past the face.
   const hairChoices = {
-    male: {fade:'Low taper fade',curls:'Doğal kıvırcık',braids:'Cornrows örgü'},
+    male: {fade:'Kısa',curls:'Kıvırcık',braids:'Örgülü'},
     female: {
       long_wavy:'Uzun dalgalı',
       long_straight:'Uzun düz',
@@ -263,32 +263,35 @@
 
   // Hand-sculpted miniature men's hairstyles. The same 42px character proportions
   // are preserved. Each shape is made for room scale, not a repeated CSS texture.
+  // Natural proportions for the small shared-room avatar; no neon or harsh stripes.
+  // Saved keys are unchanged so everyone's existing hair selection is preserved.
   const maleHairArt = {
     fade: `
-      <g data-male-hair="fade" stroke-linejoin="round" stroke-linecap="round">
-        <path d="M5.7 14Q6 5 15 4Q25 .5 33 5Q39 9 37.7 18L35.3 25.4Q32.8 27 32.1 23.3L33 16Q21 12 10.8 18L10.1 24.5Q8 26.9 6.5 23Z" fill="var(--sr-hair)" opacity=".5"/>
-        <path d="M6.1 13.2Q7.2 6 13.4 5.2Q17.7 1.5 23.5 3.7Q32.6 1.8 36.4 9.1Q38.1 12.2 35.5 16.5Q29 12.8 23.2 13.6Q16.9 13.2 9.5 19.1Q5.6 18.4 6.1 13.2Z" fill="var(--sr-hair)" stroke="#24202a" stroke-width=".8"/>
-        <path d="M7.3 11.8Q12.4 6.1 19.4 6.2Q25.2 3.2 31.4 7.6" stroke="#e1d6c7" stroke-width="1.05" fill="none" opacity=".32"/>
-        <path d="M11.6 14.6Q21.5 10.1 31.7 13.9M11.3 9.6Q17.6 6.2 22.7 7.8" fill="none" stroke="#191d27" opacity=".26" stroke-width="1.3"/>
-        <path d="M6.4 18.7q2.4 2.3 4.1-1.3M6.8 21.5q1.8 1.7 3.1-.5M35.6 17.6q-1.8 2.6-3.6.6M35.2 20.5q-1.6 2.2-2.9 1" fill="none" stroke="#ead1bf" stroke-width=".9" opacity=".27"/>
-        <path d="M8.3 23Q8.5 18 10.3 16M34 15.8Q35.5 20.4 34.8 23.3" fill="none" stroke="#242530" opacity=".36" stroke-width="1"/>
-      </g>`,
+      <g data-male-hair="fade" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M8 17Q8 10 13 8Q19 5 26 7Q34 8 35 14L34 20Q32 21 31 18L30 15Q19 13 11.5 19L10 21Q8 21 8 17Z" fill="var(--sr-hair)" opacity=".53"/>
+        <path d="M8.7 16Q8.6 10 14 8Q20 4.7 25 6.8Q31 6 34 12Q35 15 32.7 17Q26 13.2 20 14Q14.2 14.6 10.4 18.8Z" fill="var(--sr-hair)"/>
+        <path d="M12 11Q18 6.6 25.5 9Q29 9.3 31 11.6" stroke="#c6afa1" stroke-width=".9" opacity=".17" fill="none"/>
+        <path d="M12.2 15Q19.2 11.8 28.5 14M11.2 18.2L10.7 21M32 17.4L32.2 20" stroke="#151d25" stroke-width=".85" opacity=".28" fill="none"/>
+        <path d="M8.5 18.6Q9 20 10.3 19.5M33.7 18.6Q33 20.3 31.7 19.6" fill="none" stroke="#d8b9a6" stroke-width="1.1" opacity=".28"/>
+      </g>
+    `,
     curls: `
-      <g data-male-hair="curls" stroke-linejoin="round" stroke-linecap="round">
-        <path d="M5.2 22Q1.4 19 4.8 14Q2.2 8.3 9 7.1Q10.2 1.2 16.8 4.1Q22 -.4 27.1 4.3Q33 .5 35.3 7.4Q41.7 8.2 38.3 15.6Q40.8 20.2 35.5 23.2Q31 19.8 26.3 20.4Q19.4 22.4 15.3 20.2Q9.8 24.4 5.2 22Z" fill="var(--sr-hair)" stroke="#26212a" stroke-width=".75"/>
-        <path d="M7.3 16.8q-2.7-4.5 2.3-6.3q3.5-2 6.3 1.2M11.8 6.3q3.8-2.6 7.9 1.7M21.4 5.1q4.1-2.9 7.9 1.2M30.4 9.2q4.1-1 5 3.1M34.6 17.4q-.5 4.1-5.1 2.7M13.4 16q3.5-3.3 7.8.2M20.3 11.6q4.8-2.4 8.7.8M10.2 20q3.6 1.9 5.8-1.4" fill="none" stroke="#0e1422" stroke-width="1.55" opacity=".33"/>
-        <path d="M8.5 9.8q1.9-2 4.4-.9M17.3 5.8q2-.9 4.2.4M26.8 6.8q2-1.3 4.5.2M32 13.8q2.1 1.1 1.4 3M17 18q2.9-1.7 4.8.8M6.1 18.1q.1 1.9 2.1 2.2" fill="none" stroke="#ffeadc" stroke-width="1.1" opacity=".25"/>
-        <path d="M6.2 21.2q3.5 4.5 6.8-.6M30.9 21.1q3.5 4.1 6-1.4" fill="none" stroke="#292029" stroke-width="1.05" opacity=".55"/>
-      </g>`,
+      <g data-male-hair="curls" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M7.8 19Q4.8 18 6.5 14Q4.4 10 9.5 8.4Q10.5 4.3 15.2 5.6Q19.2 2.1 22.5 5.5Q27.5 2.9 30.3 7.1Q35.1 6.8 36 11.5Q39 15.9 34.4 19L32.8 21L29.3 18.3Q23.9 19.3 21 17.9Q16.7 20.6 13.9 18.6L10 21Z" fill="var(--sr-hair)"/>
+        <path d="M8.1 15Q7.5 12.2 11.2 11.2Q13 6.7 17 9Q21 5.6 25 9.1Q29.6 7.4 32.1 11.6Q36.3 13.1 33.3 17.4" fill="none" stroke="#131b25" stroke-width="1.35" opacity=".36"/>
+        <path d="M10 14.9Q13 12.4 15.5 15.1M17.1 11.8Q20.1 9.6 22.3 12.8M24 15.8Q27.1 12.9 29.6 15.4M14.4 18.5Q17.7 16 19.8 17.7" fill="none" stroke="#d5bdae" stroke-width="1.05" opacity=".22"/>
+        <path d="M9.1 18.3Q10.2 19.4 12 17.7M30.2 18Q32 19.3 34 17.2" fill="none" stroke="#171822" opacity=".28" stroke-width=".9"/>
+      </g>
+    `,
     braids: `
-      <g data-male-hair="braids" stroke-linejoin="round" stroke-linecap="round">
-        <path d="M6.2 15.5Q6 4.6 19.2 4Q33 1 36.2 13.9L36.7 21L33.4 22.3Q29 17.8 21 17.1Q13.2 17.9 9.2 22.3L6.4 20Z" fill="var(--sr-hair)" stroke="#24202b" stroke-width=".8"/>
-        <path d="M10 17Q11.5 8 17.6 4.5M14.2 17.1Q16.4 8.1 20.5 3.9M20.6 17.1Q20.9 7 23.7 3.8M26 17.8Q25.3 8.8 27.4 4.6M31.5 18.7Q28.9 9.5 30.9 6.6" fill="none" stroke="#bba89b" stroke-width="1.1" opacity=".25"/>
-        <path d="M9.2 11.4l2.5 1.8-2.5 1.6 2.4 1.7M14.7 10.1l2.5 2-2.8 1.7 2.6 1.9M19.7 9.7l2.1 1.9-2.1 1.5 2 1.8M25.2 9.5l2.2 1.6-2 1.9 2 2.1M30.5 11.3l2.3 1.7-2.2 1.9 2.2 1.7" fill="none" stroke="#111925" stroke-width="1.15" opacity=".55"/>
-        <path d="M8.2 20.7Q5.8 24.4 7.8 27.4Q5.1 30.2 7.6 33.9M34 20.2Q37.2 24.9 34.5 27.4Q37.1 30.8 34.5 34" fill="none" stroke="var(--sr-hair)" stroke-width="4.7"/>
-        <path d="M8 20.8l2.5 2.3-3 2.3 2.8 2.3-3 2.2 2.6 2.3M34 20.8l-2.5 2.3 3 2.3-2.8 2.3 3 2.2-2.6 2.3" fill="none" stroke="#bbac9d" stroke-width=".9" opacity=".29"/>
-        <path d="M6.5 33.6l2.8 1.2M33.2 34.6l2.7-1.1" stroke="#2d2631" stroke-width="1.8"/>
-      </g>`
+      <g data-male-hair="braids" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M7.3 19Q6.4 10.2 13.3 7.6Q20.2 4.3 27.5 6.7Q35.6 10.2 35.1 19.4Q33.4 22 31.8 19Q28.9 16.1 21.1 16.3Q13.8 16.4 10.6 19.8Q8.6 21.1 7.3 19Z" fill="var(--sr-hair)"/>
+        <path d="M12.3 9.5Q15 12.1 14.4 17M19.6 7.1Q20.6 11.5 20.7 16M27.4 8.1Q26.4 12.1 27.5 16.8" stroke="#1a1d26" stroke-width="2.9" opacity=".29" fill="none"/>
+        <path d="M12.3 9.7l2 2.3-2.2 2.2 2.1 2M19.1 8.1l2.3 2.1-2.2 2.1 2.2 2.1M26.3 9l2.3 2-2.4 2.2 2.4 2.1" fill="none" stroke="#d2b5a4" stroke-width=".9" opacity=".22"/>
+        <path d="M9.1 19Q8.6 22.2 9 26M33.1 19Q33.8 22.2 33.2 26" fill="none" stroke="var(--sr-hair)" stroke-width="3.2"/>
+        <path d="M9.1 22l1.3 1.3-1.4 1.3M33.3 22L32 23.3l1.4 1.3" fill="none" stroke="#cdb6aa" stroke-width=".85" opacity=".25"/>
+      </g>
+    `,
   };
 
   function character(look) {
