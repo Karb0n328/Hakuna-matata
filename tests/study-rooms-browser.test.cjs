@@ -148,6 +148,8 @@ const server=createServer((req,res)=>{
     await wardrobe.getByRole('button',{name:'Karakter'}).click();
     assert.deepEqual(await wardrobe.locator('[name=hair] option').evaluateAll(nodes=>nodes.map(n=>n.value)),
       ['fade','curls','braids'],'male dropdown lists only male hair');
+    assert.deepEqual(await wardrobe.locator('[name=hair] option').evaluateAll(nodes=>nodes.map(n=>n.textContent)),
+      ['Kısa','Kıvırcık','Örgülü'],'male hairstyle names stay simple in the actual dropdown');
     // The refreshed male options must render unique visible miniatures, not flat caps.
     fs.mkdirSync('test-results',{recursive:true});
     const maleShapes=[];
