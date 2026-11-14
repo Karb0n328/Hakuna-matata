@@ -265,25 +265,22 @@
   // are preserved. Each shape is made for room scale, not a repeated CSS texture.
   // Natural proportions for the small shared-room avatar; no neon or harsh stripes.
   // Saved keys are unchanged so everyone's existing hair selection is preserved.
-  // Mature freeform locs: blunt uneven ends, compact jaw-length silhouette.
-  // Reuse native SVG layers in the wardrobe and every shared-room avatar.
-  // Broad shadow + broken edge light keeps each felted rope legible at 42px.
-  function locStrand(d, width, tone, detail) {
+  // Continuous, irregular rope-shaped locs. Color inherits the exact palette
+  // used by the other men's haircuts, in wardrobe previews and room avatars.
+  function locRope(d, width, fiber) {
     return `<g fill="none" stroke-linecap="round" stroke-linejoin="round">
-      <path d="${d}" stroke="#141416" stroke-width="${width + .9}"/>
-      <path d="${d}" stroke="${tone}" stroke-width="${width}"/>
-      <path d="${d}" stroke="#766d65" stroke-width="${width * .18}"
-        stroke-dasharray="1.1 2.3 .5 1.7" opacity=".24" transform="translate(-.45 -.25)"/>
-      <path d="${detail}" stroke="#101113" stroke-width=".55" opacity=".48"/>
+      <path d="${d}" stroke="var(--sr-hair)" stroke-width="${width + .55}"/>
+      <path d="${d}" stroke="#100e0d" stroke-opacity=".28" stroke-width="${width + .55}"/>
+      <path d="${d}" stroke="var(--sr-hair)" stroke-width="${width}"/>
+      <path d="${fiber}" stroke="#d5bdae" stroke-opacity=".22" stroke-width=".42"/>
     </g>`;
   }
   const maleLocsBackArt = `<g data-male-hair="locs-back">
-    ${locStrand('M10 12 C6 17 5 23 4.5 28 Q3.8 32 4.8 35',3.8,'#292726','M4 25l1.4 1 M3.8 31l1.5 .7')}
-    ${locStrand('M13 12 C9 18 9 25 9.5 30 Q9.8 35 8.6 39',4.1,'#222222','M8.4 23l1.6 .8 M9 34l1.2 .6')}
-    ${locStrand('M17 13 C14 21 14.2 28 14 33 Q13.5 36 14.4 37',3.3,'#302c29','M13 28l1.4 .6')}
-    ${locStrand('M31 11 C35 16 37 22 37 27 Q37 30 38.2 32',3.7,'#292725','M36 23l1.5 1')}
-    ${locStrand('M28 13 C32 19 32 25 33 30 Q34 33 33 36',4,'#242323','M31.5 24l1.3 1 M33 32l1 .5')}
-    ${locStrand('M25 14 C28 22 27 28 28 34',3.3,'#302c29','M27 29l1.2 .6')}
+    ${locRope('M11 12 Q7 18 5.7 24 L5 28 5.4 31 4.7 34',2.4,'M6 23l-.4 3 M5.3 29l.1 2')}
+    ${locRope('M14 12 Q10 20 9 26 L9.4 30 8.4 33 8.7 38',2.6,'M9.1 25l.2 3 M8.9 33l-.2 2')}
+    ${locRope('M17 14 Q13 22 13 28 L12.6 32 13.4 35',2.3,'M13 27l-.1 3')}
+    ${locRope('M30 12 Q35 18 36.7 24 L36.3 27 37.3 30 36.8 33',2.4,'M36.4 23l.1 3 M37 29l.2 1')}
+    ${locRope('M27 14 Q31 22 32.2 28 L31.8 32 32.6 36',2.5,'M31.8 26l.2 3 M32 32l.2 2')}
   </g>`;
 
   const maleHairArt = {
@@ -314,19 +311,19 @@
       </g>
     `,
     locs: `
-      <g data-male-hair="locs" stroke-linecap="round" stroke-linejoin="round">
-        <!-- Recessed roots and an angular exposed hairline, not a smooth cap. -->
-        <path d="M7 19 L7 13 Q8 6 16 6 Q23 2 30 7 Q35 10 35 18 L32 21 L31 16 Q25 13 20 15 L12 16 L10 21Z" fill="#1c1c1d"/>
-        <path d="M12 13Q15 10 18 10 M21 8L22 13 M27 10L29 14" fill="none" stroke="#8a7463" stroke-width=".75" opacity=".4"/>
-        ${locStrand('M17 7 C14 5 11 8 9 12 Q6 17 5.8 22',4.2,'#302d29','M10 10l1.3 1 M6.8 17l1.4 .6')}
-        ${locStrand('M21 5 C18 3 15 5 13 9 Q11 12 10.5 16',4.3,'#38332e','M16 6l1 1 M11 12l1.3 .8')}
-        ${locStrand('M24 5 C22 4 21 7 19 10 Q17 13 15 15',4,'#292726','M20 8l1.3 .7 M16 13l1 .6')}
-        ${locStrand('M27 6 C27 9 25 11 24 14',4.4,'#35312d','M25.5 10l1.4 .6')}
-        ${locStrand('M30 8 C33 10 32 13 31.2 16',3.9,'#292725','M31 12l1.4 .6')}
-        ${locStrand('M34 12 C36 16 34 19 34.5 23',3.5,'#35312e','M34 18l1.2 .6')}
-        <!-- Sparse fibers, subordinate to the softly shaded native artwork. -->
-        <path d="M10 7l-.5-1 M16 3.8l.1-1 M23 3l.6-.8 M29 5.5l.7-.6 M35.5 14l.8.3 M5 20l-.7.3"
-          stroke="#393531" stroke-width=".45" fill="none" opacity=".65"/>
+      <g data-male-hair="locs">
+        <!-- Small root bed; separated ropes carry the silhouette, not a cap. -->
+        <path d="M8 17Q7 10 13 7Q22 2 29 7Q35 10 34 18L31 16L29 13Q23 11 18 14L11 18Z" fill="var(--sr-hair)"/>
+        <path d="M13 9l2 3 M19 6l1 5 M25 6l-1 5 M29 9l-2 3" stroke="#d5bdae" opacity=".18" stroke-width=".65" fill="none"/>
+        ${locRope('M20 5 C16 3 12 5 10 9 L8.7 13 6.9 17 6.2 21 5.3 24',2.8,'M16 4.8q-3 .4-4 2 M8.6 13l-1 2 M6 20l-.5 2')}
+        ${locRope('M23 4 C19 4 16 7 14 10 L12.8 14 10.7 18 10.4 21',2.6,'M19 5.9l-2 1.6 M13.4 12l-.6 2 M11 18l-.2 1')}
+        ${locRope('M26 5 C23 4 22 7 20 10 L18 13 17.7 17 16.5 19',2.5,'M23 6l-1 2 M19.5 11l-1 2 M17.5 16l-.3 1')}
+        ${locRope('M28 6 Q29 9 26 12 L24.8 15 24.9 18',2.5,'M27.8 8l-.5 2 M25.5 13l-.5 2')}
+        ${locRope('M30 8 Q33 10 31.4 14 L30.9 17 31.6 20',2.7,'M32 11l-.3 2 M31.3 16l.1 2')}
+        ${locRope('M33 11 Q36 14 35 18 L35.5 22 34.8 25 35.2 28',2.6,'M35 15l-.2 2 M35.2 22l-.3 2')}
+        <!-- Tiny uneven fiber edges avoid the smooth tube / braid appearance. -->
+        <path d="M11 7l-1-.3 M16 4l-.3-.7 M21 4l.3-.7 M7 16l-.7.2 M10.5 19l-.5.4 M18 15l-.7.2 M26 13l.5.4 M35 21l.6.4"
+          stroke="var(--sr-hair)" stroke-width=".55" fill="none" stroke-linecap="round"/>
       </g>
     `,
 

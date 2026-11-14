@@ -240,8 +240,7 @@ html[data-hakuna-palette="republic"] .sr-desk-scene{filter:hue-rotate(323deg) sa
 .sr-avatar[data-gender="female"] .sr-male-hair-art{display:none}
 .sr-avatar[data-gender="male"] .sr-male-hair-art g{shape-rendering:geometricPrecision}
 
-/* Rastalı: hair stays charcoal regardless of outfit palette; its strands must not cover the face. */
-.sr-avatar[data-gender="male"][data-hair="locs"]{--sr-hair:#282428}
+/* Rastalı inherits the shared hair palette; rear strands stay behind the face. */
 .sr-avatar[data-gender="male"][data-hair="locs"] .sr-male-hair-back{
   position:absolute;left:0;top:0;width:42px;height:67px;
   z-index:3;overflow:visible;pointer-events:none;
