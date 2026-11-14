@@ -152,11 +152,13 @@ self.addEventListener('fetch',event=>{
     });
     event.waitUntil(network.then(()=>{}).catch(()=>{}));
     event.respondWith((async()=>{
-      const versionedScript=event.request.destination==='script'&&url.search;
-      const cached=await caches.match(event.request,{ignoreSearch:!versionedScript});
+      // Keep URL versions for both scripts AND styles: a cached base stylesheet
+      // must never shadow a newly published wardrobe/room CSS revision.
+      const versionedAsset=(event.request.destination==='script'||event.request.destination==='style')&&!!url.search;
+      const cached=await caches.match(event.request,{ignoreSearch:!versionedAsset});
       if(cached)return cached;
       try{return await network;}catch{
-        if(versionedScript){const offline=await caches.match(event.request,{ignoreSearch:true});if(offline)return offline;}
+        if(versionedAsset){const offline=await caches.match(event.request,{ignoreSearch:true});if(offline)return offline;}
         const dest=event.request.destination;
         if(dest==='script')return new Response('',{status:503,headers:{'Content-Type':'text/javascript'}});
         if(dest==='style')return new Response('',{status:503,headers:{'Content-Type':'text/css'}});
