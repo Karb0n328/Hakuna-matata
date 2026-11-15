@@ -265,52 +265,8 @@
   // are preserved. Each shape is made for room scale, not a repeated CSS texture.
   // Natural proportions for the small shared-room avatar; no neon or harsh stripes.
   // Saved keys are unchanged so everyone's existing hair selection is preserved.
-  // Felted locs are irregular closed silhouettes, not round-ended strokes.
-  // Deterministic microfibers add texture without filters, images or SVG IDs.
-  function feltedLoc(points, width, seed) {
-    const [a,b,c,d] = points;
-    const samples = [];
-    const n = 34;
-    const f = value => Number(value.toFixed(3));
-    for (let i=0;i<=n;i++) {
-      const t=i/n,u=1-t;
-      const x=u*u*u*a[0]+3*u*u*t*b[0]+3*u*t*t*c[0]+t*t*t*d[0];
-      const y=u*u*u*a[1]+3*u*u*t*b[1]+3*u*t*t*c[1]+t*t*t*d[1];
-      const dx=3*u*u*(b[0]-a[0])+6*u*t*(c[0]-b[0])+3*t*t*(d[0]-c[0]);
-      const dy=3*u*u*(b[1]-a[1])+6*u*t*(c[1]-b[1])+3*t*t*(d[1]-c[1]);
-      const length=Math.hypot(dx,dy)||1;
-      const radius=width*.5*(.94+.055*Math.sin(i*2.7+seed)+.065*Math.sin(i*.8+seed))
-        * (t>.92 ? 1-(t-.92)*5.5 : 1);
-      samples.push({x,y,nx:-dy/length,ny:dx/length,r:radius});
-    }
-    const edge=(p,side)=>`${f(p.x+p.nx*p.r*side)},${f(p.y+p.ny*p.r*side)}`;
-    const outline='M'+samples.map(p=>edge(p,1)).join('L')+'L'+samples.slice().reverse().map(p=>edge(p,-1)).join('L')+'Z';
-    let fibers='',grain='',shadow='';
-    samples.forEach((p,i)=>{
-      if(i<2||i>n-1)return;
-      const offset=Math.sin(i*4.7+seed)*p.r*.65;
-      const x=p.x+p.nx*offset,y=p.y+p.ny*offset;
-      grain+=`<circle cx="${f(x)}" cy="${f(y)}" r="${i%3===0?.17:.11}"/>`;
-      if(i%3===0){
-        fibers+=`M${f(p.x+p.nx*p.r*.5)} ${f(p.y+p.ny*p.r*.5)}l${f(-p.ny*.65+p.nx*.25)} ${f(p.nx*.65+p.ny*.25)}`;
-        shadow+=`M${f(p.x-p.nx*p.r*.7)} ${f(p.y-p.ny*p.r*.7)}q${f(p.nx*.6-p.ny*.3)} ${f(p.ny*.6+p.nx*.3)} ${f(p.nx*p.r)} ${f(p.ny*p.r)}`;
-      }
-    });
-    return `<g stroke-linecap="round" stroke-linejoin="round">
-      <path d="${outline}" fill="var(--sr-hair)" stroke="#1c1715" stroke-opacity=".65" stroke-width=".65"/>
-      <path d="${shadow}" fill="none" stroke="#191411" opacity=".16" stroke-width=".28"/>
-      <path d="${fibers}" fill="none" stroke="#d5bdae" opacity=".22" stroke-width=".3"/>
-      <g fill="#d5bdae" opacity=".2">${grain}</g>
-    </g>`;
-  }
-  const maleLocsBackArt = `<g data-male-hair="locs-back">
-    ${feltedLoc([[11,12],[6,18],[2,27],[3.8,34]],3.5,1)}
-    ${feltedLoc([[15,10],[9,19],[8,31],[7.2,39]],3.2,2)}
-    ${feltedLoc([[18,12],[14,22],[10,31],[12,37]],3,3)}
-    ${feltedLoc([[28,10],[35,17],[38,25],[37,32]],3.2,4)}
-    ${feltedLoc([[27,12],[32,23],[32,30],[33.8,36]],3.1,5)}
-  </g>`;
-
+  // The reference locs use a transparent high-detail texture; CSS supplies the
+  // same hair palette as every other cut. One cached asset serves all avatars.
   const maleHairArt = {
     fade: `
       <g data-male-hair="fade" stroke-linecap="round" stroke-linejoin="round">
@@ -338,23 +294,6 @@
         <path d="M9.1 22l1.3 1.3-1.4 1.3M33.3 22L32 23.3l1.4 1.3" fill="none" stroke="#cdb6aa" stroke-width=".85" opacity=".25"/>
       </g>
     `,
-    locs: `
-      <g data-male-hair="locs">
-        <path d="M8 17Q7 10 13 7Q22 3 29 7Q34 10 34 17L31 19L30 14L24 13L17 15L10 20Z" fill="var(--sr-hair)"/>
-        <!-- Staggered root clusters: no common side part or concentric bands. -->
-        ${feltedLoc([[10,11],[6,13],[4,20],[4.2,28]],3.1,8)}
-        ${feltedLoc([[15,9],[10,13],[8,23],[9,31]],2.9,9)}
-        ${feltedLoc([[29,10],[34,12],[34,17],[33,22]],3.2,12)}
-        ${feltedLoc([[33,14],[37,17],[35,23],[36,27]],3,13)}
-        ${feltedLoc([[9,13],[6,8],[11,4],[15,6]],3.4,14)}
-        ${feltedLoc([[15,12],[12,7],[16,3],[20,5]],3.7,15)}
-        ${feltedLoc([[22,13],[19,9],[20,3],[24,4.5]],3.8,16)}
-        ${feltedLoc([[28,14],[26,10],[26,5],[29,7]],3.5,17)}
-        ${feltedLoc([[33,16],[35,11],[33,8],[30,9]],3.1,18)}
-        ${feltedLoc([[15,8],[17,11],[13,15],[13,21]],2.9,10)}
-        ${feltedLoc([[23,6],[25,10],[20,12],[19,17]],3.1,11)}
-      </g>
-    `,
 
   };
 
@@ -364,9 +303,8 @@
     const displayHair = hair;
     return '<div class="sr-avatar" data-gender="'+gender+'" style="'+variables+'"'+(displayHair?' data-hair="'+displayHair+'"':'')+(head===PLUSH_BUNNY?' data-head="'+PLUSH_BUNNY+'"':'')+'>'
       +(gender==='female'?'<div class="sr-avatar-hair-back"></div>':'')
-      +(gender==='male'&&hair==='locs'?svg('sr-male-hair-back','0 0 42 67',maleLocsBackArt):'')
       +'<div class="sr-avatar-hair"></div><div class="sr-avatar-head"><i></i><b></b></div>'
-      +(gender==='male'?svg('sr-male-hair-art','0 0 42 42',maleHairArt[hair]):'')
+      +(gender==='male'?(hair==='locs'?'<span class="sr-locs-hair" aria-hidden="true"></span>':svg('sr-male-hair-art','0 0 42 42',maleHairArt[hair])):'')
       +'<div class="sr-avatar-body">'+svg('sr-clothes-art','0 0 42 36',shirtArt[top])+'</div>'
       +'<div class="sr-avatar-arm">'+(hand?'<span data-accessory="'+hand+'" class="'+(hand==='glove'?'sr-jeweled-glove':'sr-metal-watch')+'"></span>':'')+'</div>'
       +svg('sr-accessory-art','0 0 42 67',(head===THORN_CROWN?thornCrown():head===PLUSH_BUNNY?plushBunnyHat():accessory(head,headArt))+accessory(face,faceArt)+accessory(neck,neckArt))
