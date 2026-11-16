@@ -187,6 +187,7 @@ try{
   };
   const form=document.createElement('form');
   form.id='restore-photo-test';
+  form.style.cssText='position:fixed;inset:0;z-index:100000;overflow:auto;background:white';
   document.body.append(form);
   window.HakunaQuestionBooks.mountQuestionForm(form,{id:'q-compression',hasPhoto:true});
  },{crop,original});
@@ -197,9 +198,11 @@ try{
   const form=document.querySelector('#restore-photo-test');
   const editor=form.querySelector('[data-book-image-editor]');
   const recovered=editor.getSourceFile();
-  const decoded=await createImageBitmap(recovered);
-  const result={newSource:editor.hasNewSource(),width:decoded.width,height:decoded.height};
-  decoded.close();
+  const url=URL.createObjectURL(recovered),decoded=new Image();
+  try{
+   await new Promise((resolve,reject)=>{decoded.onload=resolve;decoded.onerror=reject;decoded.src=url;});
+  }finally{URL.revokeObjectURL(url);}
+  const result={newSource:editor.hasNewSource(),width:decoded.naturalWidth,height:decoded.naturalHeight};
   await window.HakunaQuestionBooks.savePhoto(form,'q-compression',true);
   return result;
  });

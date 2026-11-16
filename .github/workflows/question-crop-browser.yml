@@ -18,6 +18,7 @@ permissions:
 jobs:
   crop-ui:
     runs-on: ubuntu-latest
+    container: mcr.microsoft.com/playwright:v1.56.1-noble
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
@@ -30,7 +31,5 @@ jobs:
           node --check tests/question-crop-ui.test.mjs
       - name: Install browser test tool
         run: npm install --no-save --ignore-scripts playwright@1.56.1
-      - name: Install Chromium and WebKit including iPad rendering dependencies
-        run: npx playwright install --with-deps chromium webkit
       - name: Verify crop UI in browsers
         run: node tests/question-crop-ui.test.mjs
