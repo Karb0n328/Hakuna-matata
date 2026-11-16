@@ -660,7 +660,7 @@
       await rpc(name,args);
       const otherStops=await updateOtherRooms(sourceRoom,sourceUser,group,false);
       if(ticket!==epoch||sourceRoom!==roomId||!active())return;
-      if(action==='leave'||action==='close')showLobby();
+      if(action==='leave'||action==='close'){busy=false;showLobby();}
       else {
         await loadRoom();
         if(action==='stop'){
