@@ -57,6 +57,29 @@ try{
  assert.equal(await page.evaluate(()=>window.HakunaRoomPreferences.startAll()),false,
    'turning the setting off immediately restores independent rooms');
 
+ // Group selection is saved through the real settings page and read back on reload.
+ await page.evaluate(()=>{
+  window.HakunaAccount={
+   info:()=>({id:'group-settings-test'}),
+   roomRpc:async()=>({rooms:[
+    {id:'a',name:'Birinci oda'},{id:'b',name:'İkinci oda'},{id:'c',name:'Bağımsız oda'},
+    {id:'old',name:'Kapanmış oda',is_active:false}
+   ]})
+  };
+ });
+ await page.locator('#settingsRoomStartTogether').check();
+ await page.locator('[data-room-group] summary').click();
+ const manual=page.getByRole('checkbox',{name:'Bağımsız oda',exact:true});
+ await manual.uncheck();
+ assert.equal(await page.getByRole('checkbox',{name:'Kapanmış oda',exact:true}).count(),0);
+ await page.getByRole('button',{name:'Seçimi kaydet'}).click();
+ await page.getByText('2 oda seçildi.',{exact:true}).waitFor();
+ assert.deepEqual(await page.evaluate(()=>window.HakunaRoomPreferences.selectedIds()),['a','b']);
+ await page.reload();
+ await page.locator('#sidebarNav [data-nav=settings]').click();
+ assert.deepEqual(await page.evaluate(()=>window.HakunaRoomPreferences.selectedIds()),['a','b']);
+ await page.locator('#settingsRoomStartTogether').uncheck();
+
  // A failed crop upload must not starve the next photo, and retries skip confirmed files.
  const uploads=await page.evaluate(async()=>{
   const owner='photo-test';

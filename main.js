@@ -14,7 +14,7 @@ function loadRoomUi(){
     import('./room-weather.js?v=2'),
     import('./room-experience.js?v=7-bloom'),
     import('./room-wardrobe.js?v=24-reference-locs'),
-    import('./study-rooms.js?v=40-gender-hair')
+    import('./study-rooms.js?v=41-room-selection')
   ]);
   return roomUi;
 }
@@ -29,7 +29,7 @@ if(launch?.entries.length){
 }
 
 try{
-  await import('./app.js?v=backup-verified-v1');
+  await import('./app.js?v=room-selection-v1');
 }catch(error){
   showBootError(error);
 }

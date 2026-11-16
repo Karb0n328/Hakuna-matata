@@ -63,7 +63,7 @@ const fixture=[
   '<main class="main-area"><h1 id="pageTitle">Odalar</h1><section class="ataturk-corner" aria-label="Atatürk Köşesi">Atatürk Köşesi</section><section class="republic-hero">Cumhuriyet</section><section id="view"></section></main>',
   '<script>',
   'window.__batuId='+JSON.stringify(batuId)+';window.__uid="user-1";localStorage.setItem("sb-zyrbbkbwrijnnykbgjvc-auth-token",JSON.stringify({user:{id:window.__uid}}));',
-  'window.__state={room:null,rooms:[],nextRoomId:1,studyingByRoom:{},startedByRoom:{},startCalls:{},stopCalls:{},selfStudying:false,seconds:12,other:false};window.__multiStart=false;window.HakunaRoomPreferences={startAll:()=>window.__multiStart};',
+  'window.__state={room:null,rooms:[],nextRoomId:1,studyingByRoom:{},startedByRoom:{},startCalls:{},stopCalls:{},selfStudying:false,seconds:12,other:false};window.__multiStart=false;window.HakunaRoomPreferences={startAll:()=>window.__multiStart,selectedIds:()=>window.__groupIds};',
   'window.HakunaAccount={',
   'info:()=>({id:window.__uid}),open:()=>{window.__loginOpened=true},',
   'roomListen:()=>()=>{},roomLoadLook:async()=> (window.__uid===window.__batuId?window.__state.batuLook:window.__state.look)||{},roomSaveLook:async look=>{window.__state[window.__uid===window.__batuId?"batuLook":"look"]=look},',
@@ -522,6 +522,31 @@ const server=createServer((req,res)=>{
     await page.locator('[data-sr-action=start]').waitFor();
     assert.equal(await page.evaluate(id=>window.__state.studyingByRoom[id],secondMultiRoom),false,
       'the second room remains stopped with the switch OFF');
+
+    // A third room can run independently while the two selected rooms move together.
+    await page.locator('[data-sr-action=create-next]').click();
+    await page.locator('[data-sr-form=create] [name=name]').fill('Bağımsız Oda');
+    await page.locator('[data-sr-form=create] button[type=submit]').click();
+    await page.getByText('Bağımsız Oda',{exact:true}).waitFor();
+    const manualRoom=await page.evaluate(()=>window.__state.room.id);
+    await page.evaluate(ids=>{window.__multiStart=true;window.__groupIds=ids;},[firstMultiRoom,secondMultiRoom]);
+    await page.locator('[data-sr-action=start]').click();
+    await page.locator('[data-sr-action=stop]').waitFor();
+    assert.deepEqual(await page.evaluate(()=>Object.entries(window.__state.studyingByRoom).filter(([,working])=>working).map(([id])=>id)),[manualRoom]);
+    await page.locator('[data-sr-action=back]').click();
+    await page.locator('[data-sr-action=open]').filter({hasText:'Çevrimdışı hava'}).click();
+    await page.locator('[data-sr-action=start]').click();
+    await page.waitForFunction(ids=>ids.every(id=>window.__state.studyingByRoom[id]),[firstMultiRoom,secondMultiRoom,manualRoom]);
+    const manualStart=await page.evaluate(id=>window.__state.startedByRoom[id],manualRoom);
+    await page.locator('[data-sr-action=stop]').click();
+    await page.waitForFunction(ids=>ids.every(id=>!window.__state.studyingByRoom[id]),[firstMultiRoom,secondMultiRoom]);
+    assert.equal(await page.evaluate(id=>window.__state.startedByRoom[id],manualRoom),manualStart);
+    await page.waitForFunction(()=>document.querySelector('[data-sr-action=start]:enabled'));
+    await page.locator('[data-sr-action=back]').click();
+    await page.locator('[data-sr-action=open]').filter({hasText:'Bağımsız Oda'}).click();
+    await page.locator('[data-sr-action=stop]').click();
+    await page.locator('[data-sr-action=start]').waitFor();
+    assert.equal(await page.evaluate(()=>Object.values(window.__state.studyingByRoom).some(Boolean)),false);
 
     assert.equal(errors.length,0,'Page errors: '+errors.join(', '));
     console.log('PASS '+label+': room creation, shared clock, timer, roster security, presets, close, responsive layout');

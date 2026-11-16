@@ -24,7 +24,9 @@
   // Account-synced preference: other modules read it without reaching into app internals.
   // It is deliberately off unless a user enables it in Settings > Odalar.
   window.HakunaRoomPreferences = Object.freeze({
-    startAll: () => state?.settings?.roomsStartTogether === true
+    startAll: () => state?.settings?.roomsStartTogether === true,
+    selectedIds: () => Array.isArray(state?.settings?.roomsTogetherIds)
+      ? state.settings.roomsTogetherIds.slice() : null
   });
   let currentPage = 'today';
   let taskTab = 'tasks';
@@ -861,8 +863,64 @@
     });
   }
 
+  function bindRoomGroup(group){
+    const form=group.querySelector('form');
+    const options=form.querySelector('[data-room-group-options]');
+    const status=form.querySelector('[data-room-group-status]');
+    const buttons=[...form.querySelectorAll('button[type=submit]')];
+    let rooms=[],owner,request=0,saving=false;
+    form.addEventListener('change',()=>{status.textContent='Seçimi kaydet.';});
+    const disableButtons=disabled=>buttons.forEach(button=>{button.disabled=disabled;});
+    function showSelection(){
+      const selected=window.HakunaRoomPreferences.selectedIds();
+      options.innerHTML=rooms.map(room=>`<label class="settings-row"><span>${esc(room.name)}</span><input type="checkbox" name="groupRoom" value="${esc(room.id)}" ${!selected||selected.includes(room.id)?'checked':''}></label>`).join('');
+      status.textContent=!rooms.length?'Henüz katıldığın oda yok.':selected
+        ?'İşaretli odalar birlikte yönetilir.':'Tüm odalar gruba dahil.';
+      disableButtons(!rooms.length);
+    }
+    group.ontoggle=async()=>{
+      if(!group.open||saving)return;
+      const ticket=++request;
+      const account=window.HakunaAccount;
+      owner=account?.info()?.id;
+      options.replaceChildren();
+      disableButtons(true);
+      if(!navigator.onLine||!owner){
+        status.textContent=navigator.onLine?'Odaları seçmek için hesabına giriş yap.':'Oda listesi için internet bağlantısı gerekiyor.';
+        return;
+      }
+      status.textContent='Odalar yükleniyor…';
+      try{
+        const data=await account.roomRpc('study_room_overview');
+        if(ticket!==request||!group.isConnected||owner!==account.info()?.id)return;
+        rooms=(data.rooms||[]).filter(room=>room.id&&room.is_active!==false);
+        showSelection();
+      }catch(error){
+        if(ticket===request)status.textContent=error?.message||'Odalar yüklenemedi.';
+      }
+    };
+    form.onsubmit=async event=>{
+      event.preventDefault();
+      if(saving||!rooms.length||owner!==window.HakunaAccount?.info()?.id)return;
+      const ids=event.submitter?.value==='all'?null:new FormData(form).getAll('groupRoom');
+      const previous=state.settings?.roomsTogetherIds;
+      saving=true;
+      disableButtons(true);
+      state.settings={...state.settings,roomsTogetherIds:ids};
+      try{
+        await save();
+        showSelection();
+        status.textContent=ids===null?'Tüm odalar gruba dahil.':ids.length+' oda seçildi.';
+      }catch(error){
+        if(state.settings.roomsTogetherIds===ids)state.settings.roomsTogetherIds=previous;
+        showSelection();
+        status.textContent='Oda seçimi kaydedilemedi.';
+      }finally{saving=false;}
+    };
+  }
+
   function renderSettings(view,actions) {
-    view.innerHTML=`<div class="settings-grid"><section class="card settings-section"><div class="card-title">⚙️ Genel</div><div class="settings-row"><div><div class="settings-row-title">Ana ekrana ekle</div><div class="settings-row-desc">Safari → Paylaş → Ana Ekrana Ekle.</div></div><span>📲</span></div><div class="settings-row"><div><div class="settings-row-title">Bildirimler</div><div class="settings-row-desc" data-notifications-status role="status"></div></div><button type="button" class="secondary-btn" data-enable-notifications>Bildirimleri aç</button></div><div class="settings-row"><div><div class="settings-row-title">Veri yedeği</div><div class="settings-row-desc">Verilerini JSON olarak yedekleyebilirsin.</div></div><div style="display:flex;gap:6px"><button class="secondary-btn" data-backup>Yedekle</button><button class="secondary-btn" data-restore>Geri yükle</button><input id="restoreFile" type="file" accept="application/json" hidden></div></div><div class="settings-row"><div><div class="settings-row-title">Soru yedeği</div><div class="settings-row-desc" data-question-backup-status role="status">Buluttaki soru ve fotoğrafları doğrula.</div></div><button type="button" class="secondary-btn" data-check-question-backup>Yedeği kontrol et</button></div><div class="settings-row"><div><div class="settings-row-title">Tüm veriyi sıfırla</div><div class="settings-row-desc">Bu cihazdaki Hakuna Matata kayıtlarını temizler.</div></div><button class="danger-btn" data-reset>Sil</button></div></section><section class="card settings-section settings-room-card" aria-labelledby="settingsRoomHeading"><div class="card-title" id="settingsRoomHeading">🫂 Odalar</div><label class="settings-row settings-room-row" for="settingsRoomStartTogether"><span><span class="settings-row-title">Tüm odaları birlikte yönet</span><span class="settings-row-desc">Birinde başlat veya mola ver; hepsine uygula.</span></span><input id="settingsRoomStartTogether" type="checkbox" role="switch" aria-label="Tüm odaları birlikte yönet" ${state.settings?.roomsStartTogether === true ? 'checked' : ''}></label></section></div>`;
+    view.innerHTML=`<div class="settings-grid"><section class="card settings-section"><div class="card-title">⚙️ Genel</div><div class="settings-row"><div><div class="settings-row-title">Ana ekrana ekle</div><div class="settings-row-desc">Safari → Paylaş → Ana Ekrana Ekle.</div></div><span>📲</span></div><div class="settings-row"><div><div class="settings-row-title">Bildirimler</div><div class="settings-row-desc" data-notifications-status role="status"></div></div><button type="button" class="secondary-btn" data-enable-notifications>Bildirimleri aç</button></div><div class="settings-row"><div><div class="settings-row-title">Veri yedeği</div><div class="settings-row-desc">Verilerini JSON olarak yedekleyebilirsin.</div></div><div style="display:flex;gap:6px"><button class="secondary-btn" data-backup>Yedekle</button><button class="secondary-btn" data-restore>Geri yükle</button><input id="restoreFile" type="file" accept="application/json" hidden></div></div><div class="settings-row"><div><div class="settings-row-title">Soru yedeği</div><div class="settings-row-desc" data-question-backup-status role="status">Buluttaki soru ve fotoğrafları doğrula.</div></div><button type="button" class="secondary-btn" data-check-question-backup>Yedeği kontrol et</button></div><div class="settings-row"><div><div class="settings-row-title">Tüm veriyi sıfırla</div><div class="settings-row-desc">Bu cihazdaki Hakuna Matata kayıtlarını temizler.</div></div><button class="danger-btn" data-reset>Sil</button></div></section><section class="card settings-section settings-room-card" aria-labelledby="settingsRoomHeading"><div class="card-title" id="settingsRoomHeading">🫂 Odalar</div><label class="settings-row settings-room-row" for="settingsRoomStartTogether"><span><span class="settings-row-title">Odaları birlikte yönet</span><span class="settings-row-desc">Seçili odalarda çalışmayı birlikte başlat veya durdur.</span></span><input id="settingsRoomStartTogether" type="checkbox" role="switch" aria-label="Odaları birlikte yönet" ${state.settings?.roomsStartTogether === true ? 'checked' : ''}></label><details data-room-group ${state.settings?.roomsStartTogether === true ? '' : 'hidden'}><summary>Birlikte yönetilecek odalar</summary><form data-room-group-form><div data-room-group-options role="group" aria-label="Odalar"></div><div class="form-actions"><button type="submit" class="primary-btn" value="selected">Seçimi kaydet</button><button type="submit" class="secondary-btn" value="all">Tüm odaları dahil et</button></div><p class="settings-row-desc" role="status" data-room-group-status></p></form></details></section></div>`;
     const backupCheck=view.querySelector('[data-check-question-backup]');
     const backupStatus=view.querySelector('[data-question-backup-status]');
     backupCheck.onclick=async()=>{
@@ -878,14 +936,18 @@
       finally{backupCheck.disabled=false;}
     };
     const roomStartTogether=view.querySelector('#settingsRoomStartTogether');
+    const roomGroup=view.querySelector('[data-room-group]');
+    bindRoomGroup(roomGroup);
     roomStartTogether.onchange=async()=>{
       const oldValue=state.settings?.roomsStartTogether === true;
       state.settings={...(state.settings||{}),roomsStartTogether:roomStartTogether.checked};
+      roomGroup.hidden=!roomStartTogether.checked;
       try {
         await save();
       } catch(error) {
         state.settings.roomsStartTogether=oldValue;
         roomStartTogether.checked=oldValue;
+        roomGroup.hidden=!oldValue;
         toast('Oda ayarı kaydedilemedi.');
       }
     };

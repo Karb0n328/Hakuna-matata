@@ -466,3 +466,9 @@ html[data-batu-theme="dark"] .question-top-notice-mark {
 .settings-room-row input[type="checkbox"]:checked::before{transform:translateX(18px)}
 .settings-room-row input[type="checkbox"]:focus-visible{outline:3px solid var(--blue,#5688c4);outline-offset:3px}
 @media(prefers-reduced-motion:reduce){.settings-room-row input[type="checkbox"],.settings-room-row input[type="checkbox"]::before{transition:none}}
+
+.settings-room-card [data-room-group]{margin-top:12px;border-top:1px solid var(--line)}
+.settings-room-card [data-room-group] summary{padding:12px 0;cursor:pointer;font-weight:700}
+.settings-room-card [data-room-group-options] label{cursor:pointer;min-height:42px;overflow-wrap:anywhere;gap:10px}
+.settings-room-card [data-room-group-options] input{width:18px;height:18px;flex:none}
+.settings-room-card [data-room-group-status]{margin:8px 0 0}
