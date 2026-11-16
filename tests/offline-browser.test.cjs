@@ -59,13 +59,14 @@ try{
 
  // Group selection is saved through the real settings page and read back on reload.
  await page.evaluate(()=>{
-  window.HakunaAccount={
+  const account={
    info:()=>({id:'group-settings-test'}),
    roomRpc:async()=>({rooms:[
     {id:'a',name:'Birinci oda'},{id:'b',name:'İkinci oda'},{id:'c',name:'Bağımsız oda'},
     {id:'old',name:'Kapanmış oda',is_active:false}
    ]})
   };
+  Object.defineProperty(window,'HakunaAccount',{get:()=>account,set:()=>{},configurable:true});
  });
  await page.locator('#settingsRoomStartTogether').check();
  await page.locator('[data-room-group] summary').click();
@@ -87,10 +88,11 @@ try{
   localStorage.setItem(key,owner);
   const calls=[];
   let fails=true;
-  window.HakunaAccount={info:()=>({id:owner}),photoUpload:async id=>{
+  const account={info:()=>({id:owner}),photoUpload:async id=>{
    calls.push(id);
    if(id==='q1'&&fails)throw Error('Simulated upload failure');
   }};
+  Object.defineProperty(window,'HakunaAccount',{get:()=>account,set:()=>{},configurable:true});
   const db=await new Promise((resolve,reject)=>{
    const req=indexedDB.open('hakuna-question-image-cache',1);
    req.onsuccess=()=>resolve(req.result);
@@ -142,7 +144,7 @@ try{
   localStorage.setItem('hakuna.cloud.localOwner',owner);
   let failOriginal=true;
   const calls=[],objects={};
-  window.HakunaAccount={info:()=>({id:owner}),photoUpload:async(key,blob)=>{
+  const account={info:()=>({id:owner}),photoUpload:async(key,blob)=>{
    calls.push(key);
    if(key.endsWith('__original')&&failOriginal)throw Error('Simulated original upload failure');
    const image=await createImageBitmap(blob);
@@ -154,6 +156,7 @@ try{
    objects[key]={data,width:image.width,height:image.height,size:blob.size,type:blob.type};
    image.close();
   }};
+  Object.defineProperty(window,'HakunaAccount',{get:()=>account,set:()=>{},configurable:true});
   await books.savePhoto({querySelector:()=>editor,dispatchEvent:()=>{}},id,false);
   await books.syncPending(state);
   const pending=await books.pendingLocalPhotos(state,owner);
