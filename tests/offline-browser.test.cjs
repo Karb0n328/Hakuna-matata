@@ -57,6 +57,40 @@ try{
  assert.equal(await page.evaluate(()=>window.HakunaRoomPreferences.startAll()),false,
    'turning the setting off immediately restores independent rooms');
 
+ // A failed crop upload must not starve the next photo, and retries skip confirmed files.
+ const uploads=await page.evaluate(async()=>{
+  const owner='photo-test';
+  const key='hakuna.cloud.localOwner';
+  localStorage.setItem(key,owner);
+  const calls=[];
+  let fails=true;
+  window.HakunaAccount={info:()=>({id:owner}),photoUpload:async id=>{
+   calls.push(id);
+   if(id==='q1'&&fails)throw Error('Simulated upload failure');
+  }};
+  const db=await new Promise((resolve,reject)=>{
+   const req=indexedDB.open('hakuna-question-image-cache',1);
+   req.onsuccess=()=>resolve(req.result);
+   req.onerror=()=>reject(req.error);
+  });
+  await new Promise((resolve,reject)=>{
+   const tx=db.transaction('photos','readwrite'),store=tx.objectStore('photos');
+   const request=store.get('q1');
+   request.onsuccess=()=>store.put(request.result,'q2');
+   tx.oncomplete=resolve;
+   tx.onabort=()=>reject(tx.error);
+  });
+  db.close();
+  const state={questions:[{id:'q1',hasPhoto:true},{id:'q2',hasPhoto:true}]};
+  await window.HakunaQuestionBooks.syncPending(state);
+  const pending=await window.HakunaQuestionBooks.pendingLocalPhotos(state,owner);
+  fails=false;
+  await window.HakunaQuestionBooks.syncPending(state);
+  localStorage.removeItem(key);
+  return {calls,pending};
+ });
+ assert.deepEqual(uploads,{calls:['q1','q2','q1'],pending:1});
+
  // Isolate startup from the real worker's cached auth dependencies.
  resumeContext=await browser.newContext({serviceWorkers:'block'});
  await resumeContext.route('https://**/*',r=>r.abort());

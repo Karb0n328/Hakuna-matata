@@ -2,7 +2,7 @@
   'use strict';
   const DB='hakuna-question-image-cache',STORE='photos';
   const SUBJECTS=['Türkçe','Matematik','Geometri','Fizik','Kimya','Biyoloji','Tarih','Coğrafya','Felsefe','Din'];
-  let currentSubject='Matematik',period='all',bookStatus='all',search='',syncing=false;
+  let currentSubject='Matematik',period='all',bookStatus='all',search='',syncing=null;
   const previewUrls=new Set(),loading=new Map();
   let bookImageObserver=null;
 
@@ -68,51 +68,66 @@
 
   function account(){return window.HakunaAccount||null;}
   function accountId(){return account()?.info?.()?.id||null;}
-  const uploadedKey=(uid,id)=>'hakuna.photo.synced.'+uid+'.'+id;
+  const uploadedKey=(uid,id)=>'hakuna.photo.confirmed.v2.'+uid+'.'+id;
+  const photoEdits=new Map();
+  const cloudOwner=()=>localStorage.getItem('hakuna.cloud.localOwner');
 
   async function getPhoto(id){
     const local=await lookup(id).catch(()=>null);
     if(local)return local;
-    if(navigator.onLine===false||!accountId()||!account()?.photoDownload)return null;
-    if(loading.has(id))return loading.get(id);
+    const uid=accountId();
+    if(navigator.onLine===false||!uid||!account()?.photoDownload)return null;
+    const key=uploadedKey(uid,id);
+    if(loading.has(key))return loading.get(key);
+    const revision=photoEdits.get(id);
     const job=(async()=>{
       const blob=await account().photoDownload(id);
+      if(accountId()!==uid||photoEdits.get(id)!==revision)return null;
       await store(id,blob).catch(()=>{});
-      try{localStorage.setItem(uploadedKey(accountId(),id),'1');}catch{}
+      localStorage.setItem(key,'1');
       return blob;
-    })().catch(()=>null).finally(()=>loading.delete(id));
-    loading.set(id,job);return job;
+    })().catch(()=>null).finally(()=>loading.delete(key));
+    loading.set(key,job);return job;
   }
 
-  async function syncPending(state){
-    if(syncing||!accountId()||!account()?.photoUpload||!navigator.onLine)return;
-    syncing=true;const uid=accountId();
+  async function uploadPhoto(uid,id,original=false){
+    const cloudId=original?id+'__original':id;
+    const key=uploadedKey(uid,cloudId);
+    if(localStorage.getItem(key)==='1'||accountId()!==uid||cloudOwner()!==uid)return;
+    const revision=photoEdits.get(id);
     try{
-      for(const q of (state?.questions||[]).filter(q=>q.hasPhoto)){
-        if(!q?.id)continue;
-        if(localStorage.getItem(uploadedKey(uid,q.id))!=='1'){
-          const blob=await lookup(q.id).catch(()=>null);
-          if(blob){
-            await account().photoUpload(q.id,blob);
-            localStorage.setItem(uploadedKey(uid,q.id),'1');
-          }
-        }
-        // Keep the editable source across devices. The old app stored original
-        // images only in local IndexedDB, so another iPad could not re-crop them.
-        const originalKey=q.id+'__original';
-        if(localStorage.getItem(uploadedKey(uid,originalKey))!=='1'){
-          const original=await lookup(q.id+'.original').catch(()=>null);
-          if(original){
-            const jpeg=original.type==='image/jpeg'?original:await processPhoto(original,{
-              rotate:0,left:0,right:0,top:0,bottom:0,trim:false,grayscale:false,manualCrop:false
-            });
-            await account().photoUpload(originalKey,jpeg);
-            localStorage.setItem(uploadedKey(uid,originalKey),'1');
-          }
-        }
+      let blob=await lookup(original?id+'.original':id);
+      if(!blob)return;
+      if(original&&blob.type!=='image/jpeg')blob=await processPhoto(blob,{
+        rotate:0,left:0,right:0,top:0,bottom:0,trim:false,grayscale:false,manualCrop:false
+      });
+      if(accountId()!==uid||cloudOwner()!==uid||photoEdits.get(id)!==revision)return;
+      await account().photoUpload(cloudId,blob);
+      if(accountId()===uid&&photoEdits.get(id)===revision)localStorage.setItem(key,'1');
+    }catch(error){console.warn('Fotoğraf bulut yedeği bekliyor',error);}
+  }
+
+  function syncPending(state){
+    const uid=accountId();
+    if(syncing)return syncing;
+    if(!uid||cloudOwner()!==uid||!account()?.photoUpload||!navigator.onLine)return;
+    syncing=(async()=>{
+      for(const q of state?.questions||[]){
+        if(accountId()!==uid||cloudOwner()!==uid)break;
+        if(!q?.id||!q.hasPhoto)continue;
+        await uploadPhoto(uid,q.id);
+        await uploadPhoto(uid,q.id,true);
       }
-    }catch(e){console.warn('Fotoğraf bulut senkronu bekliyor',e);}
-    finally{syncing=false;}
+    })().finally(()=>{syncing=null;});
+    return syncing;
+  }
+
+  async function pendingLocalPhotos(state,uid){
+    let count=0;
+    for(const q of state?.questions||[]){
+      if(q.hasPhoto&&localStorage.getItem(uploadedKey(uid,q.id))!=='1'&&await lookup(q.id).catch(()=>null))count++;
+    }
+    return count;
   }
 
   async function readState(){
@@ -469,6 +484,7 @@
     const remove=!!editor.querySelector('[data-book-remove]')?.checked;
     if(file){
       const blob=await processPhoto(file,editor.getImageOptions());
+      photoEdits.set(id,(photoEdits.get(id)||0)+1);
       if(!editor.isUsingOriginalBackup?.())await store(id+'.original',file).catch(e=>console.warn('Orijinal fotoğraf yedeklenemedi',e));
       await store(id,blob);
       const uid=accountId();
@@ -476,11 +492,11 @@
         localStorage.removeItem(uploadedKey(uid,id));
         if(!editor.isUsingOriginalBackup?.())localStorage.removeItem(uploadedKey(uid,id+'__original'));
       }
-      void readState().then(syncPending).catch(()=>{});
       form.dispatchEvent(new Event('book-cleanup'));
       return true;
     }
     if(remove){
+      photoEdits.set(id,(photoEdits.get(id)||0)+1);
       await erase(id);
       await erase(id+'.original').catch(()=>{});
       void account()?.photoDelete?.(id).catch(e=>console.warn('Photo cleanup',e));
@@ -493,6 +509,7 @@
   }
 
   async function forgetPhoto(id){
+    photoEdits.set(id,(photoEdits.get(id)||0)+1);
     try{await erase(id);await erase(id+'.original');}catch{}
     try{await account()?.photoDelete?.(id);}catch{}
     try{await account()?.photoDelete?.(id+'__original');}catch{}
@@ -616,5 +633,5 @@
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});
   else start();
 
-  window.HakunaQuestionBooks=Object.freeze({render,mountQuestionForm,savePhoto,getPhoto,forgetPhoto,syncPending});
+  window.HakunaQuestionBooks=Object.freeze({render,mountQuestionForm,savePhoto,getPhoto,forgetPhoto,syncPending,pendingLocalPhotos});
 })();

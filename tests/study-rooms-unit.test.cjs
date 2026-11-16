@@ -153,15 +153,17 @@ assert.equal(wardrobe.normalize({}).gender,'male','old saved outfits retain male
 assert.equal(wardrobe.normalize({gender:'female'}).gender,'female','female avatar can be selected');
 const maleHair=Array.from(wardrobe.itemsFor('hair',null,'male'),([key])=>key);
 const femaleHair=Array.from(wardrobe.itemsFor('hair',null,'female'),([key])=>key);
-assert.deepEqual(maleHair,['fade','curls','braids'],'male hairstyles do not include female hairstyles');
+assert.deepEqual(maleHair,['fade','curls','braids','locs'],'male hairstyles do not include female hairstyles');
 assert.deepEqual(Array.from(wardrobe.itemsFor('hair',null,'male'),([,name])=>name),
-  ['Kısa','Kıvırcık','Örgülü'],
+  ['Kısa','Kıvırcık','Örgülü','Rastalı'],
   'male hairstyle names must remain short and use everyday Turkish');
 assert(!src.includes('Low taper fade')&&!src.includes('Cornrows örgü'),
   'overly technical barber names must not return to the wardrobe');
 
-const maleArt=maleHair.map(hair=>wardrobe.character({gender:'male',hair,top:'palm'}));
-for(const [i,hair] of maleHair.entries()){
+const vectorHair=maleHair.filter(hair=>hair!=='locs');
+assert.match(wardrobe.character({gender:'male',hair:'locs'}),/class="sr-locs-hair"/);
+const maleArt=vectorHair.map(hair=>wardrobe.character({gender:'male',hair,top:'palm'}));
+for(const [i,hair] of vectorHair.entries()){
   assert.match(maleArt[i],/class="sr-male-hair-art"/,
     'every male hairstyle must be custom vector artwork');
   assert(maleArt[i].includes('data-male-hair="'+hair+'"'),

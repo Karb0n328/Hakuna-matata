@@ -107,7 +107,10 @@
       tx.oncomplete=()=>resolve(); tx.onerror=()=>reject(tx.error);
     });
   }
-  async function save() { await dbSet(STATE_KEY,state); }
+  async function save() {
+    await dbSet(STATE_KEY,state);
+    window.dispatchEvent(new Event('hakuna-local-state-saved'));
+  }
   async function mutate(fn, rerender=true) { fn(state); await save(); if (rerender) render(); }
 
   function toast(text) {
@@ -776,7 +779,7 @@
       },false);
       closeModal();
       render();
-      toast(editing?'Soru güncellendi.':'Soru kaydedildi.');
+      toast(editing?'Soru cihazda güncellendi.':'Soru cihaza kaydedildi.');
       if(hasPhoto)void window.HakunaQuestionBooks?.syncPending?.(state);
     };
   }
@@ -859,7 +862,21 @@
   }
 
   function renderSettings(view,actions) {
-    view.innerHTML=`<div class="settings-grid"><section class="card settings-section"><div class="card-title">⚙️ Genel</div><div class="settings-row"><div><div class="settings-row-title">Ana ekrana ekle</div><div class="settings-row-desc">Safari → Paylaş → Ana Ekrana Ekle.</div></div><span>📲</span></div><div class="settings-row"><div><div class="settings-row-title">Bildirimler</div><div class="settings-row-desc" data-notifications-status role="status"></div></div><button type="button" class="secondary-btn" data-enable-notifications>Bildirimleri aç</button></div><div class="settings-row"><div><div class="settings-row-title">Veri yedeği</div><div class="settings-row-desc">Verilerini JSON olarak yedekleyebilirsin.</div></div><div style="display:flex;gap:6px"><button class="secondary-btn" data-backup>Yedekle</button><button class="secondary-btn" data-restore>Geri yükle</button><input id="restoreFile" type="file" accept="application/json" hidden></div></div><div class="settings-row"><div><div class="settings-row-title">Tüm veriyi sıfırla</div><div class="settings-row-desc">Bu cihazdaki Hakuna Matata kayıtlarını temizler.</div></div><button class="danger-btn" data-reset>Sil</button></div></section><section class="card settings-section settings-room-card" aria-labelledby="settingsRoomHeading"><div class="card-title" id="settingsRoomHeading">🫂 Odalar</div><label class="settings-row settings-room-row" for="settingsRoomStartTogether"><span><span class="settings-row-title">Tüm odaları birlikte yönet</span><span class="settings-row-desc">Birinde başlat veya mola ver; hepsine uygula.</span></span><input id="settingsRoomStartTogether" type="checkbox" role="switch" aria-label="Tüm odaları birlikte yönet" ${state.settings?.roomsStartTogether === true ? 'checked' : ''}></label></section></div>`;
+    view.innerHTML=`<div class="settings-grid"><section class="card settings-section"><div class="card-title">⚙️ Genel</div><div class="settings-row"><div><div class="settings-row-title">Ana ekrana ekle</div><div class="settings-row-desc">Safari → Paylaş → Ana Ekrana Ekle.</div></div><span>📲</span></div><div class="settings-row"><div><div class="settings-row-title">Bildirimler</div><div class="settings-row-desc" data-notifications-status role="status"></div></div><button type="button" class="secondary-btn" data-enable-notifications>Bildirimleri aç</button></div><div class="settings-row"><div><div class="settings-row-title">Veri yedeği</div><div class="settings-row-desc">Verilerini JSON olarak yedekleyebilirsin.</div></div><div style="display:flex;gap:6px"><button class="secondary-btn" data-backup>Yedekle</button><button class="secondary-btn" data-restore>Geri yükle</button><input id="restoreFile" type="file" accept="application/json" hidden></div></div><div class="settings-row"><div><div class="settings-row-title">Soru yedeği</div><div class="settings-row-desc" data-question-backup-status role="status">Buluttaki soru ve fotoğrafları doğrula.</div></div><button type="button" class="secondary-btn" data-check-question-backup>Yedeği kontrol et</button></div><div class="settings-row"><div><div class="settings-row-title">Tüm veriyi sıfırla</div><div class="settings-row-desc">Bu cihazdaki Hakuna Matata kayıtlarını temizler.</div></div><button class="danger-btn" data-reset>Sil</button></div></section><section class="card settings-section settings-room-card" aria-labelledby="settingsRoomHeading"><div class="card-title" id="settingsRoomHeading">🫂 Odalar</div><label class="settings-row settings-room-row" for="settingsRoomStartTogether"><span><span class="settings-row-title">Tüm odaları birlikte yönet</span><span class="settings-row-desc">Birinde başlat veya mola ver; hepsine uygula.</span></span><input id="settingsRoomStartTogether" type="checkbox" role="switch" aria-label="Tüm odaları birlikte yönet" ${state.settings?.roomsStartTogether === true ? 'checked' : ''}></label></section></div>`;
+    const backupCheck=view.querySelector('[data-check-question-backup]');
+    const backupStatus=view.querySelector('[data-question-backup-status]');
+    backupCheck.onclick=async()=>{
+      backupCheck.disabled=true;
+      backupStatus.textContent='Bulut yedeği kontrol ediliyor…';
+      try{
+        if(!window.HakunaAccount?.verifyQuestionBackup)throw Error('Hesap bağlantısı henüz hazır değil.');
+        const {count,missing,pending}=await window.HakunaAccount.verifyQuestionBackup();
+        backupStatus.textContent=missing||pending
+          ?count+' soru kaydı bulutta. '+(missing?missing+' fotoğraf bulutta eksik. ':'')+(pending?pending+' fotoğrafın son hâli yüklenmeyi bekliyor.':'')
+          :count+' soru kaydı ve fotoğrafları bulutta doğrulandı.';
+      }catch(error){backupStatus.textContent=error.message||'Bulut yedeği doğrulanamadı.';}
+      finally{backupCheck.disabled=false;}
+    };
     const roomStartTogether=view.querySelector('#settingsRoomStartTogether');
     roomStartTogether.onchange=async()=>{
       const oldValue=state.settings?.roomsStartTogether === true;
