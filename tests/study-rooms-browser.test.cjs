@@ -147,9 +147,9 @@ const server=createServer((req,res)=>{
     await wardrobe.locator('[name=neck]').selectOption('pendant');
     await wardrobe.getByRole('button',{name:'Karakter'}).click();
     assert.deepEqual(await wardrobe.locator('[name=hair] option').evaluateAll(nodes=>nodes.map(n=>n.value)),
-      ['fade','curls','braids'],'male dropdown lists only male hair');
+      ['fade','curls','braids','locs'],'male dropdown lists only male hair');
     assert.deepEqual(await wardrobe.locator('[name=hair] option').evaluateAll(nodes=>nodes.map(n=>n.textContent)),
-      ['Kısa','Kıvırcık','Örgülü'],'male hairstyle names stay simple in the actual dropdown');
+      ['Kısa','Kıvırcık','Örgülü','Rastalı'],'male hairstyle names stay simple in the actual dropdown');
     // The refreshed male options must render unique visible miniatures, not flat caps.
     fs.mkdirSync('test-results',{recursive:true});
     const maleShapes=[];
@@ -196,7 +196,7 @@ const server=createServer((req,res)=>{
     assert.equal(await wardrobe.locator('[name=hair]').inputValue(),'braids',
       'switching back restores earlier masculine hair');
     assert.deepEqual(await wardrobe.locator('[name=hair] option').evaluateAll(nodes=>nodes.map(n=>n.value)),
-      ['fade','curls','braids'],'male hair dropdown never includes female options');
+      ['fade','curls','braids','locs'],'male hair dropdown never includes female options');
     assert.equal(await preview.locator('.sr-avatar-hair-back').count(),0,
       'switching back restores the original male variant');
     await wardrobe.locator('.sr-wardrobe-gender label').filter({hasText:'Kadın'}).click();
