@@ -29,7 +29,7 @@ if(launch?.entries.length){
 }
 
 try{
-  await import('./app.js?v=room-selection-v1');
+  await import('./app.js?v=photo-backup-v1');
 }catch(error){
   showBootError(error);
 }
@@ -60,7 +60,7 @@ async function importAccountSyncOptimized(){
     return nativeSetInterval.call(window,fn,next,...args);
   };
   try{
-    await import('./account-sync-v2.js?v=backup-verified-v1');
+    await import('./account-sync-v2.js?v=photo-backup-v1');
   }finally{
     window.setInterval=nativeSetInterval;
   }

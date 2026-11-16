@@ -107,9 +107,13 @@ window.HakunaAccount=Object.freeze({
     if(user?.id!==owner||await hashState(await readLocalState())!==localHash)
       throw Error('Kayıtlar değişti. Tekrar kontrol et.');
     const questions=local.questions||[];
-    const missing=questions.filter(q=>q.hasPhoto&&!photos.has(questionPhotoName(q.id))).length;
+    const withPhotos=questions.filter(q=>q.hasPhoto);
+    const missing=withPhotos.filter(q=>!photos.has(questionPhotoName(q.id))).length;
+    const missingOriginals=withPhotos.filter(q=>!photos.has(questionPhotoName(q.id+'__original'))).length;
     const pending=await window.HakunaQuestionBooks?.pendingLocalPhotos(local,owner)||0;
-    return {count:questions.length,missing,pending};
+    if(user?.id!==owner||await hashState(await readLocalState())!==localHash)
+      throw Error('Kayıtlar değişti. Tekrar kontrol et.');
+    return {count:questions.length,missing,missingOriginals,pending};
   },
   photoUpload:async(id,blob)=>{
     if(!user?.id)throw new Error('Fotoğraf buluta yüklemek için giriş yap.');

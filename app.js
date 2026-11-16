@@ -928,10 +928,14 @@
       backupStatus.textContent='Bulut yedeği kontrol ediliyor…';
       try{
         if(!window.HakunaAccount?.verifyQuestionBackup)throw Error('Hesap bağlantısı henüz hazır değil.');
-        const {count,missing,pending}=await window.HakunaAccount.verifyQuestionBackup();
-        backupStatus.textContent=missing||pending
-          ?count+' soru kaydı bulutta. '+(missing?missing+' fotoğraf bulutta eksik. ':'')+(pending?pending+' fotoğrafın son hâli yüklenmeyi bekliyor.':'')
-          :count+' soru kaydı ve fotoğrafları bulutta doğrulandı.';
+        const {count,missing,missingOriginals,pending}=await window.HakunaAccount.verifyQuestionBackup();
+        const messages=[];
+        if(missing)messages.push(missing+' kayıtlı fotoğraf bulutta eksik.');
+        if(missingOriginals)messages.push(missingOriginals+' tam kadraj yedeği bulutta eksik.');
+        if(pending)messages.push(pending+' sorunun son fotoğrafı yüklenmeyi bekliyor.');
+        backupStatus.textContent=messages.length
+          ?[count+' soru kaydı bulutta.',...messages].join(' ')
+          :count+' soru kaydı, fotoğrafları ve tam kadraj yedekleri bulutta doğrulandı.';
       }catch(error){backupStatus.textContent=error.message||'Bulut yedeği doğrulanamadı.';}
       finally{backupCheck.disabled=false;}
     };

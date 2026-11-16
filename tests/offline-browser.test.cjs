@@ -1,8 +1,8 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http');
-const {chromium}=require('playwright');
+const {chromium,webkit}=require('playwright');
 const root=path.resolve(__dirname,'..');
 const server=http.createServer((req,res)=>{const p=decodeURIComponent(req.url.split('?')[0]);const f=path.join(root,p==='/'?'index.html':p);if(!f.startsWith(root+path.sep)){res.writeHead(403).end();return;}try{const body=fs.readFileSync(f);res.writeHead(200,{'Content-Type':f.endsWith('.js')?'text/javascript':f.endsWith('.css')?'text/css':f.endsWith('.html')?'text/html':'application/octet-stream','Cache-Control':'no-cache'});res.end(body);}catch{res.writeHead(404).end();}});
-(async()=>{await new Promise(r=>server.listen(0,'127.0.0.1',r));const browser=await chromium.launch();const context=await browser.newContext();let page,resumeContext;
+(async()=>{await new Promise(r=>server.listen(0,'127.0.0.1',r));const browser=await chromium.launch();const context=await browser.newContext();let page,resumeContext,restoreBrowser;
 try{
  await context.route('https://**/*',r=>r.abort());
  page=await context.newPage();const base='http://127.0.0.1:'+server.address().port;
@@ -114,6 +114,97 @@ try{
  });
  assert.deepEqual(uploads,{calls:['q1','q2','q1'],pending:1});
 
+ // Store both renditions, simulate a failed original upload, then restore in fresh WebKit storage.
+ const photos=await page.evaluate(async()=>{
+  const owner='new-photo-test',id='q-compression';
+  const canvas=document.createElement('canvas');
+  canvas.width=4000;canvas.height=2500;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,4000,2500);
+  const band=ctx.createImageData(4000,160);
+  let seed=42;
+  for(let i=0;i<band.data.length;i+=4){
+   seed=(Math.imul(seed,1664525)+1013904223)>>>0;
+   band.data[i]=seed>>>24;band.data[i+1]=(seed>>>16)&255;
+   band.data[i+2]=(seed>>>8)&255;band.data[i+3]=255;
+  }
+  ctx.putImageData(band,0,0);
+  ctx.fillStyle='#202020';ctx.font='44px sans-serif';
+  for(let y=250;y<2400;y+=65)ctx.fillText('Matematik • 12. soru   x² + y² = 25',240,y);
+  const input=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+  const file=new File([input],'test.png',{type:'image/png'});
+  const editor={
+   getSourceFile:()=>file,hasNewSource:()=>true,getImageOptions:()=>({left:10,right:10,top:12,bottom:12}),
+   querySelector:()=>null
+  };
+  const books=window.HakunaQuestionBooks;
+  const state={questions:[{id,hasPhoto:true}]};
+  localStorage.setItem('hakuna.cloud.localOwner',owner);
+  let failOriginal=true;
+  const calls=[],objects={};
+  window.HakunaAccount={info:()=>({id:owner}),photoUpload:async(key,blob)=>{
+   calls.push(key);
+   if(key.endsWith('__original')&&failOriginal)throw Error('Simulated original upload failure');
+   const image=await createImageBitmap(blob);
+   const data=await new Promise(resolve=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(reader.result);
+    reader.readAsDataURL(blob);
+   });
+   objects[key]={data,width:image.width,height:image.height,size:blob.size,type:blob.type};
+   image.close();
+  }};
+  await books.savePhoto({querySelector:()=>editor,dispatchEvent:()=>{}},id,false);
+  await books.syncPending(state);
+  const pending=await books.pendingLocalPhotos(state,owner);
+  failOriginal=false;
+  await books.syncPending(state);
+  return {calls,objects,pending,remaining:await books.pendingLocalPhotos(state,owner),sourceSize:input.size};
+ });
+ assert.deepEqual(photos.calls,['q-compression','q-compression__original','q-compression__original']);
+ assert.equal(photos.pending,1);
+ assert.equal(photos.remaining,0);
+ const crop=photos.objects['q-compression'],original=photos.objects['q-compression__original'];
+ assert.equal(crop.type,'image/jpeg');
+ assert.equal(original.type,'image/jpeg');
+ assert.equal(original.width,3200);
+ assert.equal(original.height,2000);
+ assert(crop.width<original.width&&crop.height<original.height);
+ assert(crop.size+original.size<1.5*1024*1024);
+ assert(original.size<photos.sourceSize);
+
+ restoreBrowser=await webkit.launch();
+ const restoreContext=await restoreBrowser.newContext({serviceWorkers:'block'});
+ await restoreContext.route('https://**/*',r=>r.abort());
+ await restoreContext.route('**/account-sync-v2.js?*',r=>r.fulfill({body:'',contentType:'text/javascript'}));
+ const restored=await restoreContext.newPage();
+ await restored.goto(base);
+ await restored.waitForFunction(()=>!!window.HakunaQuestionBooks);
+ await restored.evaluate(({crop,original})=>{
+  window.HakunaAccount={
+   info:()=>({id:'new-photo-test'}),
+   photoDownload:async key=>(await fetch(key.endsWith('__original')?original.data:crop.data)).blob()
+  };
+  const form=document.createElement('form');
+  form.id='restore-photo-test';
+  document.body.append(form);
+  window.HakunaQuestionBooks.mountQuestionForm(form,{id:'q-compression',hasPhoto:true});
+ },{crop,original});
+ await restored.waitForFunction(width=>document.querySelector('#restore-photo-test [data-book-existing]')?.naturalWidth===width,crop.width);
+ await restored.locator('#restore-photo-test [data-book-restore-original]').click();
+ await restored.waitForFunction(()=>document.querySelector('#restore-photo-test [data-crop-ready="1"]'));
+ const recrop=await restored.evaluate(async()=>{
+  const form=document.querySelector('#restore-photo-test');
+  const editor=form.querySelector('[data-book-image-editor]');
+  const recovered=editor.getSourceFile();
+  const decoded=await createImageBitmap(recovered);
+  const result={newSource:editor.hasNewSource(),width:decoded.width,height:decoded.height};
+  decoded.close();
+  await window.HakunaQuestionBooks.savePhoto(form,'q-compression',true);
+  return result;
+ });
+ assert.deepEqual(recrop,{newSource:false,width:3200,height:2000});
+
  // Isolate startup from the real worker's cached auth dependencies.
  resumeContext=await browser.newContext({serviceWorkers:'block'});
  await resumeContext.route('https://**/*',r=>r.abort());
@@ -178,5 +269,5 @@ try{
  assert.deepEqual(await page.evaluate(()=>window.__launchTitles),['Bugün']);
 
  console.log('PASS real service worker installation, cold offline launch, unversioned core fallback, local photo, plan, task persistence, online-only tabs, account-scoped snapshots and reconnect');
-}catch(e){fs.mkdirSync('test-results',{recursive:true});if(page&&!page.isClosed()){console.log('OFFLINE FAILURE VIEW',await page.locator('body').innerText());await page.screenshot({path:'test-results/offline-failure.png',fullPage:true});}throw e;}finally{await resumeContext?.close();await context.close();await browser.close();await new Promise(r=>server.close(r));}
+}catch(e){fs.mkdirSync('test-results',{recursive:true});if(page&&!page.isClosed()){console.log('OFFLINE FAILURE VIEW',await page.locator('body').innerText());await page.screenshot({path:'test-results/offline-failure.png',fullPage:true});}throw e;}finally{await restoreBrowser?.close();await resumeContext?.close();await context.close();await browser.close();await new Promise(r=>server.close(r));}
 })().catch(e=>{console.error(e);process.exitCode=1});

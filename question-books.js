@@ -19,7 +19,7 @@
     req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(STORE))req.result.createObjectStore(STORE);};
     req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
   });}
-  async function store(id,blob){
+  async function photoRecord(blob){
     // WebKit (including iPad installed apps) can abort IndexedDB transactions
     // containing File/Blob values with a null transaction.error. Store
     // cloneable ArrayBuffers instead, while preserving legacy Blob reads.
@@ -30,15 +30,21 @@
         reader.onerror=()=>reject(reader.error||new Error('Fotoğraf okunamadı.'));
         reader.readAsArrayBuffer(blob);
       });
-    const record={v:2,bytes,type:blob.type||'image/jpeg'};
+    return {v:2,bytes,type:blob.type||'image/jpeg'};
+  }
+  async function storePhotos(entries){
+    const records=[];
+    for(const [id,blob] of entries)records.push([id,await photoRecord(blob)]);
     const db=await openDb();
     try{await new Promise((resolve,reject)=>{
-      const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put(record,String(id));
+      const tx=db.transaction(STORE,'readwrite'),photos=tx.objectStore(STORE);
+      for(const [id,record] of records)photos.put(record,String(id));
       tx.oncomplete=resolve;
       tx.onerror=()=>reject(tx.error||new Error('Fotoğraf cihazın veritabanına yazılamadı.'));
       tx.onabort=()=>reject(tx.error||new Error('Fotoğraf kaydı iPad tarafından durduruldu.'));
     });}finally{db.close();}
   }
+  const store=(id,blob)=>storePhotos([[id,blob]]);
   async function lookup(id){
     const db=await openDb();
     try{return await new Promise((resolve,reject)=>{
@@ -125,7 +131,10 @@
   async function pendingLocalPhotos(state,uid){
     let count=0;
     for(const q of state?.questions||[]){
-      if(q.hasPhoto&&localStorage.getItem(uploadedKey(uid,q.id))!=='1'&&await lookup(q.id).catch(()=>null))count++;
+      if(!q?.id||!q.hasPhoto)continue;
+      const cropPending=localStorage.getItem(uploadedKey(uid,q.id))!=='1'&&await lookup(q.id).catch(()=>null);
+      const originalPending=localStorage.getItem(uploadedKey(uid,q.id+'__original'))!=='1'&&await lookup(q.id+'.original').catch(()=>null);
+      if(cropPending||originalPending)count++;
     }
     return count;
   }
@@ -151,8 +160,38 @@
     }finally{URL.revokeObjectURL(url);}
   }
 
-  async function processPhoto(file,options){
-    const img=await imageFromFile(file);
+  const CROP_TARGET_BYTES=450*1024;
+  const ORIGINAL_TARGET_BYTES=1024*1024;
+
+  async function encodePhoto(canvas,target,qualities){
+    let smallest;
+    for(const quality of qualities){
+      const blob=await new Promise((resolve,reject)=>{
+        canvas.toBlob(result=>result?resolve(result):reject(new Error('Fotoğraf hazırlanamadı.')),'image/jpeg',quality);
+      });
+      if(blob.size<=target)return blob;
+      if(!smallest||blob.size<smallest.size)smallest=blob;
+    }
+    return smallest;
+  }
+
+  async function prepareOriginal(file,img){
+    if(file.type==='image/jpeg'&&file.size<=ORIGINAL_TARGET_BYTES)return file;
+    const scale=Math.min(1,3200/Math.max(img.width,img.height));
+    const canvas=document.createElement('canvas');
+    canvas.width=Math.max(1,Math.round(img.width*scale));
+    canvas.height=Math.max(1,Math.round(img.height*scale));
+    const ctx=canvas.getContext('2d',{alpha:false});
+    try{
+      ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.drawImage(img,0,0,canvas.width,canvas.height);
+      const encoded=await encodePhoto(canvas,ORIGINAL_TARGET_BYTES,[.9,.86,.82]);
+      return file.type==='image/jpeg'&&file.size<=encoded.size?file:encoded;
+    }finally{canvas.width=canvas.height=1;}
+  }
+
+  async function processPhoto(file,options,img,target=Infinity){
+    img??=await imageFromFile(file);
     const rotation=Number(options.rotate||0);
     const dims=rotation%180===0?[img.width,img.height]:[img.height,img.width];
     const scale=Math.min(1,2300/Math.max(...dims));
@@ -208,8 +247,9 @@
       }
       o.putImageData(frame,0,0);
     }
-    const blob=await new Promise((resolve,reject)=>out.toBlob(b=>b?resolve(b):reject(new Error('Fotoğraf hazırlanamadı.')),'image/jpeg',.9));
-    return blob;
+    canvas.width=canvas.height=1;
+    try{return await encodePhoto(out,target,[.9,.86,.82]);}
+    finally{out.width=out.height=1;}
   }
 
   function mountQuestionForm(form,editing=null){
@@ -239,7 +279,7 @@
     // One visible canvas is the source of truth for the crop preview.
     // No offscreen data URLs, CSS object-fit, or async image preview races.
     let rotated=0,url=null,sourceImage=null,sourceFile=null,selection=null;
-    let dragStart=null,dragMode='new',initialSelection=null,originalFromBackup=false;
+    let dragStart=null,dragMode='new',initialSelection=null,sourceKind='new';
     let lastWidth=0,paintScheduled=false,closed=false;
     const canvas=wrap.querySelector('[data-book-canvas]');
     const stage=wrap.querySelector('.book-crop-stage');
@@ -369,10 +409,10 @@
       if(stage.hasPointerCapture?.(e.pointerId))stage.releasePointerCapture(e.pointerId);
       renderSelection();
     });
-    const loadSelectedFile=(file,fromOriginalBackup=false)=>{
+    const loadSelectedFile=(file,kind='new')=>{
       if(url){URL.revokeObjectURL(url);url=null;}
       sourceFile=file||null;
-      originalFromBackup=!!fromOriginalBackup;
+      sourceKind=kind;
       sourceImage=null;selection=null;dragStart=null;rotated=0;
       stage.dataset.cropReady='0';
       controls.hidden=true;
@@ -401,7 +441,7 @@
       const remove=wrap.querySelector('[data-book-remove]');
       if(remove)remove.checked=false;
     };
-    input.addEventListener('change',()=>loadSelectedFile(input.files?.[0]||null,false));
+    input.addEventListener('change',()=>loadSelectedFile(input.files?.[0]||null));
     wrap.querySelector('[data-book-rotate]').addEventListener('click',()=>{
       if(!sourceImage)return;
       rotated=(rotated+90)%360;
@@ -413,7 +453,7 @@
       renderSelection();
     });
     wrap.getSourceFile=()=>sourceFile;
-    wrap.isUsingOriginalBackup=()=>originalFromBackup;
+    wrap.hasNewSource=()=>sourceKind==='new';
     wrap.getImageOptions=()=>({
       rotate:rotated,trim:false,grayscale:wrap.querySelector('[data-book-gray]').checked,
       manualCrop:!!selection,
@@ -424,10 +464,16 @@
     });
     wrap.querySelector('[data-book-restore-original]')?.addEventListener('click',async()=>{
       let original=await lookup(editing.id+'.original').catch(()=>null);
-      if(!original&&accountId()&&account()?.photoDownload){
+      const uid=accountId(),revision=photoEdits.get(editing.id);
+      if(!original&&uid&&account()?.photoDownload){
         try{
           original=await account().photoDownload(editing.id+'__original');
-          if(original)await store(editing.id+'.original',original).catch(()=>{});
+          if(accountId()!==uid||photoEdits.get(editing.id)!==revision||!form.isConnected)return;
+          if(original){
+            await store(editing.id+'.original',original).catch(()=>{});
+            if(accountId()===uid&&photoEdits.get(editing.id)===revision)
+              localStorage.setItem(uploadedKey(uid,editing.id+'__original'),'1');
+          }
         }catch{ /* Older questions may have no cloud original. */ }
       }
       let blob=original;
@@ -442,7 +488,8 @@
       try{
         const transfer=new DataTransfer();transfer.items.add(file);input.files=transfer.files;
       }catch{input.value='';}
-      loadSelectedFile(file,!!original);
+      if(!form.isConnected||accountId()!==uid||photoEdits.get(editing.id)!==revision)return;
+      loadSelectedFile(file,original?'original':'crop');
       notify(original?'Orijinal fotoğraf açıldı. Köşelerinden kırpıp kaydet.':
         'Orijinal yedek bulunamadı; kayıtlı fotoğrafı yeniden kırpabilirsin. Önceden kesilmiş alan geri getirilemez.');
     });
@@ -483,14 +530,18 @@
     const file=editor.getSourceFile?.()||editor.querySelector('input[type=file]')?.files?.[0];
     const remove=!!editor.querySelector('[data-book-remove]')?.checked;
     if(file){
-      const blob=await processPhoto(file,editor.getImageOptions());
+      const options=editor.getImageOptions();
+      const newSource=editor.hasNewSource();
+      const img=await imageFromFile(file);
+      const blob=await processPhoto(file,options,img,CROP_TARGET_BYTES);
+      const entries=[[id,blob]];
+      if(newSource)entries.push([id+'.original',await prepareOriginal(file,img)]);
+      await storePhotos(entries);
       photoEdits.set(id,(photoEdits.get(id)||0)+1);
-      if(!editor.isUsingOriginalBackup?.())await store(id+'.original',file).catch(e=>console.warn('Orijinal fotoğraf yedeklenemedi',e));
-      await store(id,blob);
       const uid=accountId();
       if(uid){
         localStorage.removeItem(uploadedKey(uid,id));
-        if(!editor.isUsingOriginalBackup?.())localStorage.removeItem(uploadedKey(uid,id+'__original'));
+        if(newSource)localStorage.removeItem(uploadedKey(uid,id+'__original'));
       }
       form.dispatchEvent(new Event('book-cleanup'));
       return true;
