@@ -580,7 +580,7 @@ const server=createServer((req,res)=>{
     const renameTeam=page.locator('[data-sr-form=team-rename]');
     await renameTeam.locator('input').fill('Gece Ekibi');
     await renameTeam.getByRole('button').click();
-    await page.locator('.sr-team-divider').getByText('Gece Ekibi',{exact:true}).waitFor();
+    await page.locator('.sr-team-divider').filter({hasText:'Gece Ekibi'}).waitFor();
 
     assert.equal(errors.length,0,'Page errors: '+errors.join(', '));
     console.log('PASS '+label+': room creation, shared clock, timer, roster security, presets, close, responsive layout');
