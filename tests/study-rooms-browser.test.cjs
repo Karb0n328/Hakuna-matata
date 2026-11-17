@@ -560,22 +560,22 @@ const server=createServer((req,res)=>{
     const settings=page.locator('[data-sr-owner-actions]');
     await settings.locator('.sr-room-settings>summary').click();
     assert.equal(await settings.locator('[data-sr-form=rename]').isVisible(),true);
-    assert.equal(await settings.locator('.sr-team-settings').count(),2);
+    assert.equal(await page.locator('[data-sr-team]').count(),2);
     const add=page.locator('[data-sr-form=team-add]');
     await add.locator('input').fill('2');
     await add.getByRole('button').click();
-    const team3=settings.locator('[data-settings-section="team-3"]');
-    await team3.waitFor();
-    assert.match(await team3.locator('summary').textContent(),/0\/2/);
-    const team1=settings.locator('[data-settings-section="team-1"]');
-    await team1.locator('summary').click();
-    const limit=team1.locator('[data-sr-form=team-limit]');
+    const limits=settings.locator('[data-settings-section="limits"]');
+    await limits.locator('summary').click();
+    const newLimit=limits.locator('[data-sr-form=team-limit][data-team="3"]');
+    await newLimit.waitFor();
+    assert.equal(await newLimit.locator('input').inputValue(),'2');
+    const limit=limits.locator('[data-sr-form=team-limit][data-team="1"]');
     await limit.locator('input').fill('1');
     await limit.getByRole('button').click();
-    await page.waitForFunction(()=>document.querySelector('[data-settings-section="team-1"] summary')?.textContent.includes('1/1'));
+    await page.waitForFunction(()=>document.querySelector('[data-sr-form=team-limit][data-team="1"] strong')?.textContent.includes('1/1'));
 
     // A member can choose team 3 before that team has a captain.
-    await page.evaluate(()=>{window.__state.other=true;window.__uid="user-2";window.dispatchEvent(new Event('hakuna-account-changed'));});
+    await page.evaluate(()=>{window.__state.other=true;window.__state.away=true;window.__uid="user-2";window.dispatchEvent(new Event('hakuna-account-changed'));});
     await page.locator('[data-sr-action=open]').filter({hasText:'Çevrimdışı hava'}).click();
     const choose=page.locator('[data-sr-form=team-choose]');
     await choose.waitFor();
@@ -584,10 +584,10 @@ const server=createServer((req,res)=>{
     assert.equal(await settings.isHidden(),true);
     await choose.locator('select').selectOption('3');
     await choose.getByRole('button').click();
-    await page.locator('.sr-team-current').getByText('Takım 3',{exact:true}).waitFor();
+    await page.locator('[data-sr-team="3"] [data-sr-user="user-2"]').waitFor();
     await page.locator('[data-sr-action=back]').click();
     await page.locator('[data-sr-action=open]').filter({hasText:'Çevrimdışı hava'}).click();
-    await page.locator('.sr-team-current').getByText('Takım 3',{exact:true}).waitFor();
+    await page.locator('[data-sr-team="3"] [data-sr-user="user-2"]').waitFor();
     assert.equal(await choose.count(),0);
     assert.equal(await page.locator('[data-sr-form=team-rename]').count(),0);
 
@@ -595,11 +595,12 @@ const server=createServer((req,res)=>{
     await page.evaluate(()=>{window.__uid="user-1";window.dispatchEvent(new Event('hakuna-account-changed'));});
     await page.locator('[data-sr-action=open]').filter({hasText:'Çevrimdışı hava'}).click();
     await settings.locator('.sr-room-settings>summary').click();
-    await team3.locator('summary').click();
+    await settings.getByText('Kaptan ata',{exact:true}).click();
     const assign=page.locator('[data-sr-form=team-captain][data-team="3"]');
     await assign.locator('select').selectOption('user-2');
     await assign.getByRole('button').click();
-    await page.locator('[data-sr-user="user-2"]').getByText('Kaptan',{exact:true}).waitFor();
+    await page.waitForFunction(()=>window.__state.room.teams.find(t=>t.number===3).captain_id==='user-2');
+    assert.equal(await page.locator('[data-sr-roster]').getByText('Kaptan',{exact:true}).count(),0);
     await page.evaluate(()=>{window.__uid="user-2";window.dispatchEvent(new Event('hakuna-account-changed'));});
     await page.locator('[data-sr-action=open]').filter({hasText:'Çevrimdışı hava'}).click();
     await settings.locator('.sr-room-settings>summary').click();
@@ -607,7 +608,12 @@ const server=createServer((req,res)=>{
     const renameTeam=page.locator('[data-sr-form=team-rename]');
     await renameTeam.locator('input').fill('Gece Ekibi');
     await renameTeam.getByRole('button').click();
-    await page.locator('.sr-team-divider').filter({hasText:'Gece Ekibi'}).waitFor();
+    const lead=page.locator('[data-sr-team]').first();
+    await lead.getByText('Gece Ekibi',{exact:true}).waitFor();
+    assert.equal(await lead.getAttribute('data-sr-team'),'3');
+    assert.match(await lead.locator('[data-sr-team-total]').textContent(),/^20 dk/);
+    assert.equal(await page.locator('[data-sr-team="2"] [data-sr-team-total]').textContent(),'0 dk 00 sn');
+    assert.equal(await page.locator('[data-sr-team="3"] [data-sr-user="user-1"]').count(),0);
 
     assert.equal(errors.length,0,'Page errors: '+errors.join(', '));
     console.log('PASS '+label+': room creation, shared clock, timer, roster security, presets, close, responsive layout');

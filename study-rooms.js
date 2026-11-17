@@ -256,7 +256,7 @@
       +'<div data-sr-own-status class="sr-own-status"></div>'
       +'<div data-sr-personal-actions class="sr-action-area"></div>'
       +'<div data-sr-owner-actions class="sr-owner-area"></div></section>'
-      +'<section class="sr-friends"><div class="sr-section-head"><h3>Masalar <span data-sr-member-count></span></h3></div>'
+      +'<section class="sr-friends"><div class="sr-section-head"><h3><span data-sr-desk-label>Masalar</span> <span data-sr-member-count></span></h3></div>'
       +'<section class="sr-teams" data-sr-teams hidden aria-label="Takımlar"></section>'
       +'<div class="sr-roster" data-sr-roster><div class="sr-loading">Yükleniyor…</div></div></section></div>'
       +'<div class="sr-room-footer" data-sr-footer></div>'+chairGuide()
@@ -471,13 +471,11 @@
 
   function renderTeams(teams,ownTeam,canChoose){
     const panel=host.querySelector('[data-sr-teams]');
-    panel.hidden=!teams.length||(!ownTeam&&!canChoose);
+    panel.hidden=!teams.length||!!ownTeam||!canChoose;
     if(panel.hidden)return;
     const options=teams.map(team=>'<option value="'+team.number+'" '+(teamFull(team)?'disabled':'')+'>'
       +E(team.name)+' · '+teamSize(team)+(teamFull(team)?' · Dolu':'')+'</option>').join('');
-    const html=ownTeam
-      ?'<p class="sr-team-current">Takımın <strong>'+E(ownTeam.name)+'</strong></p>'
-      :'<form data-sr-form="team-choose"><label>Takımını seç<select name="team" required>'
+    const html='<form data-sr-form="team-choose"><label>Takımını seç<select name="team" required>'
         +'<option value="" disabled selected>Takım seç</option>'+options+'</select></label>'
         +'<button type="submit" class="secondary-btn" '+(teams.every(teamFull)?'disabled':'')+'>Takıma katıl</button></form>'
         +'<small class="sr-muted">Takım seçimin kalıcıdır.</small>';
@@ -506,20 +504,23 @@
     if(isOwner&&teams.length){
       if(teams.length<30)html+='<form data-sr-form="team-add" class="sr-settings">'
         +capacityField(null)+'<button type="submit" class="secondary-btn">Takım ekle</button></form>';
-      html+=teams.map(team=>{
+      const captainForms=teams.map(team=>{
         const choices=members.filter(member=>member.team_number===team.number||(!member.team_number&&!teamFull(team)));
+        if(!choices.length)return '';
         const captainOptions=choices.map(member=>'<option value="'+E(member.user_id)+'" '
           +(member.user_id===team.captain_id?'selected':'')+'>'+E(member.username)+'</option>').join('');
-        const captain=choices.length?'<form data-sr-form="team-captain" class="sr-settings" data-team="'+team.number+'">'
-          +'<label>Takım kaptanı<select name="captain" required><option value="" disabled '
-          +(!team.captain_id?'selected':'')+'>Kaptan seç</option>'+captainOptions+'</select></label>'
-          +'<button type="submit" class="secondary-btn">Ata</button></form>':'';
-        return '<details class="sr-team-settings" data-settings-section="team-'+team.number+'">'
-          +'<summary>'+E(team.name)+' <small>'+teamSize(team)+'</small></summary>'
-          +'<form data-sr-form="team-limit" class="sr-settings" data-team="'+team.number+'">'
-          +capacityField(team.member_limit)+'<button type="submit" class="secondary-btn">Sınırı kaydet</button></form>'
-          +captain+'</details>';
+        return '<form data-sr-form="team-captain" class="sr-settings" data-team="'+team.number+'">'
+          +'<label>'+E(team.name)+'<select name="captain" required><option value="" disabled '
+          +(!team.captain_id?'selected':'')+'>Üye seç</option>'+captainOptions+'</select></label>'
+          +'<button type="submit" class="secondary-btn">Ata</button></form>';
       }).join('');
+      html+='<details class="sr-team-settings" data-settings-section="captains"><summary>Kaptan ata</summary>'
+        +captainForms+'</details>';
+      html+='<details class="sr-team-settings" data-settings-section="limits"><summary>Takım sınırları</summary>'
+        +teams.map(team=>'<form data-sr-form="team-limit" class="sr-settings" data-team="'+team.number+'">'
+          +'<strong class="sr-team-limit-name">'+E(team.name)+' <small>'+teamSize(team)+'</small></strong>'
+          +capacityField(team.member_limit)+'<button type="submit" class="secondary-btn">Sınırı kaydet</button></form>'
+        ).join('')+'</details>';
     }
     return html+'</div></details>';
   }
@@ -541,7 +542,8 @@
       +' · '+members.length+' kişi · '+r.focus_minutes+' dk / '+r.break_minutes+' dk'
       +' · '+duration(total)+' toplam';
     host.querySelector('[data-sr-invite]').textContent=r.invite_code.length===8?r.invite_code.slice(0,4)+'-'+r.invite_code.slice(4):r.invite_code;
-    host.querySelector('[data-sr-member-count]').textContent='('+members.length+'/30)';
+    host.querySelector('[data-sr-desk-label]').textContent=teams.length?'Takım masaları':'Masalar';
+    host.querySelector('[data-sr-member-count]').textContent=teams.length?'':'('+members.length+'/30)';
     const personalHtml=!r.is_active
       ?'<div class="sr-muted">Bu oda kapatıldı. Önceki sürelerin kayıtlı.</div>'
       :working
@@ -565,7 +567,7 @@
     // Rank by the same room total shown on each desk. Ties keep join order.
     const roster=members.slice().sort((a,b)=>liveSeconds(b,now)-liveSeconds(a,now));
     // Avoid re-creating animated characters on every 12-second sync.
-    const rosterKey=JSON.stringify({mode:r.mode,phase:r.phase,teams,
+    const rosterKey=JSON.stringify({mode:r.mode,phase:r.phase,teams:teams.map(team=>[team.number,team.name]),
       friends:roster.map(m=>[m.user_id,m.username,
         memberWorking(m,now),isAtDesk(m,now),m.look,m.team_number])});
     if(rosterKey!==lastRosterKey){
@@ -576,19 +578,24 @@
       const label=!inClass?'Uzakta':atWork?'Çalışıyor':'Molada';
       return '<article data-sr-user="'+E(m.user_id)+'" class="sr-person '+(atWork?'sr-person-working ':'')+(inClass?'':'sr-person-away')+'">'
         +deskMarkup(m,atWork,inClass,chairLevel(liveSeconds(m,now)))
-        +'<div class="sr-person-info"><strong>'+E(m.username)+(m.user_id===id()?' <span class="sr-me">sen</span>':'')
-        +(teams.some(team=>team.captain_id===m.user_id)?' <span class="sr-me">Kaptan</span>':'')+'</strong>'
+        +'<div class="sr-person-info"><strong>'+E(m.username)+(m.user_id===id()?' <span class="sr-me">sen</span>':'')+'</strong>'
         +'<small>'+label+'</small>'
         +'<span data-sr-member-time="'+E(m.user_id)+'">'+duration(liveSeconds(m,now))+'</span></div></article>';
       };
-      let desks=roster.map(desk).join('');
+      const roomDesks=host.querySelector('[data-sr-roster]');
+      roomDesks.classList.toggle('sr-roster-teams',!!teams.length);
       if(teams.length){
-        const group=(name,teamMembers)=>teamMembers.length
-          ?'<h4 class="sr-team-divider">'+E(name)+'</h4>'+teamMembers.map(desk).join(''):'';
-        desks=teams.map(team=>group(team.name,roster.filter(m=>m.team_number===team.number))).join('')
-          +group('Takım seçmeyenler',roster.filter(m=>!m.team_number));
-      }
-      host.querySelector('[data-sr-roster]').innerHTML=desks;
+        const teamCard=(name,people,number)=>'<section class="sr-team-card"'
+          +(number?' data-sr-team="'+number+'"':'')+'>'
+          +'<header><h4>'+E(name)+'</h4>'
+          +(number?'<strong data-sr-team-total aria-label="Toplam süre"></strong>':'')+'</header>'
+          +(people.length?'<div class="sr-team-desks">'+people.map(desk).join('')+'</div>':'')
+          +'</section>';
+        const unassigned=roster.filter(member=>!member.team_number);
+        roomDesks.innerHTML=teams.map(team=>teamCard(team.name,
+          roster.filter(member=>member.team_number===team.number),team.number)).join('')
+          +(unassigned.length?teamCard('Takım seçmeyenler',unassigned):'');
+      }else roomDesks.innerHTML=roster.map(desk).join('');
     }
     host.querySelector('[data-sr-footer]').innerHTML=r.is_active
       ?owner?'<button type="button" class="sr-link-danger" data-sr-action="close">Odayı sil</button>'
@@ -598,6 +605,25 @@
     window.HakunaRoomExperience?.update(snapshot,now);
     tick();
   }
+  function updateTeamStanding(now){
+    if(!snapshot.teams?.length)return;
+    const totals=new Map(snapshot.teams.map(team=>[team.number,seconds(team.absent_seconds)]));
+    for(const member of snapshot.members||[]){
+      if(totals.has(member.team_number))
+        totals.set(member.team_number,totals.get(member.team_number)+liveSeconds(member,now));
+    }
+    const ordered=[...totals].sort(([a,as],[b,bs])=>bs-as||a-b);
+    const desks=host.querySelector('[data-sr-roster]');
+    ordered.forEach(([number,total],position)=>{
+      const card=desks.querySelector('[data-sr-team="'+number+'"]');
+      if(!card)return;
+      const label=card.querySelector('[data-sr-team-total]');
+      const formatted=duration(total);
+      if(label.textContent!==formatted)label.textContent=formatted;
+      if(desks.children[position]!==card)desks.insertBefore(card,desks.children[position]||null);
+    });
+  }
+
   function tick(){
     if(!snapshot||!active()||!roomId)return;
     const r=snapshot.room,now=Date.now()+skewMs;
@@ -626,6 +652,7 @@
         }
       }
     }
+    updateTeamStanding(now);
     window.HakunaRoomExperience?.update(snapshot,now);
     host.classList.remove('sr-timer-ended');
   }
