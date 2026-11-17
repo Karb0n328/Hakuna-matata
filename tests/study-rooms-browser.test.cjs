@@ -294,8 +294,7 @@ const server=createServer((req,res)=>{
     await page.locator('.sr-invite summary').click();
     await page.locator('[data-sr-action=copy-code]').click();
     assert.equal(await page.evaluate(()=>window.__copied),'K7MP4X9R');
-    await page.locator('[data-sr-action=copy]').click();
-    assert.equal(new URL(await page.evaluate(()=>window.__copied)).searchParams.get('room'),'K7MP4X9R');
+    assert.equal(await page.locator('.sr-invite button').count(),1,'invitations are shared by code only');
     await page.locator('.sr-invite summary').click();
 
     assert.equal(await page.locator('.ataturk-corner').isVisible(),false,'Atatürk Köşesi must not appear in immersive room');

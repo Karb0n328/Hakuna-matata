@@ -14,7 +14,7 @@ function loadRoomUi(){
     import('./room-weather.js?v=2'),
     import('./room-experience.js?v=8-team-rooms'),
     import('./room-wardrobe.js?v=24-reference-locs'),
-    import('./study-rooms.js?v=47-team-layout')
+    import('./study-rooms.js?v=48-code-invites')
   ]);
   return roomUi;
 }

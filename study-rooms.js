@@ -157,7 +157,7 @@
     n.classList.toggle('sr-error',!!isError);
     n.hidden=!message;
   }
-  async function copy(value,label='Bağlantı'){
+  async function copyInviteCode(value){
     try{
       if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(value);
       else{
@@ -167,13 +167,8 @@
         if(!document.execCommand('copy'))throw new Error('Kopyalanamadı');
         input.remove();
       }
-      notice(label+' kopyalandı ✓');
+      notice('Kod kopyalandı ✓');
     }catch{notice('Kopyalanamadı. Davet kodunu elle paylaşabilirsin.',true);}
-  }
-  function inviteUrl(code){
-    const url=new URL(location.pathname,location.origin);
-    url.searchParams.set('room',code);
-    return url.toString();
   }
   function lobbyMarkup(){
     return '<div class="sr-shell sr-lobby">'
@@ -249,7 +244,7 @@
       +'<div class="sr-room-sub" data-sr-room-meta></div></div>'
       +'<div class="sr-space-tools"><span class="sx-weather" data-sx-weather>Elazığ · Hava yükleniyor</span>'
       +'</div>'
-      +'<details class="sr-invite"><summary>+ Davet</summary><span data-sr-invite>••••••••</span><button type="button" data-sr-action="copy-code" class="secondary-btn">Kodu kopyala</button><button type="button" data-sr-action="copy" class="secondary-btn">Bağlantıyı kopyala</button></details></header>'
+      +'<details class="sr-invite"><summary>+ Davet</summary><span data-sr-invite>••••••••</span><button type="button" data-sr-action="copy-code" class="secondary-btn">Kodu kopyala</button></details></header>'
       +'<div class="sr-room-grid"><section class="sr-session-card">'
       +'<div class="sr-phase-label" data-sr-phase>Hazırlanıyor</div>'
       +'<div class="sr-focus-ring" data-sr-ring><div class="sr-ring-core"><span class="sr-ring-icon" data-sr-ring-icon>☾</span>'
@@ -770,7 +765,7 @@
     if(action==='close-room-settings'){button.closest('dialog').close();return;}
     if(busy||changingStudy)return;
     if(action==='open-room-settings'){openRoomSettings();return;}
-    if(bootOwner&&!accountId()&&!['back','create-next','open','copy','copy-code'].includes(action))return;
+    if(bootOwner&&!accountId()&&!['back','create-next','open','copy-code'].includes(action))return;
     if(action==='entry-create'||action==='entry-join'){showEntry(action.slice(6));return;}
     if(action==='wardrobe'){void openWardrobe(button);return;}
     if(action==='back'){showLobby();return;}
@@ -789,8 +784,7 @@
       finally{busy=false;if(button.isConnected)button.disabled=false;}return;
     }
     if(action==='open'){openRoom(button.dataset.id);return;}
-    if(action==='copy-code'){if(snapshot)void copy(snapshot.room.invite_code,'Kod');return;}
-    if(action==='copy'){if(snapshot)void copy(inviteUrl(snapshot.room.invite_code));return;}
+    if(action==='copy-code'){if(snapshot)void copyInviteCode(snapshot.room.invite_code);return;}
     if(!roomId)return;
     if(action==='start'){void startWithCountdown(button);return;}
     let name=null,args={p_room_id:roomId};
