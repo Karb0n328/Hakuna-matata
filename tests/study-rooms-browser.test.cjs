@@ -580,7 +580,7 @@ const server=createServer((req,res)=>{
     const choose=page.locator('[data-sr-form=team-choose]');
     await choose.waitFor();
     assert.equal(await choose.locator('option:not([disabled])').count(),2);
-    assert.equal(await choose.locator('option[value="1"]').isDisabled(),true);
+    assert.equal(await choose.locator('option[value="1"]:disabled').count(),1);
     assert.equal(await settings.isHidden(),true);
     await choose.locator('select').selectOption('3');
     await choose.getByRole('button').click();
