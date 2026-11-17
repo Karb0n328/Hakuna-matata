@@ -14,7 +14,7 @@ function loadRoomUi(){
     import('./room-weather.js?v=2'),
     import('./room-experience.js?v=7-bloom'),
     import('./room-wardrobe.js?v=24-reference-locs'),
-    import('./study-rooms.js?v=42-chair-motif')
+    import('./study-rooms.js?v=43-teams')
   ]);
   return roomUi;
 }
@@ -60,7 +60,7 @@ async function importAccountSyncOptimized(){
     return nativeSetInterval.call(window,fn,next,...args);
   };
   try{
-    await import('./account-sync-v2.js?v=photo-backup-v1');
+    await import('./account-sync-v2.js?v=room-teams-v1');
   }finally{
     window.setInterval=nativeSetInterval;
   }

@@ -151,11 +151,12 @@ window.HakunaAccount=Object.freeze({
     const allowed=['study_room_create','study_room_join','study_room_leave','study_room_settings',
       'study_room_set_phase','study_room_start','study_room_stop','study_room_close',
       'study_room_touch','study_room_create_v2','study_room_configure','study_room_rename',
-      'study_room_overview','study_room_snapshot'];
+      'study_room_overview','study_room_snapshot','study_room_create_teams','study_room_team_update'];
     if(!allowed.includes(name))throw new Error('Geçersiz çalışma odası işlemi.');
     if(!user?.id)throw new Error('Çalışma odaları için Hakuna hesabına giriş yap.');
     if(!navigator.onLine)throw new Error('Ortak çalışma odaları için internet bağlantısı gerekiyor.');
-    const {data,error}=await supabase.rpc(name,args);
+    const endpoint=name==='study_room_snapshot'?'study_room_snapshot_v2':name;
+    const {data,error}=await supabase.rpc(endpoint,args);
     if(error)throw error;
     if(name==='study_room_start')void supabase.functions.invoke('room-notifications',{body:{action:'started',roomId:args.p_room_id}}).catch(()=>{});
     if(['study_room_stop','study_room_leave','study_room_close'].includes(name))void window.HakunaRoomNotifications?.close(args.p_room_id);

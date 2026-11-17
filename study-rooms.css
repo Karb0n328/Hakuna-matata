@@ -593,3 +593,29 @@ html[data-hakuna-palette="republic"] .sr-desk-scene{filter:hue-rotate(323deg) sa
 }
 .sr-avatar[data-gender="female"][data-hair="buns"] .sr-avatar-hair-back::before{left:-2px}
 .sr-avatar[data-gender="female"][data-hair="buns"] .sr-avatar-hair-back::after{right:-2px}
+
+/* A room can have teams without changing the study controls or desk layout. */
+.sr-lobby-form select,.sr-teams select,.sr-teams input{
+  width:100%;min-width:0;padding:10px 11px;border:1px solid var(--line);
+  border-radius:12px;background:var(--card);color:var(--ink);font-size:16px
+}
+.sr-lobby-form .sr-room-type{flex:0 1 150px}
+.sr-teams{min-width:0;display:grid;gap:8px}
+.sr-teams[hidden]{display:none}
+.sr-team-current{margin:0;color:var(--muted);font-size:13px;overflow-wrap:anywhere}
+.sr-team-current strong{margin-inline-start:4px;color:var(--ink)}
+.sr-teams details{border-top:1px solid var(--line);padding-top:8px}
+.sr-teams summary{cursor:pointer;font-size:13px;font-weight:650}
+.sr-teams form{display:flex;align-items:end;gap:8px}
+.sr-teams details form{margin-top:8px}
+.sr-teams label{display:grid;flex:1;min-width:0;gap:4px;font-size:13px;overflow-wrap:anywhere}
+.sr-teams button{min-height:44px}
+.sr-team-divider{
+  grid-column:1/-1;margin:0;padding-top:9px;border-top:1px solid var(--line);
+  color:var(--muted);font-size:13px;overflow-wrap:anywhere
+}
+@media(max-width:480px){
+  .sr-lobby-form[data-sr-form="create"]{flex-wrap:wrap}
+  .sr-lobby-form[data-sr-form="create"] label:first-child{flex-basis:100%}
+  .sr-lobby-form .sr-room-type{flex:1}
+}
