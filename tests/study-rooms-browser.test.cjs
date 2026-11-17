@@ -77,7 +77,7 @@ const fixture=[
   ' if(name==="study_room_create_v2"){const n=s.nextRoomId++;s.room={id:"room-"+n,owner_id:"user-1",name:args.p_name,invite_code:n===1?"K7MP4X9R":"K7MP4X"+String(n+70).slice(-2),focus_minutes:args.p_focus_minutes,break_minutes:args.p_break_minutes,mode:args.p_mode||"shared",phase:"idle",phase_started_at:null,is_active:true};s.rooms.push(s.room);s.selfStudying=false;s.startedAt=null;return s.room.id;}',
   ' if(name==="study_room_join"){const found=s.rooms.find(r=>r.invite_code===args.p_invite_code&&r.is_active);if(!found)throw Error("Geçersiz kod");s.room=found;return s.room.id;}',
   ' if(name==="study_room_touch")return true;',
-  ' if(name==="study_room_snapshot"){const requested=s.rooms.find(r=>r.id===args.p_room_id);if(!requested)throw Error("Oda yok");s.room=requested;s.selfStudying=!!s.studyingByRoom[requested.id];s.startedAt=s.startedByRoom[requested.id]||null;return {room:{...s.room},teams:requested.teams?.map(t=>({...t,assigned_count:Object.values(requested.teamMembers).filter(n=>n===t.number).length})),members:[{user_id:"user-1",username:"Batu",look:s.look,seconds:s.seconds,today_seconds:s.seconds,studying:s.selfStudying,last_seen_at:new Date().toISOString(),active_started_at:s.startedAt||null,active_end_at:null,task_title:s.task||null,team_number:requested.teamMembers?.["user-1"]},...(s.showBatu?[{user_id:window.__batuId,username:"Batu",look:s.batuLook,studying:true,seconds:40}]:[]),...(s.other?[{user_id:"user-2",username:"<img src=x onerror=alert(1)>",team_number:requested.teamMembers?.["user-2"],look:{top:"coogi",head:"headphones",face:"hoops",neck:"pendant",hand:"watch"},seconds:1200,today_seconds:1200,studying:!s.away,last_seen_at:new Date(Date.now()-120000).toISOString(),active_end_at:new Date(Date.now()+300000).toISOString()}]:[])],room_total_seconds:s.roomTotal,bloom_started_at:s.bloomStartedAt,server_now:new Date().toISOString()};}',
+  ' if(name==="study_room_snapshot"){const requested=s.rooms.find(r=>r.id===args.p_room_id);if(!requested)throw Error("Oda yok");s.room=requested;s.selfStudying=!!s.studyingByRoom[requested.id];s.startedAt=s.startedByRoom[requested.id]||null;return {room:{...s.room},teams:requested.teams?.map(t=>({...t,assigned_count:Object.values(requested.teamMembers).filter(n=>n===t.number).length})),members:[{user_id:"user-1",username:"Batu",look:s.look,seconds:s.seconds,today_seconds:s.seconds,studying:s.selfStudying,last_seen_at:new Date().toISOString(),active_started_at:s.startedAt||null,active_end_at:null,task_title:s.task||null,team_number:requested.teamMembers?.["user-1"]},...(s.showBatu?[{user_id:window.__batuId,username:"Batu",look:s.batuLook,studying:true,seconds:40}]:[]),...(s.other?[{user_id:"user-2",username:"<img src=x onerror=alert(1)>",team_number:requested.teamMembers?.["user-2"],look:{top:"coogi",head:"headphones",face:"hoops",neck:"pendant",hand:"watch"},seconds:1200,today_seconds:1200,studying:!s.away,last_seen_at:new Date(Date.now()-120000).toISOString(),active_end_at:new Date(Date.now()+300000).toISOString()}]:[]),...(s.extraMembers||[])],room_total_seconds:s.roomTotal,bloom_started_at:s.bloomStartedAt,server_now:new Date().toISOString()};}',
   ' if(name==="study_room_rename"){if(uid!==s.room.owner_id)throw Error("Not owner");s.room.name=args.p_name;return true;}',
   ' if(name==="study_room_configure"){s.room.focus_minutes=args.p_focus_minutes;s.room.break_minutes=args.p_break_minutes;s.room.mode=args.p_mode;return true;}',
   ' if(name==="study_room_set_phase"){s.room.phase=args.p_phase;s.room.phase_started_at=args.p_phase==="idle"?null:new Date(Date.now()+(args.p_phase==="focus"?3100:0)).toISOString();return true;}',
@@ -612,6 +612,9 @@ const server=createServer((req,res)=>{
     await settingsButton.click();
     await settings.waitFor();
     await teamPicker.selectOption('3');
+    const ownName=settings.locator('[data-sr-form=team-rename]');
+    assert.equal(await ownName.getAttribute('data-team'),'1','a room owner may name their own team only');
+    await ownName.getByLabel('Kendi takımının adı').waitFor();
     const assign=page.locator('[data-sr-form=team-captain][data-team="3"]');
     await assign.locator('select').selectOption('user-2');
     await assign.getByRole('button').click();
@@ -633,6 +636,31 @@ const server=createServer((req,res)=>{
     assert.match(await lead.locator('[data-sr-team-total]').textContent(),/^20 dk/);
     assert.equal(await page.locator('[data-sr-team="2"] [data-sr-team-total]').textContent(),'0 dk 00 sn');
     assert.equal(await page.locator('[data-sr-team="3"] [data-sr-user="user-1"]').count(),0);
+
+    // Fill both team cards without changing the screen width or the ranking.
+    await page.evaluate(()=>{
+      window.__state.extraMembers=Array.from({length:12},(_,i)=>({
+        user_id:'crowd-'+i,username:'Öğrenci '+(i+1),seconds:i,studying:false,
+        last_seen_at:new Date().toISOString(),team_number:i<6?1:3
+      }));
+      window.dispatchEvent(new Event('online'));
+    });
+    await page.locator('[data-sr-user="crowd-11"]').waitFor();
+    const layout=await page.locator('[data-sr-roster]').evaluate(roster=>{
+      const box=el=>el.getBoundingClientRect();
+      const leader=roster.firstElementChild;
+      const runnerUp=roster.children[1];
+      const rows=[...leader.querySelectorAll('[data-sr-user]')].map(box);
+      const inside=[...roster.querySelectorAll('[data-sr-user]')].every(desk=>{
+        const card=box(desk.closest('[data-sr-team]')),member=box(desk);
+        return member.left>=card.left&&member.right<=card.right;
+      });
+      return {inside,leader:leader.dataset.srTeam,sideBySide:Math.abs(box(leader).top-box(runnerUp).top)<2,
+        wraps:rows.some(row=>row.top>rows[0].top+2),multipleDesksPerRow:rows.some(row=>row.left>rows[0].left+2)};
+    });
+    assert.deepEqual(layout,{inside:true,leader:'3',sideBySide:width===1280,wraps:true,multipleDesksPerRow:true});
+    fs.mkdirSync('test-results',{recursive:true});
+    await page.locator('.sr-friends').screenshot({path:'test-results/team-desks-'+width+'.png'});
 
     assert.equal(errors.length,0,'Page errors: '+errors.join(', '));
     console.log('PASS '+label+': room creation, shared clock, timer, roster security, presets, close, responsive layout');

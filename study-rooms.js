@@ -505,7 +505,7 @@
       +'<input name="name" minlength="3" maxlength="60" value="'+E(room.name)+'" required></label>'
       +'<button type="submit" class="secondary-btn">Kaydet</button></form>';
     if(isCaptain)html+='<form data-sr-form="team-rename" class="sr-settings" data-team="'+ownTeam.number+'">'
-      +'<label>Takım adı<input name="name" required maxlength="40" value="'+E(ownTeam.name)+'"></label>'
+      +'<label>Kendi takımının adı<input name="name" required maxlength="40" value="'+E(ownTeam.name)+'"></label>'
       +'<button type="submit" class="secondary-btn">Kaydet</button></form>';
     html+='</section>';
     if(isOwner&&teams.length){
