@@ -150,7 +150,8 @@
     clearLoops();epoch++;host=null;roomId=null;snapshot=null;busy=false;bootOwner=null;
   }
   function notice(message,isError=false){
-    const n=host?.querySelector('[data-sr-notice]');
+    const n=host?.querySelector('[data-sr-settings-dialog][open] [data-sr-settings-notice]')
+      ||host?.querySelector('[data-sr-notice]');
     if(!n)return;
     n.textContent=message||'';
     n.classList.toggle('sr-error',!!isError);
@@ -255,12 +256,18 @@
       +'<strong data-sr-clock>00:00:00</strong><small data-sr-clock-note></small></div></div>'
       +'<div data-sr-own-status class="sr-own-status"></div>'
       +'<div data-sr-personal-actions class="sr-action-area"></div>'
-      +'<div data-sr-owner-actions class="sr-owner-area"></div></section>'
+      +'<div data-sr-owner-actions class="sr-owner-area" hidden><button type="button" class="sr-room-settings-trigger"'
+      +' data-sr-action="open-room-settings" aria-haspopup="dialog"><span aria-hidden="true">⚙</span> Oda ayarları</button></div></section>'
       +'<section class="sr-friends"><div class="sr-section-head"><h3><span data-sr-desk-label>Masalar</span> <span data-sr-member-count></span></h3></div>'
       +'<section class="sr-teams" data-sr-teams hidden aria-label="Takımlar"></section>'
       +'<div class="sr-roster" data-sr-roster><div class="sr-loading">Yükleniyor…</div></div></section></div>'
       +'<div class="sr-room-footer" data-sr-footer></div>'+chairGuide()
       +'<div class="sr-countdown" data-sr-countdown hidden aria-live="assertive"><div class="sr-countdown-inner"><div>ETÜT BAŞLIYOR</div><strong data-sr-countdown-num>3</strong></div></div>'
+      +'<dialog class="sr-room-settings" data-sr-settings-dialog aria-labelledby="sr-settings-title">'
+      +'<header><h2 id="sr-settings-title">Oda ayarları</h2><button type="button" class="sr-settings-close"'
+      +' data-sr-action="close-room-settings" aria-label="Kapat" autofocus>×</button></header>'
+      +'<div class="sr-room-settings-scroll" data-sr-settings-fields></div>'
+      +'<p class="sr-note" data-sr-settings-notice hidden role="status"></p></dialog>'
       +'<p class="sr-note" data-sr-notice hidden role="status"></p></div>';
   }
   function openRoom(next,initial){
@@ -493,36 +500,78 @@
     if(!accountId()||!room.is_active)return '';
     const isCaptain=ownTeam?.captain_id===accountId();
     if(!isOwner&&!isCaptain)return '';
-    let html='<details class="sx-room-settings sr-room-settings" data-settings-section="room">'
-      +'<summary class="secondary-btn"><span aria-hidden="true">⚙</span> Ayarlar</summary><div class="sr-room-settings-fields">';
+    let html='<section class="sr-settings-names">';
     if(isOwner)html+='<form data-sr-form="rename" class="sr-settings"><label>Oda adı'
       +'<input name="name" minlength="3" maxlength="60" value="'+E(room.name)+'" required></label>'
-      +'<button type="submit" class="secondary-btn">Oda adını düzenle</button></form>';
+      +'<button type="submit" class="secondary-btn">Kaydet</button></form>';
     if(isCaptain)html+='<form data-sr-form="team-rename" class="sr-settings" data-team="'+ownTeam.number+'">'
       +'<label>Takım adı<input name="name" required maxlength="40" value="'+E(ownTeam.name)+'"></label>'
-      +'<button type="submit" class="secondary-btn">Takım adını düzenle</button></form>';
+      +'<button type="submit" class="secondary-btn">Kaydet</button></form>';
+    html+='</section>';
     if(isOwner&&teams.length){
-      if(teams.length<30)html+='<form data-sr-form="team-add" class="sr-settings">'
-        +capacityField(null)+'<button type="submit" class="secondary-btn">Takım ekle</button></form>';
-      const captainForms=teams.map(team=>{
+      html+='<section class="sr-settings-teams"><h3>Takımlar</h3>'
+        +'<label>Takım seç<select data-sr-settings-team>'
+        +teams.map(team=>'<option value="'+team.number+'">'+E(team.name)+'</option>').join('')+'</select></label>';
+      html+=teams.map(team=>{
         const choices=members.filter(member=>member.team_number===team.number||(!member.team_number&&!teamFull(team)));
-        if(!choices.length)return '';
         const captainOptions=choices.map(member=>'<option value="'+E(member.user_id)+'" '
           +(member.user_id===team.captain_id?'selected':'')+'>'+E(member.username)+'</option>').join('');
-        return '<form data-sr-form="team-captain" class="sr-settings" data-team="'+team.number+'">'
-          +'<label>'+E(team.name)+'<select name="captain" required><option value="" disabled '
-          +(!team.captain_id?'selected':'')+'>Üye seç</option>'+captainOptions+'</select></label>'
-          +'<button type="submit" class="secondary-btn">Ata</button></form>';
-      }).join('');
-      html+='<details class="sr-team-settings" data-settings-section="captains"><summary>Kaptan ata</summary>'
-        +captainForms+'</details>';
-      html+='<details class="sr-team-settings" data-settings-section="limits"><summary>Takım sınırları</summary>'
-        +teams.map(team=>'<form data-sr-form="team-limit" class="sr-settings" data-team="'+team.number+'">'
-          +'<strong class="sr-team-limit-name">'+E(team.name)+' <small>'+teamSize(team)+'</small></strong>'
+        return '<div class="sr-settings-team" data-sr-settings-team-panel="'+team.number+'" hidden>'
+          +'<form data-sr-form="team-limit" class="sr-settings" data-team="'+team.number+'">'
           +capacityField(team.member_limit)+'<button type="submit" class="secondary-btn">Sınırı kaydet</button></form>'
-        ).join('')+'</details>';
+          +(choices.length?'<form data-sr-form="team-captain" class="sr-settings" data-team="'+team.number+'">'
+            +'<label>Kaptan<select name="captain" required><option value="" disabled '
+            +(!team.captain_id?'selected':'')+'>Üye seç</option>'+captainOptions+'</select></label>'
+            +'<button type="submit" class="secondary-btn">Ata</button></form>':'')
+          +'</div>';
+      }).join('');
+      if(teams.length<30)html+='<details class="sr-team-settings" data-sr-settings-add><summary>Takım ekle</summary>'
+        +'<form data-sr-form="team-add" class="sr-settings">'+capacityField(null)
+        +'<button type="submit" class="secondary-btn">Ekle</button></form></details>';
+      html+='</section>';
     }
-    return html+'</div></details>';
+    return html;
+  }
+
+  function selectSettingsTeam(dialog,number){
+    const select=dialog.querySelector('[data-sr-settings-team]');
+    if(!select)return;
+    if([...select.options].some(option=>option.value===number))select.value=number;
+    for(const panel of dialog.querySelectorAll('[data-sr-settings-team-panel]'))
+      panel.hidden=panel.dataset.srSettingsTeamPanel!==select.value;
+  }
+
+  function updateSettings(html){
+    const dialog=host.querySelector('[data-sr-settings-dialog]');
+    host.querySelector('[data-sr-owner-actions]').hidden=!html;
+    if(!html&&dialog.open)dialog.close();
+    const fields=dialog.querySelector('[data-sr-settings-fields]');
+    if(fields.dataset.renderKey===html)return;
+    const selected=fields.querySelector('[data-sr-settings-team]')?.value;
+    const adding=fields.querySelector('[data-sr-settings-add]')?.open;
+    const scroll=fields.scrollTop;
+    fields.innerHTML=html;
+    fields.dataset.renderKey=html;
+    selectSettingsTeam(dialog,selected);
+    const add=fields.querySelector('[data-sr-settings-add]');
+    if(add&&adding)add.open=true;
+    fields.scrollTop=scroll;
+  }
+
+  function openRoomSettings(){
+    const dialog=host.querySelector('[data-sr-settings-dialog]');
+    if(!dialog||dialog.open||host.querySelector('[data-sr-owner-actions]').hidden)return;
+    const status=dialog.querySelector('[data-sr-settings-notice]');
+    status.hidden=true;status.textContent='';
+    dialog.onchange=event=>{
+      if(event.target.matches('[data-sr-settings-team]'))selectSettingsTeam(dialog,event.target.value);
+    };
+    dialog.onclick=event=>{
+      if(event.target!==dialog)return;
+      const bounds=dialog.getBoundingClientRect();
+      if(event.clientX<bounds.left||event.clientX>bounds.right||event.clientY<bounds.top||event.clientY>bounds.bottom)dialog.close();
+    };
+    dialog.showModal();
   }
 
   function drawSnapshot(){
@@ -555,15 +604,7 @@
       lastPersonalKey=personalKey;
       host.querySelector('[data-sr-personal-actions]').innerHTML=personalHtml;
     }
-    const actions=roomSettings(r,teams,members,ownTeam,owner);
-    const ownerArea=host.querySelector('[data-sr-owner-actions]');
-    if(ownerArea.dataset.renderKey!==actions){
-      const opened=new Set([...ownerArea.querySelectorAll('details[open]')].map(panel=>panel.dataset.settingsSection));
-      ownerArea.innerHTML=actions;
-      ownerArea.dataset.renderKey=actions;
-      for(const panel of ownerArea.querySelectorAll('details'))panel.open=opened.has(panel.dataset.settingsSection);
-    }
-    ownerArea.hidden=!actions;
+    updateSettings(roomSettings(r,teams,members,ownTeam,owner));
     // Rank by the same room total shown on each desk. Ties keep join order.
     const roster=members.slice().sort((a,b)=>liveSeconds(b,now)-liveSeconds(a,now));
     // Avoid re-creating animated characters on every 12-second sync.
@@ -726,7 +767,9 @@
     }
   }
   async function act(action,button){
+    if(action==='close-room-settings'){button.closest('dialog').close();return;}
     if(busy||changingStudy)return;
+    if(action==='open-room-settings'){openRoomSettings();return;}
     if(bootOwner&&!accountId()&&!['back','create-next','open','copy','copy-code'].includes(action))return;
     if(action==='entry-create'||action==='entry-join'){showEntry(action.slice(6));return;}
     if(action==='wardrobe'){void openWardrobe(button);return;}
@@ -823,8 +866,18 @@
       if(ticket!==epoch||!active())return;
       if(name==='study_room_team_update'||name==='study_room_team_manage'){
         acceptSnapshot(result);
+        if(type==='team-add'){
+          const dialog=host.querySelector('[data-sr-settings-dialog]');
+          const latest=result.teams?.at(-1);
+          if(latest)selectSettingsTeam(dialog,String(latest.number));
+          const add=dialog.querySelector('[data-sr-settings-add]');
+          if(add)add.open=false;
+        }
         notice(type==='team-choose'?'Takımına katıldın.':type==='team-add'?'Takım eklendi.':'Takım güncellendi.');
-      }else if(type==='settings'||type==='rename')await loadRoom();
+      }else if(type==='settings'||type==='rename'){
+        await loadRoom();
+        if(type==='rename'&&ticket===epoch)notice('Oda adı güncellendi.');
+      }
       else openRoom(result);
     }catch(error){notice(error?.message||'Kaydetme işlemi başarısız.',true);}
     finally{busy=false;if(btn?.isConnected)btn.disabled=false;}

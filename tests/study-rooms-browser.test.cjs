@@ -302,12 +302,22 @@ const server=createServer((req,res)=>{
     assert.equal(await page.locator('.republic-hero').isVisible(),false,'holiday banners must not appear in immersive room');
     assert.equal(await page.locator('#pageTitle').isVisible(),false,'only room view should remain on screen');
     assert.equal(await page.locator('.sr-person').count(),1);
-    await page.locator('.sx-room-settings summary').click();
+    const settingsButton=page.getByRole('button',{name:'Oda ayarları',exact:true});
+    const settings=page.getByRole('dialog',{name:'Oda ayarları',exact:true});
+    assert.equal(await settingsButton.evaluate(node=>getComputedStyle(node).backgroundColor),'rgba(0, 0, 0, 0)');
+    await settingsButton.click();
+    await settings.waitFor();
+    assert(await settings.evaluate(dialog=>dialog.open&&dialog.getBoundingClientRect().right<=innerWidth));
+    await settings.getByRole('button',{name:'Kapat'}).click();
+    await settings.waitFor({state:'hidden'});
+    await settingsButton.click();
+    await settings.waitFor();
     await page.locator('[data-sr-form=rename] [name=name]').fill('Yeni oda adı');
     await page.locator('[data-sr-form=rename] button[type=submit]').click();
     await page.locator('[data-sr-room-title]').getByText('Yeni oda adı',{exact:true}).waitFor();
     assert.equal(await page.locator('[data-sr-invite]').textContent(),'K7MP-4X9R','rename keeps invitation');
-    await page.locator('.sx-room-settings summary').click();
+    await settings.getByRole('button',{name:'Kapat'}).click();
+    await settings.waitFor({state:'hidden'});
 
     assert(await page.locator('[data-sr-action=start]').isEnabled(),'personal work starts without a shared session');
     assert.equal(await page.locator('[data-sr-task],[data-sx-intent],[data-sx=note]').count(),0);
@@ -557,22 +567,27 @@ const server=createServer((req,res)=>{
     // The owner manages room names, team limits and newly added teams from settings.
     await page.locator('[data-sr-action=back]').click();
     await page.locator('[data-sr-action=open]').filter({hasText:'Çevrimdışı hava'}).click();
-    const settings=page.locator('[data-sr-owner-actions]');
-    await settings.locator('.sr-room-settings>summary').click();
+    await settingsButton.click();
+    await settings.waitFor();
     assert.equal(await settings.locator('[data-sr-form=rename]').isVisible(),true);
     assert.equal(await page.locator('[data-sr-team]').count(),2);
-    const add=page.locator('[data-sr-form=team-add]');
+    await settings.getByText('Takım ekle',{exact:true}).click();
+    const add=settings.locator('[data-sr-form=team-add]');
     await add.locator('input').fill('2');
     await add.getByRole('button').click();
-    const limits=settings.locator('[data-settings-section="limits"]');
-    await limits.locator('summary').click();
-    const newLimit=limits.locator('[data-sr-form=team-limit][data-team="3"]');
+    const teamPicker=settings.locator('[data-sr-settings-team]');
+    const newLimit=settings.locator('[data-sr-form=team-limit][data-team="3"]');
     await newLimit.waitFor();
+    assert.equal(await teamPicker.inputValue(),'3');
     assert.equal(await newLimit.locator('input').inputValue(),'2');
-    const limit=limits.locator('[data-sr-form=team-limit][data-team="1"]');
+    await teamPicker.selectOption('1');
+    assert.equal(await newLimit.isHidden(),true);
+    const limit=settings.locator('[data-sr-form=team-limit][data-team="1"]');
     await limit.locator('input').fill('1');
     await limit.getByRole('button').click();
-    await page.waitForFunction(()=>document.querySelector('[data-sr-form=team-limit][data-team="1"] strong')?.textContent.includes('1/1'));
+    await settings.getByText('Takım güncellendi.',{exact:true}).waitFor();
+    await settings.getByRole('button',{name:'Kapat'}).click();
+    await settings.waitFor({state:'hidden'});
 
     // A member can choose team 3 before that team has a captain.
     await page.evaluate(()=>{window.__state.other=true;window.__state.away=true;window.__uid="user-2";window.dispatchEvent(new Event('hakuna-account-changed'));});
@@ -581,7 +596,7 @@ const server=createServer((req,res)=>{
     await choose.waitFor();
     assert.equal(await choose.locator('option:not([disabled])').count(),2);
     assert.equal(await choose.locator('option[value="1"]:disabled').count(),1);
-    assert.equal(await settings.isHidden(),true);
+    assert.equal(await settingsButton.count(),0);
     await choose.locator('select').selectOption('3');
     await choose.getByRole('button').click();
     await page.locator('[data-sr-team="3"] [data-sr-user="user-2"]').waitFor();
@@ -594,8 +609,9 @@ const server=createServer((req,res)=>{
     // The owner appoints an existing member and the member can then rename their team.
     await page.evaluate(()=>{window.__uid="user-1";window.dispatchEvent(new Event('hakuna-account-changed'));});
     await page.locator('[data-sr-action=open]').filter({hasText:'Çevrimdışı hava'}).click();
-    await settings.locator('.sr-room-settings>summary').click();
-    await settings.getByText('Kaptan ata',{exact:true}).click();
+    await settingsButton.click();
+    await settings.waitFor();
+    await teamPicker.selectOption('3');
     const assign=page.locator('[data-sr-form=team-captain][data-team="3"]');
     await assign.locator('select').selectOption('user-2');
     await assign.getByRole('button').click();
@@ -603,12 +619,15 @@ const server=createServer((req,res)=>{
     assert.equal(await page.locator('[data-sr-roster]').getByText('Kaptan',{exact:true}).count(),0);
     await page.evaluate(()=>{window.__uid="user-2";window.dispatchEvent(new Event('hakuna-account-changed'));});
     await page.locator('[data-sr-action=open]').filter({hasText:'Çevrimdışı hava'}).click();
-    await settings.locator('.sr-room-settings>summary').click();
+    await settingsButton.click();
+    await settings.waitFor();
     assert.equal(await settings.locator('[data-sr-form=rename], [data-sr-form=team-add]').count(),0);
     const renameTeam=page.locator('[data-sr-form=team-rename]');
     await renameTeam.locator('input').fill('Gece Ekibi');
     await renameTeam.getByRole('button').click();
     const lead=page.locator('[data-sr-team]').first();
+    await settings.getByText('Takım güncellendi.',{exact:true}).waitFor();
+    await settings.getByRole('button',{name:'Kapat'}).click();
     await lead.getByText('Gece Ekibi',{exact:true}).waitFor();
     assert.equal(await lead.getAttribute('data-sr-team'),'3');
     assert.match(await lead.locator('[data-sr-team-total]').textContent(),/^20 dk/);
