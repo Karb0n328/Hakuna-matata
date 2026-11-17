@@ -35,7 +35,7 @@
       window.HakunaOffline?.saveRoomLaunch?.(owner,entries);
     }else if(name==='study_room_snapshot'&&revision===cacheRevision){
       rememberRoom(owner,data);
-    }else if(name==='study_room_team_update'){
+    }else if(name==='study_room_team_update'||name==='study_room_team_manage'){
       cacheRevision++;
       rememberRoom(owner,data);
     }else if(name==='study_room_start'){
@@ -179,9 +179,8 @@
       +'<div class="sr-lobby-entry"><button type="button" class="primary-btn" data-sr-action="entry-create">Oda aç</button><button type="button" class="secondary-btn" data-sr-action="entry-join">Koda katıl</button></div>'
       +'<form hidden class="sr-panel sr-lobby-form" data-sr-form="create">'
       +'<label>Oda adı<input name="name" type="text" maxlength="60" minlength="3" placeholder="Örn. Kütüphane Ekibi" autocomplete="off" required></label>'
-      +'<label class="sr-room-type">Oda türü<select name="teamCount"><option value="0">Takımsız</option>'
-      +Array.from({length:29},(_,i)=>'<option value="'+(i+2)+'">'+(i+2)+' takım</option>').join('')
-      +'</select></label><button type="submit" class="primary-btn">Aç</button></form>'
+      +'<label class="sr-room-type">Oda türü<select name="roomType"><option value="plain">Takımsız</option>'
+      +'<option value="teams">Takımlı</option></select></label><button type="submit" class="primary-btn">Aç</button></form>'
       +'<form hidden class="sr-panel sr-lobby-form" data-sr-form="join">'
       +'<label>Davet kodu<input name="code" type="text" maxlength="32" placeholder="K7MP-4X9R" autocapitalize="characters" autocomplete="off" spellcheck="false" required></label>'
       +'<button type="submit" class="primary-btn">Katıl</button></form>'
@@ -465,41 +464,64 @@
     dialog.showModal();
   }
 
-  function renderTeams(teams,members,self,owner,canManage){
+  const teamFull=team=>team.member_limit!=null&&team.assigned_count>=team.member_limit;
+  const teamSize=team=>team.member_limit==null
+    ?(team.assigned_count||0)+' kişi'
+    :(team.assigned_count||0)+'/'+team.member_limit;
+
+  function renderTeams(teams,ownTeam,canChoose){
     const panel=host.querySelector('[data-sr-teams]');
-    panel.hidden=!teams.length;
-    if(!teams.length)return;
-    const ownTeam=teams.find(team=>team.number===self?.team_number);
-    const options=teams.map(team=>'<option value="'+team.number+'">'+E(team.name)+'</option>').join('');
-    let html=ownTeam
+    panel.hidden=!teams.length||(!ownTeam&&!canChoose);
+    if(panel.hidden)return;
+    const options=teams.map(team=>'<option value="'+team.number+'" '+(teamFull(team)?'disabled':'')+'>'
+      +E(team.name)+' · '+teamSize(team)+(teamFull(team)?' · Dolu':'')+'</option>').join('');
+    const html=ownTeam
       ?'<p class="sr-team-current">Takımın <strong>'+E(ownTeam.name)+'</strong></p>'
-      :canManage?'<form data-sr-form="team-choose"><label>Takımını seç<select name="team" required>'
+      :'<form data-sr-form="team-choose"><label>Takımını seç<select name="team" required>'
         +'<option value="" disabled selected>Takım seç</option>'+options+'</select></label>'
-        +'<button type="submit" class="secondary-btn">Takıma katıl</button></form>'
-        +'<small class="sr-muted">Takım seçimin kalıcıdır.</small>':'';
-    if(canManage&&ownTeam?.captain_id===self?.user_id&&ownTeam){
-      html+='<details data-team-settings="name"><summary>Takım adını düzenle</summary>'
-        +'<form data-sr-form="team-rename" data-team="'+ownTeam.number+'"><label>Takım adı'
-        +'<input name="name" required maxlength="40" value="'+E(ownTeam.name)+'"></label>'
-        +'<button type="submit" class="secondary-btn">Adı kaydet</button></form></details>';
-    }
-    if(canManage&&owner){
-      html+='<details data-team-settings="captains"><summary>Kaptanları belirle</summary>'
-        +teams.map(team=>{
-          const choices=members.filter(member=>!member.team_number||member.team_number===team.number);
-          if(!choices.length)return '';
-          return '<form data-sr-form="team-captain" data-team="'+team.number+'"><label>'+E(team.name)+' kaptanı'
-            +'<select name="captain" required><option value="" disabled '+(!team.captain_id?'selected':'')+'>Kaptan seç</option>'
-            +choices.map(member=>'<option value="'+E(member.user_id)+'" '+(member.user_id===team.captain_id?'selected':'')+'>'
-              +E(member.username)+'</option>').join('')+'</select></label>'
-            +'<button type="submit" class="secondary-btn">Ata</button></form>';
-        }).join('')+'</details>';
-    }
+        +'<button type="submit" class="secondary-btn" '+(teams.every(teamFull)?'disabled':'')+'>Takıma katıl</button></form>'
+        +'<small class="sr-muted">Takım seçimin kalıcıdır.</small>';
     if(panel.dataset.renderKey===html)return;
-    const expanded=new Set([...panel.querySelectorAll('details[open]')].map(item=>item.dataset.teamSettings));
     panel.innerHTML=html;
     panel.dataset.renderKey=html;
-    for(const details of panel.querySelectorAll('details'))details.open=expanded.has(details.dataset.teamSettings);
+  }
+
+  function capacityField(limit){
+    return '<label>Kişi sınırı<input name="capacity" type="number" min="1" max="30" inputmode="numeric"'
+      +' placeholder="Sınırsız" value="'+(limit??'')+'"></label>';
+  }
+
+  function roomSettings(room,teams,members,ownTeam,isOwner){
+    if(!accountId()||!room.is_active)return '';
+    const isCaptain=ownTeam?.captain_id===accountId();
+    if(!isOwner&&!isCaptain)return '';
+    let html='<details class="sx-room-settings sr-room-settings" data-settings-section="room">'
+      +'<summary class="secondary-btn"><span aria-hidden="true">⚙</span> Ayarlar</summary><div class="sr-room-settings-fields">';
+    if(isOwner)html+='<form data-sr-form="rename" class="sr-settings"><label>Oda adı'
+      +'<input name="name" minlength="3" maxlength="60" value="'+E(room.name)+'" required></label>'
+      +'<button type="submit" class="secondary-btn">Oda adını düzenle</button></form>';
+    if(isCaptain)html+='<form data-sr-form="team-rename" class="sr-settings" data-team="'+ownTeam.number+'">'
+      +'<label>Takım adı<input name="name" required maxlength="40" value="'+E(ownTeam.name)+'"></label>'
+      +'<button type="submit" class="secondary-btn">Takım adını düzenle</button></form>';
+    if(isOwner&&teams.length){
+      if(teams.length<30)html+='<form data-sr-form="team-add" class="sr-settings">'
+        +capacityField(null)+'<button type="submit" class="secondary-btn">Takım ekle</button></form>';
+      html+=teams.map(team=>{
+        const choices=members.filter(member=>member.team_number===team.number||(!member.team_number&&!teamFull(team)));
+        const captainOptions=choices.map(member=>'<option value="'+E(member.user_id)+'" '
+          +(member.user_id===team.captain_id?'selected':'')+'>'+E(member.username)+'</option>').join('');
+        const captain=choices.length?'<form data-sr-form="team-captain" class="sr-settings" data-team="'+team.number+'">'
+          +'<label>Takım kaptanı<select name="captain" required><option value="" disabled '
+          +(!team.captain_id?'selected':'')+'>Kaptan seç</option>'+captainOptions+'</select></label>'
+          +'<button type="submit" class="secondary-btn">Ata</button></form>':'';
+        return '<details class="sr-team-settings" data-settings-section="team-'+team.number+'">'
+          +'<summary>'+E(team.name)+' <small>'+teamSize(team)+'</small></summary>'
+          +'<form data-sr-form="team-limit" class="sr-settings" data-team="'+team.number+'">'
+          +capacityField(team.member_limit)+'<button type="submit" class="secondary-btn">Sınırı kaydet</button></form>'
+          +captain+'</details>';
+      }).join('');
+    }
+    return html+'</div></details>';
   }
 
   function drawSnapshot(){
@@ -509,7 +531,8 @@
     const self=members.find(m=>m.user_id===id()),now=Date.now()+skewMs;
     const working=!!self&&memberWorking(self,now);
     const teams=snapshot.teams||[];
-    renderTeams(teams,members,self,owner,!!accountId()&&r.is_active);
+    const ownTeam=teams.find(team=>team.number===self?.team_number);
+    renderTeams(teams,ownTeam,!!accountId()&&r.is_active);
     const connected=!!accountId()&&!changingStudy,canStart=!!r.is_active&&!working&&connected;
     host.querySelector('[data-sr-room-title]').textContent=r.name;
     host.querySelector('[data-sr-room-mode]').textContent=teams.length?'TAKIMLI ODA':'ÇALIŞMA ODASI';
@@ -530,14 +553,15 @@
       lastPersonalKey=personalKey;
       host.querySelector('[data-sr-personal-actions]').innerHTML=personalHtml;
     }
-    let actions='';
-    if(owner&&r.is_active){
-      actions+='<details class="sx-room-settings"><summary>Oda ayarları</summary><form data-sr-form="rename" class="sr-settings"><label class="sr-settings-mode">Oda adı<input name="name" minlength="3" maxlength="60" value="'+E(r.name)+'" required></label><button type="submit" class="secondary-btn">Adı kaydet</button></form>';
-      actions+='</details>';
-      
-    }
+    const actions=roomSettings(r,teams,members,ownTeam,owner);
     const ownerArea=host.querySelector('[data-sr-owner-actions]');
-    if(ownerArea.dataset.renderKey!==actions){const wasOpen=ownerArea.querySelector('details')?.open;ownerArea.innerHTML=actions;ownerArea.dataset.renderKey=actions;if(wasOpen&&ownerArea.querySelector('details'))ownerArea.querySelector('details').open=true;}ownerArea.hidden=!actions;
+    if(ownerArea.dataset.renderKey!==actions){
+      const opened=new Set([...ownerArea.querySelectorAll('details[open]')].map(panel=>panel.dataset.settingsSection));
+      ownerArea.innerHTML=actions;
+      ownerArea.dataset.renderKey=actions;
+      for(const panel of ownerArea.querySelectorAll('details'))panel.open=opened.has(panel.dataset.settingsSection);
+    }
+    ownerArea.hidden=!actions;
     // Rank by the same room total shown on each desk. Ties keep join order.
     const roster=members.slice().sort((a,b)=>liveSeconds(b,now)-liveSeconds(a,now));
     // Avoid re-creating animated characters on every 12-second sync.
@@ -747,8 +771,12 @@
     if(type==='create'){
       name='study_room_create_v2';
       args={p_name:String(fd.get('name')||'').trim(),p_focus_minutes:50,p_break_minutes:10,p_mode:String(fd.get('mode')||'shared')};
-      const teamCount=Number(fd.get('teamCount'));
-      if(teamCount){name='study_room_create_teams';args={p_name:args.p_name,p_team_count:teamCount};}
+      if(fd.get('roomType')==='teams'){name='study_room_create_teams';args={p_name:args.p_name,p_team_count:2};}
+    }else if((type==='team-add'||type==='team-limit')&&roomId){
+      const capacity=fd.get('capacity');
+      name='study_room_team_manage';
+      args={p_room_id:requested,p_action:type.slice(5),p_member_limit:capacity?Number(capacity):null};
+      if(type==='team-limit')args.p_team_number=Number(form.dataset.team);
     }else if(type.startsWith('team-')&&roomId){
       const action=type.slice(5);
       name='study_room_team_update';
@@ -766,9 +794,9 @@
     try{
       const result=await rpc(name,args);
       if(ticket!==epoch||!active())return;
-      if(name==='study_room_team_update'){
+      if(name==='study_room_team_update'||name==='study_room_team_manage'){
         acceptSnapshot(result);
-        notice(type==='team-choose'?'Takımına katıldın.':'Takım güncellendi.');
+        notice(type==='team-choose'?'Takımına katıldın.':type==='team-add'?'Takım eklendi.':'Takım güncellendi.');
       }else if(type==='settings'||type==='rename')await loadRoom();
       else openRoom(result);
     }catch(error){notice(error?.message||'Kaydetme işlemi başarısız.',true);}

@@ -72,11 +72,12 @@ const fixture=[
   ' if(!uid)throw Error("Giriş gerekli");',
   ' if(name==="study_room_overview")return {rooms:s.rooms.filter(r=>r.is_active).map(r=>({...r,member_count:s.other?2:1,today_seconds:0,total_seconds:0,studying:!!s.studyingByRoom[r.id]})),total_seconds:s.seconds,today_seconds:s.seconds};',
   ' if(name==="study_room_create_teams"){const id=await window.HakunaAccount.roomRpc("study_room_create_v2",{...args,p_focus_minutes:50,p_break_minutes:10});s.room.teams=Array.from({length:args.p_team_count},(_,i)=>({number:i+1,name:"Takım "+(i+1),captain_id:i===0?uid:null}));s.room.teamMembers={[uid]:1};return id;}',
+  ' if(name==="study_room_team_manage"){const r=s.rooms.find(r=>r.id===args.p_room_id);if(uid!==r.owner_id)throw Error("Oda sahibi gerekli");if(args.p_action==="add"){const number=r.teams.length+1;r.teams.push({number,name:"Takım "+number,captain_id:null,member_limit:args.p_member_limit});}else{r.teams.find(t=>t.number===args.p_team_number).member_limit=args.p_member_limit;}return window.HakunaAccount.roomRpc("study_room_snapshot",args);}',
   ' if(name==="study_room_team_update"){const r=s.rooms.find(r=>r.id===args.p_room_id);const team=r.teams.find(t=>t.number===args.p_team_number);if(args.p_action==="rename"){if(team.captain_id!==uid)throw Error("Kaptan gerekli");team.name=args.p_name;}else{const member=args.p_action==="captain"?args.p_captain_id:uid;r.teamMembers[member]=team.number;if(args.p_action==="captain")team.captain_id=member;}return window.HakunaAccount.roomRpc("study_room_snapshot",args);}',
   ' if(name==="study_room_create_v2"){const n=s.nextRoomId++;s.room={id:"room-"+n,owner_id:"user-1",name:args.p_name,invite_code:n===1?"K7MP4X9R":"K7MP4X"+String(n+70).slice(-2),focus_minutes:args.p_focus_minutes,break_minutes:args.p_break_minutes,mode:args.p_mode||"shared",phase:"idle",phase_started_at:null,is_active:true};s.rooms.push(s.room);s.selfStudying=false;s.startedAt=null;return s.room.id;}',
   ' if(name==="study_room_join"){const found=s.rooms.find(r=>r.invite_code===args.p_invite_code&&r.is_active);if(!found)throw Error("Geçersiz kod");s.room=found;return s.room.id;}',
   ' if(name==="study_room_touch")return true;',
-  ' if(name==="study_room_snapshot"){const requested=s.rooms.find(r=>r.id===args.p_room_id);if(!requested)throw Error("Oda yok");s.room=requested;s.selfStudying=!!s.studyingByRoom[requested.id];s.startedAt=s.startedByRoom[requested.id]||null;return {room:{...s.room},teams:requested.teams,members:[{user_id:"user-1",username:"Batu",look:s.look,seconds:s.seconds,today_seconds:s.seconds,studying:s.selfStudying,last_seen_at:new Date().toISOString(),active_started_at:s.startedAt||null,active_end_at:null,task_title:s.task||null,team_number:requested.teamMembers?.["user-1"]},...(s.showBatu?[{user_id:window.__batuId,username:"Batu",look:s.batuLook,studying:true,seconds:40}]:[]),...(s.other?[{user_id:"user-2",username:"<img src=x onerror=alert(1)>",team_number:requested.teamMembers?.["user-2"],look:{top:"coogi",head:"headphones",face:"hoops",neck:"pendant",hand:"watch"},seconds:1200,today_seconds:1200,studying:!s.away,last_seen_at:new Date(Date.now()-120000).toISOString(),active_end_at:new Date(Date.now()+300000).toISOString()}]:[])],room_total_seconds:s.roomTotal,bloom_started_at:s.bloomStartedAt,server_now:new Date().toISOString()};}',
+  ' if(name==="study_room_snapshot"){const requested=s.rooms.find(r=>r.id===args.p_room_id);if(!requested)throw Error("Oda yok");s.room=requested;s.selfStudying=!!s.studyingByRoom[requested.id];s.startedAt=s.startedByRoom[requested.id]||null;return {room:{...s.room},teams:requested.teams?.map(t=>({...t,assigned_count:Object.values(requested.teamMembers).filter(n=>n===t.number).length})),members:[{user_id:"user-1",username:"Batu",look:s.look,seconds:s.seconds,today_seconds:s.seconds,studying:s.selfStudying,last_seen_at:new Date().toISOString(),active_started_at:s.startedAt||null,active_end_at:null,task_title:s.task||null,team_number:requested.teamMembers?.["user-1"]},...(s.showBatu?[{user_id:window.__batuId,username:"Batu",look:s.batuLook,studying:true,seconds:40}]:[]),...(s.other?[{user_id:"user-2",username:"<img src=x onerror=alert(1)>",team_number:requested.teamMembers?.["user-2"],look:{top:"coogi",head:"headphones",face:"hoops",neck:"pendant",hand:"watch"},seconds:1200,today_seconds:1200,studying:!s.away,last_seen_at:new Date(Date.now()-120000).toISOString(),active_end_at:new Date(Date.now()+300000).toISOString()}]:[])],room_total_seconds:s.roomTotal,bloom_started_at:s.bloomStartedAt,server_now:new Date().toISOString()};}',
   ' if(name==="study_room_rename"){if(uid!==s.room.owner_id)throw Error("Not owner");s.room.name=args.p_name;return true;}',
   ' if(name==="study_room_configure"){s.room.focus_minutes=args.p_focus_minutes;s.room.break_minutes=args.p_break_minutes;s.room.mode=args.p_mode;return true;}',
   ' if(name==="study_room_set_phase"){s.room.phase=args.p_phase;s.room.phase_started_at=args.p_phase==="idle"?null:new Date(Date.now()+(args.p_phase==="focus"?3100:0)).toISOString();return true;}',
@@ -418,7 +419,9 @@ const server=createServer((req,res)=>{
     await page.reload();
     await page.locator('[data-sr-action=entry-create]').click();
     await page.locator('[data-sr-form=create] [name=name]').fill('Çevrimdışı hava');
-    await page.locator('[data-sr-form=create] [name=teamCount]').selectOption('3');
+    const roomType=page.locator('[data-sr-form=create] [name=roomType]');
+    assert.deepEqual(await roomType.locator('option').allTextContents(),['Takımsız','Takımlı']);
+    await roomType.selectOption('teams');
     await page.locator('[data-sr-form=create] button[type=submit]').click();
     await page.waitForFunction(()=>document.querySelector('.sr-room')?.dataset.weather==='unknown');
     assert(['dawn','day','sunset','night'].includes(await page.locator('.sr-room').getAttribute('data-dayphase')));
@@ -551,12 +554,34 @@ const server=createServer((req,res)=>{
     await page.locator('[data-sr-action=start]').waitFor();
     assert.equal(await page.evaluate(()=>Object.values(window.__state.studyingByRoom).some(Boolean)),false);
 
+    // The owner manages room names, team limits and newly added teams from settings.
+    await page.locator('[data-sr-action=back]').click();
+    await page.locator('[data-sr-action=open]').filter({hasText:'Çevrimdışı hava'}).click();
+    const settings=page.locator('[data-sr-owner-actions]');
+    await settings.locator('.sr-room-settings>summary').click();
+    assert.equal(await settings.locator('[data-sr-form=rename]').isVisible(),true);
+    assert.equal(await settings.locator('.sr-team-settings').count(),2);
+    const add=page.locator('[data-sr-form=team-add]');
+    await add.locator('input').fill('2');
+    await add.getByRole('button').click();
+    const team3=settings.locator('[data-settings-section="team-3"]');
+    await team3.waitFor();
+    assert.match(await team3.locator('summary').textContent(),/0\/2/);
+    const team1=settings.locator('[data-settings-section="team-1"]');
+    await team1.locator('summary').click();
+    const limit=team1.locator('[data-sr-form=team-limit]');
+    await limit.locator('input').fill('1');
+    await limit.getByRole('button').click();
+    await page.waitForFunction(()=>document.querySelector('[data-settings-section="team-1"] summary')?.textContent.includes('1/1'));
+
     // A member can choose team 3 before that team has a captain.
     await page.evaluate(()=>{window.__state.other=true;window.__uid="user-2";window.dispatchEvent(new Event('hakuna-account-changed'));});
     await page.locator('[data-sr-action=open]').filter({hasText:'Çevrimdışı hava'}).click();
     const choose=page.locator('[data-sr-form=team-choose]');
     await choose.waitFor();
-    assert.equal(await choose.locator('option:not([disabled])').count(),3);
+    assert.equal(await choose.locator('option:not([disabled])').count(),2);
+    assert.equal(await choose.locator('option[value="1"]').isDisabled(),true);
+    assert.equal(await settings.isHidden(),true);
     await choose.locator('select').selectOption('3');
     await choose.getByRole('button').click();
     await page.locator('.sr-team-current').getByText('Takım 3',{exact:true}).waitFor();
@@ -569,14 +594,16 @@ const server=createServer((req,res)=>{
     // The owner appoints an existing member and the member can then rename their team.
     await page.evaluate(()=>{window.__uid="user-1";window.dispatchEvent(new Event('hakuna-account-changed'));});
     await page.locator('[data-sr-action=open]').filter({hasText:'Çevrimdışı hava'}).click();
-    await page.getByText('Kaptanları belirle',{exact:true}).click();
+    await settings.locator('.sr-room-settings>summary').click();
+    await team3.locator('summary').click();
     const assign=page.locator('[data-sr-form=team-captain][data-team="3"]');
     await assign.locator('select').selectOption('user-2');
     await assign.getByRole('button').click();
     await page.locator('[data-sr-user="user-2"]').getByText('Kaptan',{exact:true}).waitFor();
     await page.evaluate(()=>{window.__uid="user-2";window.dispatchEvent(new Event('hakuna-account-changed'));});
     await page.locator('[data-sr-action=open]').filter({hasText:'Çevrimdışı hava'}).click();
-    await page.getByText('Takım adını düzenle',{exact:true}).click();
+    await settings.locator('.sr-room-settings>summary').click();
+    assert.equal(await settings.locator('[data-sr-form=rename], [data-sr-form=team-add]').count(),0);
     const renameTeam=page.locator('[data-sr-form=team-rename]');
     await renameTeam.locator('input').fill('Gece Ekibi');
     await renameTeam.getByRole('button').click();

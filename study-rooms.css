@@ -604,12 +604,19 @@ html[data-hakuna-palette="republic"] .sr-desk-scene{filter:hue-rotate(323deg) sa
 .sr-teams[hidden]{display:none}
 .sr-team-current{margin:0;color:var(--muted);font-size:13px;overflow-wrap:anywhere}
 .sr-team-current strong{margin-inline-start:4px;color:var(--ink)}
-.sr-teams details{border-top:1px solid var(--line);padding-top:8px}
-.sr-teams summary{cursor:pointer;font-size:13px;font-weight:650}
-.sr-teams form{display:flex;align-items:end;gap:8px}
-.sr-teams details form{margin-top:8px}
-.sr-teams label{display:grid;flex:1;min-width:0;gap:4px;font-size:13px;overflow-wrap:anywhere}
-.sr-teams button{min-height:44px}
+.sr-teams form,.sr-room-settings .sr-settings{display:flex;align-items:end;gap:8px}
+.sr-teams label,.sr-room-settings label{
+  display:grid;flex:1;min-width:0;gap:4px;font-size:13px;overflow-wrap:anywhere
+}
+.sr-teams button,.sr-room-settings button{min-height:44px}
+.sr-room-settings>summary{display:inline-flex;align-items:center;gap:8px;min-height:44px;cursor:pointer}
+.sr-room-settings>summary::-webkit-details-marker{display:none}
+.sr-room-settings-fields,.sr-team-settings[open]{display:grid;gap:10px;min-width:0}
+.sr-room-settings .sr-settings{margin:0}
+.sr-room-settings .sr-settings :is(input,select){width:100%;min-width:0;padding:10px 11px;font-size:16px}
+.sr-team-settings{border-top:1px solid var(--line);padding-top:9px}
+.sr-team-settings summary{cursor:pointer;overflow-wrap:anywhere}
+.sr-team-settings summary small{color:var(--muted);margin-inline-start:5px}
 .sr-team-divider{
   grid-column:1/-1;margin:0;padding-top:9px;border-top:1px solid var(--line);
   color:var(--muted);font-size:13px;overflow-wrap:anywhere
