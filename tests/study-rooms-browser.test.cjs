@@ -637,6 +637,15 @@ const server=createServer((req,res)=>{
     assert.equal(await page.locator('[data-sr-team="2"] [data-sr-team-total]').textContent(),'0 dk 00 sn');
     assert.equal(await page.locator('[data-sr-team="3"] [data-sr-user="user-1"]').count(),0);
 
+    // The team horizon keeps the sky and room time without the room-wide pet.
+    await page.evaluate(()=>{
+      window.__state.roomTotal=450*3600;
+      window.__state.bloomStartedAt=new Date(Date.now()-86401000).toISOString();
+      window.dispatchEvent(new Event('online'));
+    });
+    await page.getByText('450 saat 0 dk',{exact:true}).waitFor();
+    assert.equal(await page.locator('[data-sx-plant], [data-sx-bloom-timer], [data-sx-dragon], [data-sx-companion-label]').count(),0);
+
     // Fill both team cards without changing the screen width or the ranking.
     await page.evaluate(()=>{
       window.__state.extraMembers=Array.from({length:12},(_,i)=>({

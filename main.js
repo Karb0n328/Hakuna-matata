@@ -12,7 +12,7 @@ let roomUi;
 function loadRoomUi(){
   roomUi??=Promise.all([
     import('./room-weather.js?v=2'),
-    import('./room-experience.js?v=7-bloom'),
+    import('./room-experience.js?v=8-team-rooms'),
     import('./room-wardrobe.js?v=24-reference-locs'),
     import('./study-rooms.js?v=47-team-layout')
   ]);
