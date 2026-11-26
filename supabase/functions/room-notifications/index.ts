@@ -2,6 +2,7 @@ import {createClient} from 'npm:@supabase/supabase-js@2.116.0';
 import webpush from 'npm:web-push@3.6.7';
 const headers={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization,apikey,content-type,x-client-info','Content-Type':'application/json'};
 const db=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
+const uuidPattern = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
 const reply=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers});
 function validSub(s:any){try{const u=new URL(s.endpoint);return u.protocol==='https:'&&!u.port&&!u.username&&!u.password&&['fcm.googleapis.com','updates.push.services.mozilla.com','web.push.apple.com'].includes(u.hostname)&&s.endpoint.length<2048&&/^[A-Za-z0-9_-]{87}$/.test(s.keys?.p256dh)&&/^[A-Za-z0-9_-]{22}$/.test(s.keys?.auth)}catch{return false}}
 async function keys(){let {data,error}=await db.from('room_push_keys').select('*').eq('id',true).maybeSingle();if(error)throw error;if(!data){const k=webpush.generateVAPIDKeys();const saved=await db.from('room_push_keys').upsert({id:true,public_key:k.publicKey,private_key:k.privateKey},{onConflict:'id',ignoreDuplicates:true});if(saved.error)throw saved.error;const r=await db.from('room_push_keys').select('*').eq('id',true).single();if(r.error)throw r.error;data=r.data;}return data;}
@@ -48,11 +49,15 @@ Deno.serve(async req=>{if(req.method==='OPTIONS')return new Response('ok',{heade
    return reply({ok:true,sent:results.filter(Boolean).length});
  }
  if (b.action === 'room-control') {
-   if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(b.token || '') ||
+   const tokens = typeof b.token === 'string' && b.token.length <= 1850 ? b.token.split('.') : [];
+   if (!tokens.length || tokens.length > 50 || !tokens.every((token: string) => uuidPattern.test(token)) ||
        !['pause', 'resume'].includes(b.command)) return reply({error:'Invalid action'},400);
-   const result = await db.rpc('room_push_control', {p_token:b.token, p_action:b.command});
+   const result = tokens.length === 1
+     ? await db.rpc('room_push_control', {p_token:tokens[0], p_action:b.command})
+     : await db.rpc('room_push_group_control', {p_tokens:tokens, p_action:b.command});
    if (result.error) throw result.error;
-   return result.data ? reply({ok:true, token:result.data}) : reply({error:'Action expired'},409);
+   const token = Array.isArray(result.data) ? result.data.join('.') : result.data;
+   return token ? reply({ok:true, token}) : reply({error:'Action expired'},409);
  }
  if(b.action==='pause'){if(!/^[0-9a-f-]{36}$/.test(b.token||''))return reply({error:'Invalid token'},400);const r=await db.rpc('room_push_pause',{p_token:b.token});if(r.error)throw r.error;return reply({ok:r.data},r.data?200:403);}
  const jwt=(req.headers.get('Authorization')||'').replace(/^Bearer /,'');const {data:{user},error}=await db.auth.getUser(jwt);if(error||!user)return reply({error:'Giriş gerekli'},401);
@@ -73,6 +78,47 @@ Deno.serve(async req=>{if(req.method==='OPTIONS')return new Response('ok',{heade
  if(b.action==='config'){const k=await keys();return reply({publicKey:k.public_key});}
  if(b.action==='subscribe'){if(!validSub(b.subscription))return reply({error:'Invalid subscription'},400);const existing=await db.from('room_push_subscriptions').select('user_id').eq('endpoint',b.subscription.endpoint).maybeSingle();if(existing.data&&existing.data.user_id!==user.id)return reply({error:'Bu cihazda önce eski hesabın bildirimini kapat.'},409);const r=await db.from('room_push_subscriptions').upsert({endpoint:b.subscription.endpoint,user_id:user.id,subscription:b.subscription,updated_at:new Date().toISOString()});if(r.error)throw r.error;return reply({ok:true});}
  if(b.action==='unsubscribe'){const r=await db.from('room_push_subscriptions').delete().eq('endpoint',b.endpoint).eq('user_id',user.id);if(r.error)throw r.error;return reply({ok:true});}
+ if (['started-group', 'native-group-control'].includes(b.action)) {
+   const roomIds = Array.isArray(b.roomIds) ? [...new Set<string>(b.roomIds)] : [];
+   if (roomIds.length < 2 || roomIds.length > 50 || !roomIds.every(id => typeof id === 'string' && uuidPattern.test(id))) {
+     return reply({error:'Invalid rooms'},400);
+   }
+   const rooms = await db.from('study_rooms').select('id,name,short_code').in('id',roomIds).eq('is_active',true);
+   if (rooms.error) throw rooms.error;
+   const sessions = await db.from('study_room_sessions').select('id,room_id').eq('user_id',user.id)
+     .in('room_id',roomIds).is('ended_at',null).or('planned_end_at.is.null,planned_end_at.gt.' + new Date().toISOString());
+   if (sessions.error) throw sessions.error;
+   const byRoom = new Map(sessions.data.map(session => [session.room_id,session]));
+   const active = roomIds.flatMap(id => {
+     const room = rooms.data.find(room => room.id === id);
+     const session = byRoom.get(id);
+     return room && session ? [{room,session}] : [];
+   });
+   if (active.length !== roomIds.length) return reply({error:'Room group changed'},409);
+   const primary = active[0];
+   const subscriptions = b.action === 'started-group'
+     ? await db.from('room_push_subscriptions').select('subscription').eq('user_id',user.id) : null;
+   if (subscriptions?.error) throw subscriptions.error;
+   if (subscriptions && !subscriptions.data?.length) return reply({ok:true,sent:0});
+   if (subscriptions) {
+     const claim = await db.rpc('room_push_claim',{p_session:primary.session.id,p_user:user.id});
+     if (claim.error) throw claim.error;
+     if (!claim.data) return reply({ok:true,sent:0});
+   }
+   const actions = await db.from('room_push_actions').insert(active.map(({session}) => ({
+     session_id:session.id,user_id:user.id
+   }))).select('token');
+   if (actions.error) throw actions.error;
+   const controlToken = actions.data.map(action => action.token).join('.');
+   const payload = {
+     roomId:primary.room.id, roomIds, group:true, code:primary.room.short_code, controlToken,
+     roomName:'Birlikte yönetilen odalar: ' + active.map(({room}) => room.name).join(', ').slice(0,160)
+   };
+   if (!subscriptions) return reply({...payload, token:controlToken});
+   const key = await keys();
+   const results = await Promise.all(subscriptions.data!.map(row => sendPush(row, payload, key)));
+   return reply({ok:true,sent:results.filter(Boolean).length});
+ }
  if(!['started','native-control'].includes(b.action))return reply({error:'Invalid action'},400);
  const session=await db.from('study_room_sessions').select('id,room_id').eq('user_id',user.id).eq('room_id',b.roomId).is('ended_at',null).order('started_at',{ascending:false}).limit(1).maybeSingle();if(session.error)throw session.error;if(!session.data)return reply({ok:true,sent:0});
  if (b.action === 'native-control') {

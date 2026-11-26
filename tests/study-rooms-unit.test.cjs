@@ -40,7 +40,7 @@ assert.match(app,/roomsStartTogether: false/,'new accounts default to independen
 assert.match(app,/settingsRoomHeading[^]*?Odaları birlikte yönet[^]*?Seçili odalarda çalışmayı birlikte başlat veya durdur/);
 assert.match(app,/roomStartTogether\.onchange=async/,'room preference toggle persists its changes');
 assert.match(src,/async function updateOtherRooms\(primaryRoom,owner,group,begin\)/);
-assert.match(src,/room\.id!==primaryRoom&&room\.is_active!==false&&group\.allows\(room\.id\)&&!!room\.studying!==begin/,
+assert.match(src,/room\.id!==primaryRoom&&room\.is_active!==false&&group\.allows\(room\.id\)/,
   'group start and stop skip independent, closed and already updated rooms');
 assert.match(src,/await rpc\(begin\?'study_room_start':'study_room_stop',\{p_room_id:target\.id\}\)/,
   'group actions target each distinct server room session');

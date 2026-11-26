@@ -77,3 +77,47 @@ $$;
 
 revoke all on function public.room_push_control(uuid, text) from public, anon, authenticated;
 grant execute on function public.room_push_control(uuid, text) to service_role;
+
+create function public.room_push_group_control(p_tokens uuid[], p_action text)
+returns uuid[]
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  token uuid;
+  next_token uuid;
+  next_tokens uuid[] := '{}';
+  matched integer;
+  owners integer;
+begin
+  if cardinality(p_tokens) not between 2 and 50 then return null; end if;
+
+  select count(*), count(distinct a.user_id) into matched, owners
+  from public.room_push_actions a where a.token = any(p_tokens);
+  if matched <> cardinality(p_tokens) or owners <> 1 then return null; end if;
+
+  -- Follow the single-room room-before-user locking order across the group.
+  perform 1 from public.study_rooms r
+  where r.id in (
+    select s.room_id from public.study_room_sessions s
+    join public.room_push_actions a on a.session_id = s.id
+    where a.token = any(p_tokens)
+  )
+  order by r.id for update;
+
+  begin
+    foreach token in array p_tokens loop
+      next_token := public.room_push_control(token, p_action);
+      if next_token is null then raise sqlstate 'P0002'; end if;
+      next_tokens := array_append(next_tokens, next_token);
+    end loop;
+  exception when no_data_found then
+    return null;
+  end;
+  return next_tokens;
+end;
+$$;
+
+revoke all on function public.room_push_group_control(uuid[], text) from public, anon, authenticated;
+grant execute on function public.room_push_group_control(uuid[], text) to service_role;

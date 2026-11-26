@@ -64,7 +64,7 @@ public class HakunaNotifications extends BroadcastReceiver {
         switch (data.optString("action")) {
             case "room-start":
                 String code = data.optString("code");
-                if (validRoom(room) && validCode(code)) {
+                if ((validRoom(room) || "group".equals(room)) && validCode(code)) {
                     String account = data.optString("account");
                     String token = account.equals(prefs(context).getString("account", ""))
                             ? data.optString("token") : "";
@@ -72,7 +72,7 @@ public class HakunaNotifications extends BroadcastReceiver {
                 }
                 break;
             case "room-stop":
-                if (validRoom(room)) manager(context).cancel(tag, NOTIFICATION_ID);
+                if (validRoom(room) || "group".equals(room)) manager(context).cancel(tag, NOTIFICATION_ID);
                 break;
             case "room-sync":
                 reconcileRooms(context, data.optJSONArray("active"));
@@ -92,6 +92,12 @@ public class HakunaNotifications extends BroadcastReceiver {
 
     private static boolean validRoom(String room) {
         return room != null && room.matches("[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}");
+    }
+
+    private static boolean validToken(String token) {
+        if (token == null || token.length() > 1850) return false;
+        for (String part : token.split("\\.", -1)) if (!validRoom(part)) return false;
+        return true;
     }
 
     private static void reconcileRooms(Context context, JSONArray active) {
@@ -146,7 +152,7 @@ public class HakunaNotifications extends BroadcastReceiver {
 
         String account = intent.getStringExtra("account");
         String token = intent.getStringExtra("token");
-        if (account == null || account.isEmpty() || !validRoom(token)
+        if (account == null || account.isEmpty() || !validToken(token)
                 || !account.equals(prefs(context).getString("account", ""))) return;
 
         boolean paused = intent.getBooleanExtra("paused", false);
@@ -154,7 +160,7 @@ public class HakunaNotifications extends BroadcastReceiver {
         new Thread(() -> {
             try {
                 String nextToken = controlRoom(token, paused ? "resume" : "pause");
-                if (validRoom(nextToken) && account.equals(prefs(context).getString("account", ""))) {
+                if (validToken(nextToken) && account.equals(prefs(context).getString("account", ""))) {
                     showRoom(context, intent.getStringExtra("tag"), intent.getStringExtra("code"),
                             intent.getStringExtra("name"), nextToken, !paused, account);
                 }
@@ -208,7 +214,7 @@ public class HakunaNotifications extends BroadcastReceiver {
     private static void showRoom(Context context, String tag, String code, String name,
                                  String token, boolean paused, String account) {
         Notification.Action action = null;
-        if (validRoom(token)) {
+        if (validToken(token)) {
             Intent control = new Intent(context, HakunaNotifications.class).setAction(ROOM_CONTROL)
                     .setData(Uri.fromParts("hakuna-room-control", tag, null))
                     .putExtra("tag", tag).putExtra("code", code).putExtra("name", name)

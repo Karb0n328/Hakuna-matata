@@ -62,7 +62,16 @@ const assert = require('node:assert/strict');
   assert.equal(shown[4].options.tag,'hakuna-timer-123456');
   assert.equal(shown[4].options.silent,true);
   assert.equal(shown[4].options.actions,undefined);
-  console.log('PASS room names, background pause/resume, deep links and timer notifications');
+  await push({roomId:'123', roomIds:['123','456'], group:true, roomName:'Oda A, Oda B', controlToken:'first.second'});
+  const grouped = shown[5].options;
+  assert.equal(grouped.tag,'hakuna-study-group');
+  assert.notEqual(grouped.tag,shown[0].options.tag);
+  assert.equal(grouped.body,'Oda A, Oda B');
+  await tap(5,'pause');
+  assert.equal(requests.at(-1).token,'first.second');
+  assert.deepEqual(posted.at(-1).roomIds,['123','456']);
+  assert.equal(shown[6].options.tag,grouped.tag);
+  console.log('PASS room names, independent and grouped controls, deep links and timer notifications');
 })().catch(error => {console.error(error); process.exitCode=1;});
 
 (async () => {
