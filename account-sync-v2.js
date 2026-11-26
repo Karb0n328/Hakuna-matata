@@ -158,7 +158,6 @@ window.HakunaAccount=Object.freeze({
     const endpoint=name==='study_room_snapshot'?'study_room_snapshot_v2':name;
     const {data,error}=await supabase.rpc(endpoint,args);
     if(error)throw error;
-    if(name==='study_room_start')void supabase.functions.invoke('room-notifications',{body:{action:'started',roomId:args.p_room_id}}).catch(()=>{});
     if(['study_room_stop','study_room_leave','study_room_close'].includes(name))void window.HakunaRoomNotifications?.close(args.p_room_id);
     return data;
   },

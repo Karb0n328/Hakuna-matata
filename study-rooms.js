@@ -703,22 +703,23 @@
   }
 
   async function updateOtherRooms(primaryRoom,owner,group,begin){
-    if(!group||owner!==accountId())return {changed:0,failed:0};
+    if(!group||owner!==accountId())return {changed:0,failed:0,roomIds:[]};
     let overview;
     try{overview=await rpc('study_room_overview');}
     catch(error){
       console.warn('Room group overview',error);
-      return {changed:0,failed:1};
+      return {changed:0,failed:1,roomIds:[]};
     }
     const rooms=Array.isArray(overview.rooms)?overview.rooms:[];
-    const targets=new Set(rooms
-      .filter(room=>room.id&&room.id!==primaryRoom&&room.is_active!==false&&group.allows(room.id)&&!!room.studying!==begin)
-      .map(room=>room.id));
+    const targets=rooms.filter(room=>room.id&&room.id!==primaryRoom&&room.is_active!==false&&group.allows(room.id));
+    const roomIds=begin?targets.filter(room=>room.studying).map(room=>room.id):[];
     let changed=0,failed=0;
     for(const target of targets){
       if(owner!==accountId())break;
+      if(!!target.studying===begin)continue;
       try{
-        await rpc(begin?'study_room_start':'study_room_stop',{p_room_id:target});
+        await rpc(begin?'study_room_start':'study_room_stop',{p_room_id:target.id});
+        if(begin)roomIds.push(target.id);
         changed++;
       }catch(error){
         failed++;
@@ -726,7 +727,7 @@
       }
     }
     if(owner===accountId()&&changed)refreshLaunch();
-    return {changed,failed};
+    return {changed,failed,roomIds};
   }
 
   async function startWithCountdown(button){
@@ -739,11 +740,11 @@
       if(ticket!==epoch||room!==roomId||!active())return;
       if(panel)panel.hidden=true;
       notice('Etüdün başlatılıyor…');
-      const code=snapshot.room.invite_code;
+      const {invite_code:code,name:roomName}=snapshot.room;
       const user=accountId(),group=groupFor(room);
       await rpc('study_room_start',{p_room_id:room});
-      if(user===id())window.HakunaRoomNotifications?.started?.(room,code);
       const result=await updateOtherRooms(room,user,group,true);
+      if(user===accountId())void window.HakunaRoomNotifications?.started?.(room,code,roomName,result.roomIds);
       if(ticket===epoch&&room===roomId&&active()){
         await loadRoom();
         if(result.failed)notice(result.failed+' odada çalışma başlatılamadı.',true);
@@ -806,6 +807,7 @@
       const group=action==='stop'?groupFor(sourceRoom):null;
       await rpc(name,args);
       const otherStops=await updateOtherRooms(sourceRoom,sourceUser,group,false);
+      if(group&&sourceUser===accountId()&&!otherStops.failed)void window.HakunaRoomNotifications?.close?.('group');
       if(ticket!==epoch||sourceRoom!==roomId||!active())return;
       if(action==='leave'||action==='close'){busy=false;showLobby();}
       else {
@@ -913,7 +915,11 @@
     if(active()){if(roomId){void touchRoom();void loadRoom();refreshLaunch();}else void loadLobby();tick();}
     else refreshLaunch();
   });
-  window.navigator?.serviceWorker?.addEventListener('message',e=>{if(e.data?.type==='hakuna-study-paused'&&roomId)void loadRoom();});
+  window.navigator?.serviceWorker?.addEventListener('message',e=>{if(e.data?.type==='hakuna-room-study-changed'){
+      if(roomId&&(!e.data.roomId||e.data.roomId===roomId||e.data.roomIds?.includes(roomId)))void loadRoom();
+      else if(active()&&!roomId)void loadLobby();
+      refreshLaunch();
+    }else if(e.data?.type==='hakuna-study-paused'&&roomId)void loadRoom();});
   refreshLaunch();
   window.HakunaStudyRooms=Object.freeze({render,leaveView,
     utils:Object.freeze({duration,displayClock,phaseLeft,phaseEnd,chairLevel})});

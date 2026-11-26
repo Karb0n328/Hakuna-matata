@@ -17,12 +17,41 @@
     for (const event of ['hakuna-timer-changed', 'hakuna-native-resumed', 'focus']) {
       window.addEventListener(event, syncTimer);
     }
-    const closeRoom = room => send('room-stop', {room});
+    const pendingControls = new Map();
+    const closeRoom = room => {
+      pendingControls.delete(room);
+      send('room-stop', {room});
+    };
     window.HakunaRoomNotifications = {
       close: closeRoom,
       closeAndroidRoom: closeRoom,
-      started: (room, code) => send('room-start', {room, code}),
-      syncRooms: rooms => send('room-sync', {active: rooms.filter(room => room.studying).map(room => room.id)}),
+      async started(room, code, roomName, otherRooms = []) {
+        const account = window.HakunaAccount?.info()?.id;
+        const roomIds = [room,...otherRooms];
+        const grouped = otherRooms.length > 0;
+        const tagRoom = grouped ? 'group' : room;
+        if (grouped) for (const id of roomIds) closeRoom(id);
+        const request = Symbol();
+        pendingControls.set(tagRoom, request);
+        if (!grouped) send('room-start', {room, code, roomName});
+        try {
+          const control = await window.HakunaAccount.roomNotifications(grouped ? {action:'native-group-control', roomIds} : {action:'native-control', roomId:room});
+          if (control?.token && pendingControls.get(tagRoom) === request && account === window.HakunaAccount?.info()?.id) {
+            send('room-start', {room:tagRoom, code, roomName:grouped ? control.roomName : roomName, token:control.token, account});
+          }
+        } catch (error) {
+          console.warn('Oda bildirim düğmesi hazırlanamadı', error);
+        } finally {
+          if (pendingControls.get(tagRoom) === request) pendingControls.delete(tagRoom);
+        }
+      },
+      syncRooms: rooms => {
+        const active = rooms.filter(room => room.studying).map(room => room.id);
+        const preferences = window.HakunaRoomPreferences;
+        const selected = preferences?.selectedIds?.();
+        if (preferences?.startAll?.() && active.some(id => !Array.isArray(selected) || selected.includes(id))) active.push('group');
+        send('room-sync', {active});
+      },
       enable: () => new Promise(resolve => {
         android.onmessage = event => {
           android.onmessage = null;
@@ -202,6 +231,20 @@
   });
   window.addEventListener('online', () => void sync());
   window.addEventListener('focus', () => void sync());
-  window.HakunaRoomNotifications = {close,enable};
+  async function started(room, _code, _roomName, otherRooms = []) {
+    if (!supported || Notification.permission !== 'granted') return;
+    try {
+      if (otherRooms.length) {
+        const roomIds = [room,...otherRooms];
+        await Promise.all(roomIds.map(close));
+        await api({action:'started-group',roomIds});
+      } else {
+        await api({action:'started',roomId:room});
+      }
+    } catch (error) {
+      console.warn('Oda bildirimi gönderilemedi', error);
+    }
+  }
+  window.HakunaRoomNotifications = {close,enable,started};
   void sync();
 })();
