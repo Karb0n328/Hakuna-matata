@@ -47,6 +47,13 @@ Deno.serve(async req=>{if(req.method==='OPTIONS')return new Response('ok',{heade
      sendPush(job, {kind:'timer-finished', endAt:Date.parse(job.due_at!)}, key)));
    return reply({ok:true,sent:results.filter(Boolean).length});
  }
+ if (b.action === 'room-control') {
+   if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(b.token || '') ||
+       !['pause', 'resume'].includes(b.command)) return reply({error:'Invalid action'},400);
+   const result = await db.rpc('room_push_control', {p_token:b.token, p_action:b.command});
+   if (result.error) throw result.error;
+   return result.data ? reply({ok:true, token:result.data}) : reply({error:'Action expired'},409);
+ }
  if(b.action==='pause'){if(!/^[0-9a-f-]{36}$/.test(b.token||''))return reply({error:'Invalid token'},400);const r=await db.rpc('room_push_pause',{p_token:b.token});if(r.error)throw r.error;return reply({ok:r.data},r.data?200:403);}
  const jwt=(req.headers.get('Authorization')||'').replace(/^Bearer /,'');const {data:{user},error}=await db.auth.getUser(jwt);if(error||!user)return reply({error:'Giriş gerekli'},401);
  if (b.action === 'timer-schedule') {
@@ -66,13 +73,21 @@ Deno.serve(async req=>{if(req.method==='OPTIONS')return new Response('ok',{heade
  if(b.action==='config'){const k=await keys();return reply({publicKey:k.public_key});}
  if(b.action==='subscribe'){if(!validSub(b.subscription))return reply({error:'Invalid subscription'},400);const existing=await db.from('room_push_subscriptions').select('user_id').eq('endpoint',b.subscription.endpoint).maybeSingle();if(existing.data&&existing.data.user_id!==user.id)return reply({error:'Bu cihazda önce eski hesabın bildirimini kapat.'},409);const r=await db.from('room_push_subscriptions').upsert({endpoint:b.subscription.endpoint,user_id:user.id,subscription:b.subscription,updated_at:new Date().toISOString()});if(r.error)throw r.error;return reply({ok:true});}
  if(b.action==='unsubscribe'){const r=await db.from('room_push_subscriptions').delete().eq('endpoint',b.endpoint).eq('user_id',user.id);if(r.error)throw r.error;return reply({ok:true});}
- if(b.action!=='started')return reply({error:'Invalid action'},400);
+ if(!['started','native-control'].includes(b.action))return reply({error:'Invalid action'},400);
  const session=await db.from('study_room_sessions').select('id,room_id').eq('user_id',user.id).eq('room_id',b.roomId).is('ended_at',null).order('started_at',{ascending:false}).limit(1).maybeSingle();if(session.error)throw session.error;if(!session.data)return reply({ok:true,sent:0});
+ if (b.action === 'native-control') {
+   const room = await db.from('study_rooms').select('name,short_code').eq('id',session.data.room_id).eq('is_active',true).maybeSingle();
+   if (room.error) throw room.error;
+   if (!room.data) return reply({error:'Room closed'},409);
+   const action = await db.from('room_push_actions').insert({session_id:session.data.id,user_id:user.id}).select('token').single();
+   if (action.error) throw action.error;
+   return reply({token:action.data.token, roomName:room.data.name, code:room.data.short_code});
+ }
  const subscriptions=await db.from('room_push_subscriptions').select('endpoint,subscription').eq('user_id',user.id);if(subscriptions.error)throw subscriptions.error;if(!subscriptions.data?.length)return reply({ok:true,sent:0});
  const claim=await db.rpc('room_push_claim',{p_session:session.data.id,p_user:user.id});if(claim.error)throw claim.error;if(!claim.data)return reply({ok:true,sent:0});
  const room=await db.from('study_rooms').select('name,short_code,is_active').eq('id',b.roomId).single();if(room.error)throw room.error;if(!room.data.is_active)return reply({ok:true,sent:0});
  const action=await db.from('room_push_actions').insert({session_id:session.data.id,user_id:user.id}).select('token').single();if(action.error)throw action.error;const k=await keys();
- const payload = {roomId:b.roomId, code:room.data.short_code, pauseToken:action.data.token};
+ const payload = {roomId:b.roomId, roomName:room.data.name, code:room.data.short_code, pauseToken:action.data.token, controlToken:action.data.token};
  const results = await Promise.all(subscriptions.data.map(row => sendPush(row, payload, k)));
  return reply({ok:true,sent:results.filter(Boolean).length});
  }catch{return reply({error:'Bildirim işlemi tamamlanamadı.'},500);}});

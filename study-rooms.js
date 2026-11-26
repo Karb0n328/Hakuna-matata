@@ -711,14 +711,16 @@
       return {changed:0,failed:1};
     }
     const rooms=Array.isArray(overview.rooms)?overview.rooms:[];
-    const targets=new Set(rooms
-      .filter(room=>room.id&&room.id!==primaryRoom&&room.is_active!==false&&group.allows(room.id)&&!!room.studying!==begin)
-      .map(room=>room.id));
+    const targets=rooms.filter(room=>room.id&&room.id!==primaryRoom&&room.is_active!==false&&group.allows(room.id)&&!!room.studying!==begin);
     let changed=0,failed=0;
     for(const target of targets){
       if(owner!==accountId())break;
       try{
-        await rpc(begin?'study_room_start':'study_room_stop',{p_room_id:target});
+        await rpc(begin?'study_room_start':'study_room_stop',{p_room_id:target.id});
+        if(owner===accountId()){
+          if(begin)void window.HakunaRoomNotifications?.started?.(target.id,target.invite_code,target.name);
+          else void window.HakunaRoomNotifications?.close?.(target.id);
+        }
         changed++;
       }catch(error){
         failed++;
@@ -742,7 +744,7 @@
       const code=snapshot.room.invite_code;
       const user=accountId(),group=groupFor(room);
       await rpc('study_room_start',{p_room_id:room});
-      if(user===id())window.HakunaRoomNotifications?.started?.(room,code);
+      if(user===id())window.HakunaRoomNotifications?.started?.(room,code,snapshot.room.name);
       const result=await updateOtherRooms(room,user,group,true);
       if(ticket===epoch&&room===roomId&&active()){
         await loadRoom();
@@ -913,7 +915,11 @@
     if(active()){if(roomId){void touchRoom();void loadRoom();refreshLaunch();}else void loadLobby();tick();}
     else refreshLaunch();
   });
-  window.navigator?.serviceWorker?.addEventListener('message',e=>{if(e.data?.type==='hakuna-study-paused'&&roomId)void loadRoom();});
+  window.navigator?.serviceWorker?.addEventListener('message',e=>{if(e.data?.type==='hakuna-room-study-changed'){
+      if(roomId&&(!e.data.roomId||e.data.roomId===roomId))void loadRoom();
+      else if(active()&&!roomId)void loadLobby();
+      refreshLaunch();
+    }else if(e.data?.type==='hakuna-study-paused'&&roomId)void loadRoom();});
   refreshLaunch();
   window.HakunaStudyRooms=Object.freeze({render,leaveView,
     utils:Object.freeze({duration,displayClock,phaseLeft,phaseEnd,chairLevel})});

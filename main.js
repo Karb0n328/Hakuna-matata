@@ -14,7 +14,7 @@ function loadRoomUi(){
     import('./room-weather.js?v=2'),
     import('./room-experience.js?v=8-team-rooms'),
     import('./room-wardrobe.js?v=24-reference-locs'),
-    import('./study-rooms.js?v=48-code-invites')
+    import('./study-rooms.js?v=49-notification-controls')
   ]);
   return roomUi;
 }
@@ -79,7 +79,7 @@ afterFirstPaint(()=>{
     if(navigator.onLine)void connect();
     window.addEventListener('online',()=>{void connect();},{once:true});
     try{
-      await Promise.all([loadRoomUi(),import('./room-notifications.js?v=6-android')]);
+      await Promise.all([loadRoomUi(),import('./room-notifications.js?v=7-controls')]);
       if(document.querySelector('#pageTitle')?.textContent==='Odalar')window.HakunaStudyRooms?.render(document.querySelector('#view'));
     }catch(err){console.warn('Hakuna study rooms load',err);}
     await Promise.allSettled([
